@@ -4,11 +4,13 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 14:28:34
+ * @LastEditTime: 2023-02-27 15:19:04
  */
 import CircleLayer from "../../src/base/CircleLayer"
 import { useEarth } from '../../src';
 import { fromLonLat } from "ol/proj";
+import { Feature } from "ol";
+import { Circle, Point } from "ol/geom";
 export const testCircleLayer = () => {
   const layer = new CircleLayer(useEarth());
   layer.add({

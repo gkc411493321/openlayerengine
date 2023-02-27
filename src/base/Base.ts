@@ -1,7 +1,6 @@
 import Earth from "Earth";
 import { Feature } from "ol";
 import { Geometry } from "ol/geom";
-import BaseLayer from "ol/layer/Base";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 
@@ -11,7 +10,7 @@ import VectorSource from "ol/source/Vector";
  * @Author: wuyue.nan
  * @Date: 2023-02-23 13:30:45
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 14:28:10
+ * @LastEditTime: 2023-02-27 14:31:02
  */
 /**
  * 附加数据

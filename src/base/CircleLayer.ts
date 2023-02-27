@@ -10,6 +10,7 @@ import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
 import Text from "ol/style/Text";
 import Base, { IAddBaseParam, IBaseData } from "./Base"
+import { center } from '@turf/turf';
 /*
  * @Description:圆操作
  * @Version: 2.0
@@ -80,11 +81,11 @@ interface ILabel {
   /**
    * 文本对齐方式，'left' | 'right' | 'center' | 'end' 
    */
-  textAlign?: string;
+  textAlign?: CanvasTextAlign;
   /**
    * 文本基线， 'bottom' | 'top' | 'middle' | 'alphabetic' | 'hanging' | 'ideographic'
    */
-  textBaseline?: string;
+  textBaseline?: CanvasTextBaseline;
   /**
    * 文本颜色
    */
@@ -128,9 +129,27 @@ export default class CircleLayer<T = unknown> extends Base {
       fill: new Fill(Object.assign({}, param.fill)),
       text: new Text({
         text: param.label?.text,
+        font: param.label?.font,
+        offsetX: param.label?.offsetX,
+        offsetY: param.label?.offsetY,
+        scale: param.label?.scale,
+        textAlign: param.label?.textAlign,
+        textBaseline: param.label?.textBaseline,
+        fill: new Fill({
+          color: param.label?.fill?.color
+        }),
         stroke: new Stroke({
-
-        })
+          color: param.label?.stroke?.color,
+          width: param.label?.stroke?.width
+        }),
+        backgroundFill: new Fill({
+          color: param.label?.backgroundFill?.color
+        }),
+        backgroundStroke: new Stroke({
+          color: param.label?.backgroundStroke?.color,
+          width: param.label?.backgroundStroke?.width
+        }),
+        padding: param.label?.padding
       })
     })
     feature.setStyle(style)
