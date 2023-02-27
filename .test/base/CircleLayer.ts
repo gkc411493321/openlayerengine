@@ -1,3 +1,11 @@
+/*
+ * @Description: 
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-23 18:12:58
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-02-27 14:28:34
+ */
 import CircleLayer from "../../src/base/CircleLayer"
 import { useEarth } from '../../src';
 import { fromLonLat } from "ol/proj";
@@ -49,10 +57,9 @@ export const testCircleLayer = () => {
   console.log("根据id获取图层元素", layer.get("test1"));
   console.log("获取图层所有元素", layer.get());
   setTimeout(() => {
-    console.log(layer.remove("test12"));
-    console.log(layer.remove());
+    layer.hide("test1")
     setTimeout(() => {
-      console.log(layer.destroy());
+      layer.show("test1")
     }, 5000)
   }, 5000)
 

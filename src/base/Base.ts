@@ -11,7 +11,7 @@ import VectorSource from "ol/source/Vector";
  * @Author: wuyue.nan
  * @Date: 2023-02-23 13:30:45
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-23 17:53:07
+ * @LastEditTime: 2023-02-27 14:28:10
  */
 /**
  * 附加数据
@@ -41,6 +41,7 @@ interface ICache<P, D> {
 }
 export default class Base {
   public layer: VectorLayer<VectorSource<Geometry>>;
+  public hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
   constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>) {
     this.layer = layer;
     earth.map.addLayer(layer);
@@ -110,6 +111,63 @@ export default class Base {
       if (feature) features = feature;
     }
     return features;
+  }
+  /**
+   * @description: 隐藏所有元素
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  hide(): void;
+  /**
+   * @description: 按id隐藏元素
+   * @param {string} id 元素id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  hide(id: string): void;
+  /**
+   * @description: 隐藏元素，如不传ID则隐藏图层所有元素
+   * @param {string} id 元素id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  hide(id?: string): void {
+    if (id) {
+      const feature = this.get(id);
+      this.hideFeatureMap.set(id, feature[0]);
+      this.remove(id);
+    } else {
+      this.layer.setVisible(false);
+    }
+  }
+  /**
+   * @description: 显示所有元素
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  show(): void;
+  /**
+   * @description: 根据ID显示元素
+   * @param {string} id 元素id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  show(id: string): void;
+  /**
+   * @description: 显示元素，如不传ID则显示图层所有元素
+   * @param {string} id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  show(id?: string): void {
+    if (id) {
+      const feature = this.hideFeatureMap.get(id);
+      if (feature) this.save(feature);
+      this.hideFeatureMap.delete(id);
+    } else {
+      this.hideFeatureMap.clear();
+      this.layer.setVisible(true);
+    }
   }
   /**
    * @description: 移除图层
