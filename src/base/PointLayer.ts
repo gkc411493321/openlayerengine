@@ -1,68 +1,52 @@
 /*
- * @Description: 
+ * @Description: 点操作
  * @Version: 2.0
  * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
+ * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:46:56
+ * @LastEditTime: 2023-02-27 17:29:17
  */
-import { Utils } from '../common';
 import Earth from "Earth";
+import { IPointParam } from "interface";
 import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { Circle, Geometry } from "ol/geom";
+import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import Fill from "ol/style/Fill";
-import Stroke from "ol/style/Stroke";
-import Style from "ol/style/Style";
+import Base from "./Base";
 import Text from "ol/style/Text";
-import Base from "./Base"
-import { ICircleParam } from 'interface';
-/*
- * @Description:圆操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 13:28:48
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-23 15:54:44
- */
+import { Circle, Fill, Stroke, Style } from 'ol/style.js';
+import { Utils } from "../common";
 
-export default class CircleLayer<T = unknown> extends Base {
+
+export default class PointLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
-      source: new VectorSource(),
+      source: new VectorSource()
     })
     super(earth, layer)
   }
-  /**
-   * @description: 创建Feature
-   * @param {ICircleParam} param
-   * @return {*} Feature
-   * @author: wuyue.nan
-   */
-  private createFeature(param: ICircleParam<T>): Feature {
+  private createFeature(param: IPointParam<T>): Feature {
     const feature = new Feature({
-      geometry: new Circle(param.center, param.radius),
+      geometry: new Point(param.center)
     })
     const style = new Style({
-      stroke: new Stroke(Object.assign({
-        width: 1,
-        color: "#fff"
-      }, param.stroke)),
-      fill: new Fill(Object.assign({
-        color: "#fff"
-      }, param.fill)),
+      image: new Circle({
+        radius: param.size || 4,
+        stroke: new Stroke(Object.assign({}, param.stroke)),
+        fill: new Fill(Object.assign({
+          color: 'red',
+        }, param.fill)),
+      }),
       text: new Text({
         text: param.label?.text,
         font: param.label?.font,
         offsetX: param.label?.offsetX,
-        offsetY: param.label?.offsetY,
+        offsetY: param.label?.offsetY || -15,
         scale: param.label?.scale,
         textAlign: param.label?.textAlign,
         textBaseline: param.label?.textBaseline,
         fill: new Fill({
-          color: param.label?.fill?.color || "#000"
+          color: param.label?.fill?.color || "red"
         }),
         stroke: new Stroke({
           color: param.label?.stroke?.color || "#0000",
@@ -76,21 +60,21 @@ export default class CircleLayer<T = unknown> extends Base {
           width: param.label?.backgroundStroke?.width || 0
         }),
         padding: param.label?.padding
-      }),
+      })
     })
     feature.setStyle(style)
     feature.setId(param.id);
     feature.set("data", param.data);
     feature.set("module", param.module)
-    return feature;
+    return feature
   }
   /**
    * @description: 增加一个元素
-   * @param {ICircleParam} param 详细参数 
+   * @param {IPointParam} param 详细参数 
    * @return {*} Feature
    * @author: wuyue.nan
    */
-  add(param: ICircleParam<T>): Feature<Geometry> {
+  add(param: IPointParam<T>): Feature<Geometry> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return super.save(feature);

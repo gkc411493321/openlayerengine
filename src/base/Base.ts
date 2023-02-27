@@ -10,7 +10,7 @@ import VectorSource from "ol/source/Vector";
  * @Author: wuyue.nan
  * @Date: 2023-02-23 13:30:45
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 14:31:02
+ * @LastEditTime: 2023-02-27 17:44:08
  */
 /**
  * 附加数据
@@ -167,6 +167,15 @@ export default class Base {
       this.hideFeatureMap.clear();
       this.layer.setVisible(true);
     }
+  }
+  /**
+   * @description: 设置图层Z-Index
+   * @param {number} index 层级
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  setLayerIndex(index: number): void {
+    this.layer.setZIndex(index);
   }
   /**
    * @description: 移除图层

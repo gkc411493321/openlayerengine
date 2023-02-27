@@ -1,57 +1,32 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:46:56
- */
-import { Utils } from '../common';
+import { Utils } from "../common";
 import Earth from "Earth";
+import { IPolygonParam } from "interface";
 import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { Circle, Geometry } from "ol/geom";
+import { Geometry, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import Fill from "ol/style/Fill";
-import Stroke from "ol/style/Stroke";
-import Style from "ol/style/Style";
+import { Style, Stroke, Fill } from "ol/style";
+import Base from "./Base";
 import Text from "ol/style/Text";
-import Base from "./Base"
-import { ICircleParam } from 'interface';
-/*
- * @Description:圆操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 13:28:48
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-23 15:54:44
- */
 
-export default class CircleLayer<T = unknown> extends Base {
+export default class PolygonLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
-      source: new VectorSource(),
+      source: new VectorSource()
     })
     super(earth, layer)
   }
-  /**
-   * @description: 创建Feature
-   * @param {ICircleParam} param
-   * @return {*} Feature
-   * @author: wuyue.nan
-   */
-  private createFeature(param: ICircleParam<T>): Feature {
+  private createFeature(param: IPolygonParam<T>): Feature {
     const feature = new Feature({
-      geometry: new Circle(param.center, param.radius),
+      geometry: new Polygon([param.positions])
     })
     const style = new Style({
       stroke: new Stroke(Object.assign({
-        width: 1,
-        color: "#fff"
+        color: "#388bff",
+        width: 2
       }, param.stroke)),
       fill: new Fill(Object.assign({
-        color: "#fff"
+        color: '#ffffff57',
       }, param.fill)),
       text: new Text({
         text: param.label?.text,
@@ -62,7 +37,7 @@ export default class CircleLayer<T = unknown> extends Base {
         textAlign: param.label?.textAlign,
         textBaseline: param.label?.textBaseline,
         fill: new Fill({
-          color: param.label?.fill?.color || "#000"
+          color: param.label?.fill?.color
         }),
         stroke: new Stroke({
           color: param.label?.stroke?.color || "#0000",
@@ -75,22 +50,22 @@ export default class CircleLayer<T = unknown> extends Base {
           color: param.label?.backgroundStroke?.color || "#0000",
           width: param.label?.backgroundStroke?.width || 0
         }),
-        padding: param.label?.padding
-      }),
+        padding: param.label?.padding,
+      })
     })
     feature.setStyle(style)
     feature.setId(param.id);
     feature.set("data", param.data);
     feature.set("module", param.module)
-    return feature;
+    return feature
   }
   /**
    * @description: 增加一个元素
-   * @param {ICircleParam} param 详细参数 
-   * @return {*} Feature
+   * @param {IPointParam} param 详细参数 
+   * @return {*} Feature<Geometry>
    * @author: wuyue.nan
    */
-  add(param: ICircleParam<T>): Feature<Geometry> {
+  add(param: IPolygonParam<T>): Feature<Geometry> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return super.save(feature);
