@@ -7,15 +7,12 @@
  * @LastEditTime: 2023-02-28 11:36:44
  */
 import { Utils } from '../common';
-import Earth from "Earth";
+import Earth from "../Earth";
 import { Feature } from "ol";
 import { Circle, Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import Fill from "ol/style/Fill";
-import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
-import Text from "ol/style/Text";
 import Base from "./Base"
 import { ICircleParam } from 'interface/default';
 export default class CircleLayer<T = unknown> extends Base {

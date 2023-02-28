@@ -1,5 +1,5 @@
-import Earth from "Earth";
-import { IFill, ILabel, IStroke } from "interface";
+import Earth from "../Earth";
+import { IFill, ILabel, IStroke } from "../interface";
 import { Feature } from "ol";
 import { Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";

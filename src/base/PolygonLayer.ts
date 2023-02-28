@@ -1,6 +1,6 @@
 import { Utils } from "../common";
-import Earth from "Earth";
-import { IPolygonParam } from "interface";
+import Earth from "../Earth";
+import { IPolygonParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";

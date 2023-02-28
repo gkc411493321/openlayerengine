@@ -6,14 +6,13 @@
  * @LastEditors: wuyue.nan
  * @LastEditTime: 2023-02-28 13:58:31
  */
-import Earth from "Earth";
-import { IPointParam } from "interface";
+import Earth from "../Earth";
+import { IPointParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Base from "./Base";
-import Text from "ol/style/Text";
 import { Circle, Fill, Stroke, Style } from 'ol/style.js';
 import { Utils } from "../common";
 

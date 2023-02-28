@@ -7,13 +7,13 @@
  * @LastEditTime: 2023-02-28 14:02:55
  */
 import { Utils } from "../common";
-import Earth from "Earth";
+import Earth from "../Earth";
 import { IPolylineParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, LineString } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Fill, Text } from "ol/style";
+import { Style } from "ol/style";
 import Base from "./Base";
 
 export default class Polyline<T = unknown> extends Base {
