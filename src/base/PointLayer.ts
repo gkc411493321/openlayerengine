@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:29:17
+ * @LastEditTime: 2023-02-28 13:58:31
  */
 import Earth from "Earth";
 import { IPointParam } from "interface";
@@ -29,39 +29,18 @@ export default class PointLayer<T = unknown> extends Base {
     const feature = new Feature({
       geometry: new Point(param.center)
     })
-    const style = new Style({
-      image: new Circle({
-        radius: param.size || 4,
-        stroke: new Stroke(Object.assign({}, param.stroke)),
-        fill: new Fill(Object.assign({
-          color: 'red',
-        }, param.fill)),
-      }),
-      text: new Text({
-        text: param.label?.text,
-        font: param.label?.font,
-        offsetX: param.label?.offsetX,
-        offsetY: param.label?.offsetY || -15,
-        scale: param.label?.scale,
-        textAlign: param.label?.textAlign,
-        textBaseline: param.label?.textBaseline,
-        fill: new Fill({
-          color: param.label?.fill?.color || "red"
-        }),
-        stroke: new Stroke({
-          color: param.label?.stroke?.color || "#0000",
-          width: param.label?.stroke?.width || 0
-        }),
-        backgroundFill: new Fill({
-          color: param.label?.backgroundFill?.color || "#0000"
-        }),
-        backgroundStroke: new Stroke({
-          color: param.label?.backgroundStroke?.color || "#0000",
-          width: param.label?.backgroundStroke?.width || 0
-        }),
-        padding: param.label?.padding
-      })
-    })
+
+    let style = new Style();
+    style.setImage(new Circle({
+      radius: param.size || 4,
+      stroke: new Stroke(Object.assign({
+        color: param.fill?.color || 'red',
+      }, param.stroke)),
+      fill: new Fill(Object.assign({
+        color: 'red',
+      }, param.fill)),
+    }))
+    style = super.setText(style, param.label, -15);
     feature.setStyle(style)
     feature.setId(param.id);
     feature.set("data", param.data);

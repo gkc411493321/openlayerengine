@@ -1,49 +1,61 @@
 import Earth from "Earth";
+import { IFill, ILabel, IStroke } from "interface";
 import { Feature } from "ol";
 import { Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
+import { Style, Stroke, Fill, Text } from "ol/style";
 
-/*
- * @Description: 图层操作基类
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 13:30:45
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:44:08
- */
-/**
- * 附加数据
- */
-export interface IBaseData<T> {
-  /** 模块名称 */ module?: string;
-  /** 附加数据 */ data?: T;
-}
-/**
- * 新增元素的基础参数
- */
-export interface IAddBaseParam<T> extends IBaseData<T> {
-  /** 唯一ID */ id?: string;
-}
-interface ICollection {
-  add: (arg: any) => any;
-  show: boolean;
-  remove: (arg: any) => boolean;
-  removeAll: () => void;
-}
-/**
- * 缓存数据
- */
-interface ICache<P, D> {
-  primitive: P;
-  data: D;
-}
 export default class Base {
   public layer: VectorLayer<VectorSource<Geometry>>;
   public hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
   constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>) {
     this.layer = layer;
     earth.map.addLayer(layer);
+  }
+  setStroke(style: Style, param?: IStroke, width?: number): Style {
+    const stroke = new Stroke(Object.assign({
+      color: "#388bff",
+      width: width || 1
+    }, param));
+    style.setStroke(stroke)
+    return style;
+  }
+  setFill(style: Style, param?: IFill): Style {
+    const fill = new Fill(Object.assign({
+      color: '#ffffff57',
+    }, param));
+    style.setFill(fill)
+    return style;
+  }
+  setText(style: Style, param?: ILabel, offsetY?: number): Style {
+    const text = new Text({
+      text: param?.text,
+      font: param?.font,
+      offsetX: param?.offsetX,
+      offsetY: param?.offsetY || offsetY,
+      scale: param?.scale,
+      textAlign: param?.textAlign,
+      textBaseline: param?.textBaseline,
+      rotation: param?.rotation,
+      fill: new Fill({
+        color: param?.fill?.color
+      }),
+      stroke: new Stroke({
+        color: param?.stroke?.color || "#0000",
+        width: param?.stroke?.width || 0
+      }),
+      backgroundFill: new Fill({
+        color: param?.backgroundFill?.color || "#0000"
+      }),
+      backgroundStroke: new Stroke({
+        color: param?.backgroundStroke?.color || "#0000",
+        width: param?.backgroundStroke?.width || 0
+      }),
+      padding: param?.padding,
+    })
+    style.setText(text)
+    return style;
   }
   /**
    * @description: 添加元素

@@ -1,3 +1,11 @@
+/*
+ * @Description: 
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-23 18:12:58
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-02-28 14:11:08
+ */
 import * as pkg from './package.json';
 import typescript from '@rollup/plugin-typescript';
 import shader from 'rollup-plugin-shader';
@@ -12,7 +20,7 @@ const isProd = mode === 'prod';
 
 export default defineConfig({
   input: `src/index.ts`,
-  external: ['cesium', '@turf/turf', 'mitt', 'heatmap.js'],
+  external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
   output: [
     {
       file: pkg.main,
@@ -38,5 +46,7 @@ export default defineConfig({
       }
     }
   ],
-  plugins: [typescript(), shader(), nodeResolve(), commonjs(), terser()]
+  plugins: [typescript(), shader(), nodeResolve(), commonjs(),
+    //terser()
+  ]
 });

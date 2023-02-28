@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:46:56
+ * @LastEditTime: 2023-02-28 11:36:44
  */
 import { Utils } from '../common';
 import Earth from "Earth";
@@ -35,39 +35,11 @@ export default class CircleLayer<T = unknown> extends Base {
     const feature = new Feature({
       geometry: new Circle(param.center, param.radius),
     })
-    const style = new Style({
-      stroke: new Stroke(Object.assign({
-        width: 1,
-        color: "#fff"
-      }, param.stroke)),
-      fill: new Fill(Object.assign({
-        color: "#fff"
-      }, param.fill)),
-      text: new Text({
-        text: param.label?.text,
-        font: param.label?.font,
-        offsetX: param.label?.offsetX,
-        offsetY: param.label?.offsetY,
-        scale: param.label?.scale,
-        textAlign: param.label?.textAlign,
-        textBaseline: param.label?.textBaseline,
-        fill: new Fill({
-          color: param.label?.fill?.color || "#000"
-        }),
-        stroke: new Stroke({
-          color: param.label?.stroke?.color || "#0000",
-          width: param.label?.stroke?.width || 0
-        }),
-        backgroundFill: new Fill({
-          color: param.label?.backgroundFill?.color || "#0000"
-        }),
-        backgroundStroke: new Stroke({
-          color: param.label?.backgroundStroke?.color || "#0000",
-          width: param.label?.backgroundStroke?.width || 0
-        }),
-        padding: param.label?.padding
-      }),
-    })
+
+    let style = new Style();
+    style = super.setStroke(style, param.stroke);
+    style = super.setFill(style, param.fill);
+    style = super.setText(style, param.label);
     feature.setStyle(style)
     feature.setId(param.id);
     feature.set("data", param.data);

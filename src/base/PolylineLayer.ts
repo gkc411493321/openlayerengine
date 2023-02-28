@@ -1,27 +1,34 @@
+/*
+ * @Description: 线操作
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-28 10:21:18
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-02-28 14:02:55
+ */
 import { Utils } from "../common";
 import Earth from "Earth";
-import { IPolygonParam } from "interface";
+import { IPolylineParam } from "../interface";
 import { Feature } from "ol";
-import { Geometry, Polygon } from "ol/geom";
+import { Geometry, LineString } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Fill } from "ol/style";
+import { Style, Stroke, Fill, Text } from "ol/style";
 import Base from "./Base";
-import Text from "ol/style/Text";
 
-export default class PolygonLayer<T = unknown> extends Base {
+export default class Polyline<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
     super(earth, layer)
   }
-  private createFeature(param: IPolygonParam<T>): Feature {
+  private createFeature(param: IPolylineParam<T>): Feature {
     const feature = new Feature({
-      geometry: new Polygon([param.positions])
+      geometry: new LineString(param.positions)
     })
     let style = new Style();
-    style = super.setStroke(style, param.stroke);
+    style = super.setStroke(style, param.stroke, param.width);
     style = super.setFill(style, param.fill);
     style = super.setText(style, param.label);
     feature.setStyle(style)
@@ -36,7 +43,7 @@ export default class PolygonLayer<T = unknown> extends Base {
    * @return {*} Feature<Geometry>
    * @author: wuyue.nan
    */
-  add(param: IPolygonParam<T>): Feature<Geometry> {
+  add(param: IPolylineParam<T>): Feature<Geometry> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return super.save(feature);
