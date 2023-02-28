@@ -1,4 +1,12 @@
 /*
+ * @Description: 
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-28 14:57:46
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-02-28 15:14:19
+ */
+/*
  * @Description: 点操作
  * @Version: 2.0
  * @Author: wuyue.nan
@@ -24,7 +32,7 @@ export default class PointLayer<T = unknown> extends Base {
     })
     super(earth, layer)
   }
-  private createFeature(param: IPointParam<T>): Feature {
+  private createFeature(param: IPointParam<T>): Feature<Point> {
     const feature = new Feature({
       geometry: new Point(param.center)
     })
@@ -47,7 +55,7 @@ export default class PointLayer<T = unknown> extends Base {
     return feature
   }
   /**
-   * @description: 增加一个元素
+   * @description: 增加一个点
    * @param {IPointParam} param 详细参数 
    * @return {*} Feature
    * @author: wuyue.nan

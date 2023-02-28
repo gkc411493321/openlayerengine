@@ -15,8 +15,9 @@ export default class Base {
   }
   setStroke(style: Style, param?: IStroke, width?: number): Style {
     const stroke = new Stroke(Object.assign({
-      color: "#388bff",
-      width: width || 1
+      color: "#ffcc33",
+      width: width || 2,
+      lineDash: param?.lineDash
     }, param));
     style.setStroke(stroke)
     return style;

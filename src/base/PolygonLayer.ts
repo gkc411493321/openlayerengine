@@ -5,7 +5,7 @@ import { Feature } from "ol";
 import { Geometry, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Fill } from "ol/style";
+import { Style } from "ol/style";
 import Base from "./Base";
 import Text from "ol/style/Text";
 
@@ -16,7 +16,7 @@ export default class PolygonLayer<T = unknown> extends Base {
     })
     super(earth, layer)
   }
-  private createFeature(param: IPolygonParam<T>): Feature {
+  private createFeature(param: IPolygonParam<T>): Feature<Polygon> {
     const feature = new Feature({
       geometry: new Polygon([param.positions])
     })
@@ -31,7 +31,7 @@ export default class PolygonLayer<T = unknown> extends Base {
     return feature
   }
   /**
-   * @description: 增加一个元素
+   * @description: 增加一个多边形
    * @param {IPointParam} param 详细参数 
    * @return {*} Feature<Geometry>
    * @author: wuyue.nan

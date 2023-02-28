@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-28 11:36:44
+ * @LastEditTime: 2023-02-28 15:14:44
  */
 import { Utils } from '../common';
 import Earth from "../Earth";
@@ -28,7 +28,7 @@ export default class CircleLayer<T = unknown> extends Base {
    * @return {*} Feature
    * @author: wuyue.nan
    */
-  private createFeature(param: ICircleParam<T>): Feature {
+  private createFeature(param: ICircleParam<T>): Feature<Circle> {
     const feature = new Feature({
       geometry: new Circle(param.center, param.radius),
     })
@@ -44,7 +44,7 @@ export default class CircleLayer<T = unknown> extends Base {
     return feature;
   }
   /**
-   * @description: 增加一个元素
+   * @description: 增加一个圆
    * @param {ICircleParam} param 详细参数 
    * @return {*} Feature
    * @author: wuyue.nan

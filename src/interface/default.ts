@@ -65,11 +65,19 @@ export interface IStroke {
   /**
    * 颜色
    */
-  color?: string,
+  color?: string;
   /**
    * 线宽
    */
-  width?: number,
+  width?: number;
+  /**
+   * 线形，如[20,20,20,20]。数组下标0和2代表实线长度，1和3代表虚线长度，默认为null
+   */
+  lineDash?: number[];
+  /**
+   * 偏移量
+   */
+  lineDashOffset?: number;
 }
 export interface IFill {
   /**
