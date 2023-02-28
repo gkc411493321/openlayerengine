@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 18:18:43
+ * @LastEditTime: 2023-02-28 16:22:12
  */
 import { fromLonLat } from 'ol/proj';
 import { PolygonLayer, useEarth } from '../../src';
@@ -21,7 +21,7 @@ export const testPolygonLayer = () => {
     id: "polygon_2",
     positions: [fromLonLat([130, 20]), fromLonLat([130, 40]), fromLonLat([140, 30])],
     fill: {
-      color: "red"
+      color: "#fffff3"
     }
   })
 }
