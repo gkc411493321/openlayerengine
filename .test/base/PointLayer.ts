@@ -2,9 +2,9 @@
  * @Description: 
  * @Version: 2.0
  * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
+ * @Date: 2023-02-27 16:44:05
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:04:23
+ * @LastEditTime: 2023-02-28 14:05:31
  */
 import { fromLonLat } from 'ol/proj';
 import { PointLayer, useEarth } from '../../src';
@@ -13,7 +13,6 @@ export const testPointLayer = () => {
   layer.add({
     id: "point_1",
     center: fromLonLat([120, 10]),
-    size: 5,
     label: {
       text: "带标签点"
     }
@@ -24,6 +23,7 @@ export const testPointLayer = () => {
     size: 10,
     fill: {
       color: "blue"
-    }
+    },
+
   })
 }

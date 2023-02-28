@@ -1,6 +1,30 @@
-import { IAddBaseParam } from "base/Base";
 import { Coordinate } from "ol/coordinate";
 
+/**
+ * 新增元素的基础参数
+ */
+export interface IAddBaseParam<T> extends IBaseData<T> {
+  /** 唯一ID */ id?: string;
+}
+/**
+ * 附加数据
+ */
+export interface IBaseData<T> {
+  /** 模块名称 */ module?: string;
+  /** 附加数据 */ data?: T;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+}
 export interface ICircleParam<T> extends IAddBaseParam<T> {
   /**
    * 圆中心
@@ -10,18 +34,6 @@ export interface ICircleParam<T> extends IAddBaseParam<T> {
    * 圆半径，单位m
    */
   radius: number;
-  /**
-   * 圆边框样式
-   */
-  stroke?: IStroke;
-  /**
-   * 圆填充样式
-   */
-  fill?: IFill;
-  /**
-   * 标签样式
-   */
-  label?: ILabel;
 }
 export interface IPointParam<T> extends IAddBaseParam<T> {
   /**
@@ -32,42 +44,23 @@ export interface IPointParam<T> extends IAddBaseParam<T> {
    * 点大小
    */
   size?: number;
-  /**
-   * 圆边框样式
-   */
-  stroke?: IStroke;
-  /**
-   * 圆填充样式
-   */
-  fill?: IFill;
-  /**
-   * 标签样式
-   */
-  label?: ILabel;
 }
 export interface IPolygonParam<T> extends IAddBaseParam<T> {
   /**
-   * 点中心
+   * 点集合
    */
   positions: number[] | Coordinate[][] | any;
-  /**
-   * 点大小
-   */
-  size?: number;
-  /**
-   * 圆边框样式
-   */
-  stroke?: IStroke;
-  /**
-   * 圆填充样式
-   */
-  fill?: IFill;
-  /**
-   * 标签样式
-   */
-  label?: ILabel;
 }
-
+export interface IPolylineParam<T> extends IAddBaseParam<T> {
+  /**
+   * 点集合
+   */
+  positions: number[][];
+  /**
+   * 线宽，默认为2
+   */
+  width?: number;
+}
 export interface IStroke {
   /**
    * 颜色
@@ -133,4 +126,8 @@ export interface ILabel {
    * 文本padding
    */
   padding?: number[];
+  /**
+   * 顺时针旋转，默认为0
+   */
+  rotation?: number;
 }
