@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-27 17:30:51
+ * @LastEditTime: 2023-02-28 09:29:53
  */
 import CircleLayer from "../../src/base/CircleLayer"
 import { useEarth } from '../../src';
@@ -40,6 +40,6 @@ export const testCircleLayer = () => {
     data: {
       a: "1",
       b: "2"
-    }
+    },
   })
 }

@@ -1,5 +1,5 @@
 /*
- * @Description: 
+ * @Description: 圆操作
  * @Version: 2.0
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
@@ -9,7 +9,6 @@
 import { Utils } from '../common';
 import Earth from "Earth";
 import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
 import { Circle, Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -18,16 +17,7 @@ import Stroke from "ol/style/Stroke";
 import Style from "ol/style/Style";
 import Text from "ol/style/Text";
 import Base from "./Base"
-import { ICircleParam } from 'interface';
-/*
- * @Description:圆操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 13:28:48
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-23 15:54:44
- */
-
+import { ICircleParam } from 'interface/default';
 export default class CircleLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
