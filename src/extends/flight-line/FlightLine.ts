@@ -161,8 +161,12 @@ export default class Flightline<T = unknown> {
         }),
       })
       startFeature.setId(positions[i].id + "_startPoint");
+      startFeature.set("module", this.params.module);
+      startFeature.set("data", this.params.data);
       let endtFeature = new Feature({ geometry: new Point(positions[i].position[1]) })
       endtFeature.setId(positions[i].id + "_endPoint");
+      endtFeature.set("module", this.params.module);
+      endtFeature.set("data", this.params.data);
       pointsFeatures.push({ id: positions[i].id, feature: [startFeature, endtFeature] });
     }
     return pointsFeatures
@@ -195,7 +199,7 @@ export default class Flightline<T = unknown> {
     ctx.setStyle(new Style({
       stroke: new Stroke({
         color: grd,
-        width: 3,
+        width: this.params.width,
       })
     }))
     ctx.drawGeometry(geometry);

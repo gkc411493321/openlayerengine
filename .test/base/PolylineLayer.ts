@@ -73,7 +73,8 @@ export const testPolylineLayer = () => {
       0.6: "#eebd89",
       0.8: "#d13abd",
       1.0: "#6cc6cb",
-    }
+    },
+    width: 5
   })
   layer.addFlightLine({
     id: "fly_4",
@@ -82,9 +83,6 @@ export const testPolylineLayer = () => {
     isShowArrow: false,
     isShowAnchorLine: true,
     isShowAnchorPoint: false,
+    splitLength: 100,
   })
-  setTimeout(() => {
-    layer.removeFlightLine("fly_1")
-    layer.removeFlightLine("fly_2")
-  }, 5000)
 }
