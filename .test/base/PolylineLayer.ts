@@ -58,7 +58,8 @@ export const testPolylineLayer = () => {
     isShowArrow: true,
     isShowAnchorPoint: false,
     arrowColor: "red",
-    color: "red"
+    color: "red",
+    splitLength: 100
   })
   layer.addFlightLine({
     id: "fly_3",

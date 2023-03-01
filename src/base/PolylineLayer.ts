@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 10:21:18
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-01 17:21:44
+ * @LastEditTime: 2023-03-01 17:51:16
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
@@ -147,7 +147,7 @@ export default class Polyline<T = unknown> extends Base {
     return super.save(feature);
   }
   /**
-   * @description: 添加飞行线
+   * @description: 添加飞行线 注意！！！删除此线段需使用【removeFlightLine】方法
    * @return {*} Flightline
    * @author: wuyue.nan
    */
