@@ -4,25 +4,22 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 10:21:18
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-28 18:31:51
+ * @LastEditTime: 2023-03-01 17:21:44
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
-import { IPolylineParam } from "../interface";
+import { IPointsFeature, IPolylineFlyParam, IPolylineParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, LineString, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Fill, Icon, Stroke, Style } from "ol/style";
+import { Icon, Stroke, Style } from "ol/style";
 import Base from "./Base";
-import { StyleLike } from "ol/style/Style";
-import { fromLonLat } from "ol/proj";
 import { Coordinate } from "ol/coordinate";
-import Vector from "ol/source/Vector";
-import { GeoJSON } from 'ol/format';
-
+import Flightline from "../extends/flight-line/FlightLine";
 
 export default class Polyline<T = unknown> extends Base {
+  private flyCatch: Map<string, Flightline> = new Map();
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
@@ -148,5 +145,28 @@ export default class Polyline<T = unknown> extends Base {
       feature.setStyle([fullLineStyle, newDottedLineStyle, textStyle])
     })
     return super.save(feature);
+  }
+  /**
+   * @description: 添加飞行线
+   * @return {*} Flightline
+   * @author: wuyue.nan
+   */
+  addFlightLine(param: IPolylineFlyParam<T>): Flightline {
+    param.id = param.id || Utils.GetGUID();
+    const flightline = new Flightline(this.layer, param, param.id);
+    this.flyCatch.set(param.id, flightline);
+    return flightline;
+  }
+  /**
+   * @description: 删除飞行线
+   * @param {string} id 飞行线ID
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  removeFlightLine(id: string): void {
+    const flightline = this.flyCatch.get(id);
+    if (flightline) {
+      flightline.removeFeatureById(id);
+    }
   }
 }

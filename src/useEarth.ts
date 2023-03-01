@@ -1,8 +1,4 @@
 import Earth, { IEarthConstructorOptions } from "./Earth";
-import { Collection, Map, View } from "ol";
-import BaseLayer from "ol/layer/Base";
-import TileLayer from "ol/layer/Tile";
-import OSM from "ol/source/OSM";
 import { ViewOptions } from "ol/View";
 
 let earth: Earth;

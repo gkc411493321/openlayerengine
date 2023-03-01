@@ -1,4 +1,8 @@
+import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
+import { Geometry, Point } from "ol/geom";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
 
 /**
  * 新增元素的基础参数
@@ -60,6 +64,76 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
    * 线宽，默认为2
    */
   width?: number;
+}
+export interface IPolylineFlyParam<T> extends IAddBaseParam<T>, IFlightLineParams {
+  /**
+   * 点集合
+   */
+  position: number[][];
+  /**
+   * 线宽,默认2
+   */
+  width?: number;
+  /**
+   * 是否重复播放，默认为true
+   */
+  isRepeat?: boolean;
+  /**
+   * 是否展示定位点,默认为true
+   */
+  isShowAnchorPoint?: boolean;
+  /**
+   * 是否展示定位线,默认为false。当重复播放属性为false时，此属性生效
+   */
+  isShowAnchorLine?: boolean;
+  /**
+   * 是否显示箭头,默认为true
+   */
+  isShowArrow?: boolean;
+  /**
+   * 飞行线颜色, 可设置为纯色或渐变色, 默认渐变色
+   */
+  color?: string | IRadialColor;
+  /**
+   * 定位线颜色
+   */
+  anchorLineColor?: string;
+  /**
+   * 箭头颜色
+   */
+  arrowColor?: string;
+}
+export interface IFlightLineParams {
+  /**
+   * 分割线长度，默认180。该值越高则曲线越平滑
+   */
+  splitLength?: number;
+  /**
+   * 每帧耗时多少秒，默认为0。值越大则播放速度越慢。
+   */
+  oneFrameLimitTime?: number;
+  /**
+   * 线段弯曲程度，默认为1。值越大，则弯曲程度越高
+   */
+  controlRatio?: number;
+
+}
+export interface IPointsFeature {
+  id: string;
+  feature: Feature<Point>[];
+}
+export interface IFlyPosition {
+  id: string;
+  position: number[][];
+}
+export interface IRadialColor {
+  0: string;
+  0.2: string;
+  0.4: string;
+  0.6: string;
+  0.8: string;
+  1.0: string;
+  [key: number]: string;
 }
 export interface IStroke {
   /**

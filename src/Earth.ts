@@ -1,3 +1,11 @@
+/*
+ * @Description: 
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-23 18:12:58
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-03-01 11:05:45
+ */
 import { Map, View } from "ol";
 import { defaults } from 'ol/control/defaults';
 import { Coordinate } from "ol/coordinate";

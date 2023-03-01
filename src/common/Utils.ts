@@ -28,4 +28,53 @@ export default class Utils {
     }
     return guid;
   }
+  /**
+   * @description: 线性插值函数 此处的计算只处理二维带x ,y 的向量
+   * @param {number[]} startPos
+   * @param {number[]} endPos
+   * @param {number} t
+   * @return {*} number[]
+   * @author: wuyue.nan
+   */
+  static linearInterpolation(startPos: number[], endPos: number[], t: number): number[] {
+    let a = this.constantMultiVector2(1 - t, startPos)
+    let b = this.constantMultiVector2(t, endPos)
+    return this.vector2Add(a, b)
+  }
+  /**
+   * @description: 常数乘以二维向量数组的函数
+   * @param {number} constant
+   * @param {number} vector2
+   * @return {*} number[]
+   * @author: wuyue.nan
+   */
+  static constantMultiVector2(constant: number, vector2: number[]): number[] {
+    return [constant * vector2[0], constant * vector2[1]];
+  }
+  /**
+   * @description: 计算曲线点
+   * @param {number} a
+   * @param {number} b
+   * @return {*} number[]
+   * @author: wuyue.nan
+   */
+  static vector2Add(a: number[], b: number[]): number[] {
+    return [a[0] + b[0], a[1] + b[1]]
+  }
+
+  /**
+   * @description: 计算贝塞尔曲线
+   * @param {number} startPos
+   * @param {number} center
+   * @param {number} endPos
+   * @param {number} t
+   * @return {*} number[]
+   * @author: wuyue.nan
+   */
+  static bezierSquareCalc(startPos: number[], center: number[], endPos: number[], t: number): number[] {
+    let a = this.constantMultiVector2(Math.pow((1 - t), 2), startPos)
+    let b = this.constantMultiVector2((2 * t * (1 - t)), center)
+    let c = this.constantMultiVector2(Math.pow(t, 2), endPos)
+    return this.vector2Add(this.vector2Add(a, b), c)
+  }
 }

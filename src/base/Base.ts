@@ -8,28 +8,28 @@ import { Style, Stroke, Fill, Text } from "ol/style";
 
 export default class Base {
   public layer: VectorLayer<VectorSource<Geometry>>;
-  public hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
+  private hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
   constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>) {
     this.layer = layer;
     earth.map.addLayer(layer);
   }
-  setStroke(style: Style, param?: IStroke, width?: number): Style {
+  protected setStroke(style: Style, param?: IStroke, width?: number): Style {
     const stroke = new Stroke(Object.assign({
-      color: "#ffcc33",
+      color: param?.color || "#ffcc33",
       width: width || 2,
       lineDash: param?.lineDash
     }, param));
     style.setStroke(stroke)
     return style;
   }
-  setFill(style: Style, param?: IFill): Style {
+  protected setFill(style: Style, param?: IFill): Style {
     const fill = new Fill(Object.assign({
-      color: '#ffffff57',
+      color: param?.color || '#ffffff57',
     }, param));
     style.setFill(fill)
     return style;
   }
-  setText(style: Style, param?: ILabel, offsetY?: number): Style {
+  protected setText(style: Style, param?: ILabel, offsetY?: number): Style {
     const text = new Text({
       text: param?.text,
       font: param?.font,
