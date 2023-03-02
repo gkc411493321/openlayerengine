@@ -1,0 +1,62 @@
+/*
+ * @Description: 广告牌
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-03-02 16:07:20
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-03-02 16:44:41
+ */
+import Earth from "Earth";
+import { IBillboardParam } from "../interface";
+import { Feature } from "ol";
+import { Geometry, Point } from "ol/geom";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import { Icon, Style } from "ol/style";
+import Base from "./Base";
+import { Utils } from "../common";
+
+export default class BillboardLayer<T = unknown> extends Base {
+  constructor(earth: Earth) {
+    const layer = new VectorLayer({
+      source: new VectorSource()
+    })
+    super(earth, layer)
+  }
+  private createFeature(param: IBillboardParam<T>): Feature<Point> {
+    const feature = new Feature({
+      geometry: new Point(param.center)
+    })
+    const icon = new Icon({
+      src: param.src,
+      size: param.size,
+      color: param.color,
+      displacement: param.displacement,
+      scale: param.scale,
+      rotation: param.rotation,
+      anchor: param.anchor,
+      anchorOrigin: param.anchorOrigin,
+      anchorXUnits: param.anchorXUnits,
+      anchorYUnits: param.anchorYUnits,
+    })
+    let style = new Style();
+    style = super.setText(style, param.label);
+    style.setImage(icon);
+    feature.setStyle(style);
+    feature.setId(param.id);
+    feature.set("data", param.data);
+    feature.set("module", param.module)
+    return feature;
+  }
+  /**
+   * @description: 增加一个广告牌
+   * @param {IBillboardParam} param 详细参数 
+   * @return {*} Feature
+   * @author: wuyue.nan
+   */
+  add(param: IBillboardParam<T>): Feature<Geometry> {
+    param.id = param.id || Utils.GetGUID();
+    const feature = this.createFeature(param);
+    return super.save(feature);
+  }
+}

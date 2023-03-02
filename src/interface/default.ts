@@ -2,7 +2,9 @@ import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
+import { Size } from "ol/size";
 import VectorSource from "ol/source/Vector";
+import { IconAnchorUnits, IconOrigin } from "ol/style/Icon";
 
 /**
  * 新增元素的基础参数
@@ -16,6 +18,16 @@ export interface IAddBaseParam<T> extends IBaseData<T> {
 export interface IBaseData<T> {
   /** 模块名称 */ module?: string;
   /** 附加数据 */ data?: T;
+}
+export interface ICircleParam<T> extends IAddBaseParam<T> {
+  /**
+   * 圆中心
+   */
+  center: Coordinate;
+  /**
+   * 圆半径，单位m
+   */
+  radius: number;
   /**
    * 边框样式
    */
@@ -28,16 +40,6 @@ export interface IBaseData<T> {
    * 标签样式
    */
   label?: ILabel;
-}
-export interface ICircleParam<T> extends IAddBaseParam<T> {
-  /**
-   * 圆中心
-   */
-  center: Coordinate;
-  /**
-   * 圆半径，单位m
-   */
-  radius: number;
 }
 export interface IPointParam<T> extends IAddBaseParam<T> {
   /**
@@ -64,6 +66,68 @@ export interface IPointParam<T> extends IAddBaseParam<T> {
    * 是否重复闪烁，默认为true;该属性在isFlash属性为true时生效
    */
   isRepeat?: boolean;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+}
+export interface IBillboardParam<T> extends IAddBaseParam<T> {
+  /**
+  * 点中心
+  */
+  center: Coordinate;
+  /**
+   * 图片地址
+   */
+  src: string;
+  /**
+   * 图片大小,[width,height]
+   */
+  size?: Size;
+  /**
+   * 图标颜色,未指定则图标保持原样
+   */
+  color?: string;
+  /**
+   * 图标位移，单位是像素，默认[0,0]。正值将使图标向右和向上移动。
+   */
+  displacement?: number[];
+  /**
+   * 图标缩放，默认为1
+   */
+  scale?: number;
+  /**
+   * 旋转，默认0
+   */
+  rotation?: number;
+  /**
+   * 锚，默认值是图标中心:[0.5,0.5]
+   */
+  anchor?: number[];
+  /**
+   * 锚的来源，默认top-left
+   */
+  anchorOrigin?: IconOrigin;
+  /**
+   * 指定锚 x 值的单位，默认'fraction'。'fraction'表示 x 值是图标的一部分。'pixels'表示以像素为单位的 x 值。
+   */
+  anchorXUnits?: IconAnchorUnits;
+  /**
+   * 指定锚 y 值的单位，默认'fraction'。'fraction'表示 y 值是图标的一部分。'pixels'表示以像素为单位的 y 值。
+   */
+  anchorYUnits?: IconAnchorUnits;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
 }
 export interface IRgbColor {
   R: number;
@@ -75,6 +139,18 @@ export interface IPolygonParam<T> extends IAddBaseParam<T> {
    * 点集合
    */
   positions: number[] | Coordinate[][] | any;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
 }
 export interface IPolylineParam<T> extends IAddBaseParam<T> {
   /**
@@ -85,6 +161,18 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
    * 线宽，默认为2
    */
   width?: number;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
 }
 export interface IPolylineFlyParam<T> extends IAddBaseParam<T>, IFlightLineParams {
   /**
@@ -186,7 +274,7 @@ export interface ILabel {
    */
   text: string;
   /**
-   * 字体及字体大小，遵循css字体样式，如：'10px sans-serif'
+   * 字体及字体大小。注意！！！必须遵循css字体样式，如：'10px sans-serif'
    */
   font?: string;
   /**

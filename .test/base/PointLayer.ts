@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 16:44:05
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-02 15:27:37
+ * @LastEditTime: 2023-03-02 15:31:40
  */
 import { fromLonLat } from 'ol/proj';
 import { PointLayer, useEarth } from '../../src';
@@ -31,6 +31,7 @@ export const testPointLayer = () => {
       G: 0,
       B: 255
     },
-    duration: 500
+    duration: 3000,
+    isRepeat: false
   })
 }

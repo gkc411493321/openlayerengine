@@ -4,14 +4,14 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-02 15:24:21
+ * @LastEditTime: 2023-03-02 15:59:05
  */
 import Earth from "../Earth";
 import { IPointParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
-import VectorSource, { VectorSourceEvent } from "ol/source/Vector";
+import VectorSource from "ol/source/Vector";
 import Base from "./Base";
 import { Circle, Fill, Stroke, Style } from 'ol/style.js';
 import { Utils } from "../common";
@@ -20,7 +20,6 @@ import RenderEvent from "ol/render/Event";
 import { unByKey } from "ol/Observable";
 import { getVectorContext } from "ol/render";
 import CircleStyle from "ol/style/Circle";
-import { useEarth } from "../useEarth";
 
 
 export default class PointLayer<T = unknown> extends Base {

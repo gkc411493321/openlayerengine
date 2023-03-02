@@ -4,7 +4,7 @@ import { Feature } from "ol";
 import { Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Fill, Text } from "ol/style";
+import { Style, Stroke, Fill, Text, Icon } from "ol/style";
 
 export default class Base {
   public layer: VectorLayer<VectorSource<Geometry>>;
