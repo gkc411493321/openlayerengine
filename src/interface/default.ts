@@ -2,6 +2,7 @@ import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
+import { PanIntoViewOptions, Positioning } from "ol/Overlay";
 import { Size } from "ol/size";
 import VectorSource from "ol/source/Vector";
 import { IconAnchorUnits, IconOrigin } from "ol/style/Icon";
@@ -133,6 +134,40 @@ export interface IRgbColor {
   R: number;
   G: number;
   B: number;
+}
+export interface IOverlayParam<T> extends IAddBaseParam<T> {
+  /**
+   * DOM容器
+   */
+  element: HTMLElement;
+  /**
+   * 位置
+   */
+  position: Coordinate;
+  /**
+   * 偏移量,默认[0,0]
+   */
+  offset?: number[];
+  /**
+   * 定位模式，默认'top-left'
+   */
+  positioning?: Positioning;
+  /**
+   * 地图的事件传播是否停止,默认为true，即阻止传播。举例：当鼠标在地图上进行缩放时会触发缩放事件，但在Overlay上滚动鼠标则不会触发地图缩放事件，若想要触发事件，则设置该属性为false
+   */
+  stopEvent?: boolean;
+  /**
+   * Overlay是否应该先添加到其所在的容器（当前地图容器），默认为true；举例：当stopEvent设置为true时，overlay和openlayers的控件（controls）是放于一个容器的，此时将insertFirst设置为true ，overlay会首先添加到容器。这样，overlay默认在控件的下一层。所以当stopEvent和insertFirst都采用默认值时，overlay默认在控件的下一层
+   */
+  insertFirst?: boolean;
+  /**
+   * 当Overlay超出地图边界时，地图自动移动，以保证Overlay全部可见，默认为false。PanIntoViewOptions：{animation：设置 autoPan 的效果动画，margin：地图自动平移时，地图边缘与overlay的留白（空隙），单位是像素，默认是 20像素}
+   */
+  autoPan?: PanIntoViewOptions | boolean;
+  /**
+   * class类名，默认'ol-overlay-container ol-selectable'
+   */
+  className?: string;
 }
 export interface IPolygonParam<T> extends IAddBaseParam<T> {
   /**
@@ -274,7 +309,7 @@ export interface ILabel {
    */
   text: string;
   /**
-   * 字体及字体大小。注意！！！必须遵循css字体样式，如：'10px sans-serif'
+   * 字体及字体大小。注意！！！必须遵循css字体样式，如：'10px sans-serif' | 'bold 10px sans-serif'
    */
   font?: string;
   /**
