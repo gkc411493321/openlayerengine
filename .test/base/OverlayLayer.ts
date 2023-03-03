@@ -7,7 +7,7 @@ export const testOverlayLayer = () => {
   const layer = new OverlayLayer(useEarth());
   const div = document.createElement("div");
   div.className = "overlay";
-  div.innerHTML = "<div class='title'>我是一个DOM容器，基于Overlay创建</div>"
+  div.innerHTML = "<div class='title'>div，基于Overlay创建</div>"
   document.body.appendChild(div);
   layer.add({
     id: "overlay_1",

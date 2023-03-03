@@ -31,29 +31,29 @@ export default class Base {
   }
   protected setText(style: Style, param?: ILabel, offsetY?: number): Style {
     const text = new Text({
-      text: param?.text,
-      font: param?.font,
-      offsetX: param?.offsetX,
-      offsetY: param?.offsetY || offsetY,
-      scale: param?.scale,
-      textAlign: param?.textAlign,
-      textBaseline: param?.textBaseline,
-      rotation: param?.rotation,
+      text: param?.text || style.getText()?.getText(),
+      font: param?.font || style.getText()?.getFont(),
+      offsetX: param?.offsetX || style.getText()?.getOffsetX(),
+      offsetY: param?.offsetY || offsetY || style.getText()?.getOffsetY(),
+      scale: param?.scale || style.getText()?.getScale(),
+      textAlign: param?.textAlign || style.getText()?.getTextAlign(),
+      textBaseline: param?.textBaseline || style.getText()?.getTextBaseline(),
+      rotation: param?.rotation || style.getText()?.getRotation(),
       fill: new Fill({
-        color: param?.fill?.color
+        color: param?.fill?.color || style.getText()?.getFill().getColor()
       }),
       stroke: new Stroke({
-        color: param?.stroke?.color || "#0000",
-        width: param?.stroke?.width || 0
+        color: param?.stroke?.color || style.getText()?.getStroke().getColor() || "#0000",
+        width: param?.stroke?.width || style.getText()?.getStroke().getWidth() || 0
       }),
       backgroundFill: new Fill({
-        color: param?.backgroundFill?.color || "#0000"
+        color: param?.backgroundFill?.color || style.getText()?.getBackgroundFill().getColor() || "#0000"
       }),
       backgroundStroke: new Stroke({
-        color: param?.backgroundStroke?.color || "#0000",
-        width: param?.backgroundStroke?.width || 0
+        color: param?.backgroundStroke?.color || style.getText()?.getBackgroundStroke().getColor() || "#0000",
+        width: param?.backgroundStroke?.width || style.getText()?.getBackgroundStroke().getWidth() || 0
       }),
-      padding: param?.padding,
+      padding: param?.padding || style.getText()?.getPadding() || undefined,
     })
     style.setText(text)
     return style;
