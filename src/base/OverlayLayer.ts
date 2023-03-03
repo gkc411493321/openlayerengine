@@ -4,12 +4,13 @@
  * @Author: wuyue.nan
  * @Date: 2023-03-02 17:16:32
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 09:16:01
+ * @LastEditTime: 2023-03-03 11:26:44
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IOverlayParam } from "../interface";
 import { Map, Overlay } from "ol";
+import { Coordinate } from "ol/coordinate";
 
 export default class OverlayLayer<T = unknown>{
   private map: Map;
@@ -38,6 +39,45 @@ export default class OverlayLayer<T = unknown>{
     return overlay;
   }
   /**
+   * @description: 修改覆盖物位置
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Overlay
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate): Overlay {
+    const overlay = this.get(id);
+    overlay.setPosition(position);
+    return overlay;
+  }
+  /**
+   * @description: 获取所有覆盖物
+   * @return {*}  Overlay[]
+   * @author: wuyue.nan
+   */
+  get(): Overlay[];
+  /**
+   * @description: 根据ID获取覆盖物
+   * @return {*} Overlay
+   * @author: wuyue.nan
+   */
+  get(id: string): Overlay;
+  /**
+   * @description: 覆盖物获取方法
+   * @param {string} id id
+   * @return {*} Overlay[] | Overlay
+   * @author: wuyue.nan
+   */
+  get(id?: string): Overlay[] | Overlay {
+    if (id) {
+      const overlay = this.map.getOverlayById(id);
+      return overlay;
+    } else {
+      const overlays = this.map.getOverlays().getArray();
+      return overlays;
+    }
+  }
+  /**
    * @description: 移除所有覆盖物
    * @return {*} Overlay[] | Overlay
    * @author: wuyue.nan
@@ -57,15 +97,15 @@ export default class OverlayLayer<T = unknown>{
    */
   remove(id?: string): Overlay[] | Overlay {
     if (id) {
-      const overlay = this.map.getOverlayById(id);
+      const overlay = this.get(id);
       this.map.removeOverlay(overlay);
       return overlay;
     } else {
-      const overlays = this.map.getOverlays();
+      const overlays = this.get();
       overlays.forEach(item => {
         this.map.removeOverlay(item);
       })
-      return overlays.getArray();
+      return overlays;
     }
   }
 }

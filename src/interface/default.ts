@@ -173,7 +173,7 @@ export interface IPolygonParam<T> extends IAddBaseParam<T> {
   /**
    * 点集合
    */
-  positions: number[] | Coordinate[][] | any;
+  positions: Coordinate[][];
   /**
    * 边框样式
    */
@@ -208,6 +208,26 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
    * 标签样式
    */
   label?: ILabel;
+  /**
+   * 箭头线
+   */
+  isArrow?: boolean;
+  /**
+   * 箭头是否重复,isArrow为true生效
+   */
+  arrowIsRepeat?: boolean;
+  /**
+   * 流水线
+   */
+  isFlowingDash?: boolean;
+  /**
+   * 流水线实线填充色 isFlowingDash为true生效
+   */
+  fullLineColor?: string;
+  /**
+   * 流水线虚线填充色 isFlowingDash为true生效
+   */
+  dottedLineColor?: string
 }
 export interface IPolylineFlyParam<T> extends IAddBaseParam<T>, IFlightLineParams {
   /**

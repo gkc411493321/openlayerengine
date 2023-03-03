@@ -1,3 +1,11 @@
+/*
+ * @Description: 
+ * @Version: 2.0
+ * @Author: wuyue.nan
+ * @Date: 2023-02-28 19:09:09
+ * @LastEditors: wuyue.nan
+ * @LastEditTime: 2023-03-03 11:31:46
+ */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolygonParam } from "../interface";
@@ -8,6 +16,7 @@ import VectorSource from "ol/source/Vector";
 import { Style } from "ol/style";
 import Base from "./Base";
 import Text from "ol/style/Text";
+import { Coordinate } from "ol/coordinate";
 
 export default class PolygonLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
@@ -18,7 +27,7 @@ export default class PolygonLayer<T = unknown> extends Base {
   }
   private createFeature(param: IPolygonParam<T>): Feature<Polygon> {
     const feature = new Feature({
-      geometry: new Polygon([param.positions])
+      geometry: new Polygon(param.positions)
     })
     let style = new Style();
     style = super.setStroke(style, param.stroke);
@@ -36,9 +45,21 @@ export default class PolygonLayer<T = unknown> extends Base {
    * @return {*} Feature<Geometry>
    * @author: wuyue.nan
    */
-  add(param: IPolygonParam<T>): Feature<Geometry> {
+  add(param: IPolygonParam<T>): Feature<Polygon> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
-    return super.save(feature);
+    return <Feature<Polygon>>super.save(feature);
+  }
+  /**
+   * @description: 修改多边形坐标
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Feature<Polygon>[]
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate[][]): Feature<Polygon>[] {
+    const features = <Feature<Polygon>[]>super.get(id);
+    features[0].getGeometry()?.setCoordinates(position);
+    return features;
   }
 }

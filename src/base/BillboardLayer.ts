@@ -4,17 +4,18 @@
  * @Author: wuyue.nan
  * @Date: 2023-03-02 16:07:20
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-02 16:44:41
+ * @LastEditTime: 2023-03-03 11:05:45
  */
 import Earth from "Earth";
 import { IBillboardParam } from "../interface";
 import { Feature } from "ol";
-import { Geometry, Point } from "ol/geom";
+import { Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Icon, Style } from "ol/style";
 import Base from "./Base";
 import { Utils } from "../common";
+import { Coordinate } from "ol/coordinate";
 
 export default class BillboardLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
@@ -54,9 +55,22 @@ export default class BillboardLayer<T = unknown> extends Base {
    * @return {*} Feature
    * @author: wuyue.nan
    */
-  add(param: IBillboardParam<T>): Feature<Geometry> {
+  add(param: IBillboardParam<T>): Feature<Point> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
-    return super.save(feature);
+    return <Feature<Point>>super.save(feature);
+  }
+  /**
+   * @description: 修改广告牌位置
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Feature<Point>[]
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate): Feature<Point>[] {
+    const features = <Feature<Point>[]>super.get(id);
+    const geometry = <Point>features[0].getGeometry();
+    geometry.setCoordinates(position);
+    return features;
   }
 }

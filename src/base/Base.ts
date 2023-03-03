@@ -1,7 +1,7 @@
 import Earth from "../Earth";
 import { IFill, ILabel, IStroke } from "../interface";
 import { Feature } from "ol";
-import { Geometry } from "ol/geom";
+import { Circle, Geometry, LineString, Point, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Style, Stroke, Fill, Text, Icon } from "ol/style";

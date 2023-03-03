@@ -1,6 +1,6 @@
 import PolylineLayer from "../../base/PolylineLayer";
 import { Feature, Map } from "ol";
-import { Geometry, MultiLineString, Point } from "ol/geom";
+import { Geometry, LineString, MultiLineString, Point } from "ol/geom";
 import { Vector as VectorLayer } from "ol/layer";
 import { unByKey } from "ol/Observable";
 import { getVectorContext } from "ol/render";
@@ -11,6 +11,7 @@ import FlightLineSource from "./FlightLineSource";
 import { IFlyPosition, IPointsFeature, IPolylineFlyParam, IRadialColor } from "../../interface/default";
 import { EventsKey } from "ol/events";
 import { Utils } from "../../common";
+import { Coordinate } from "ol/coordinate";
 
 
 
@@ -235,7 +236,7 @@ export default class Flightline<T = unknown> {
     ctx.drawGeometry(arrowGeometry)
   }
   /**
-   * @description: 
+   * @description: 删除飞线
    * @return {*} 
    * @author: wuyue.nan
    */
@@ -250,13 +251,19 @@ export default class Flightline<T = unknown> {
     })
     this.lineLayers.remove(id + "_anchorLine");
   }
-  // 提供此方法 用于删除所有相关的图层
-  destroy() {
-    // 其他的变量由js 自己控制gc 就可
-    this.eventKey && unByKey(this.eventKey)
-    this.positions = []
-    this.pointsFeatures = []
-    this.map.removeLayer(this.flightlineLayer)
+  setPosition(id: string, position: Coordinate[]): void {
+    this.pointsFeatures.map(item => {
+      if (item.id == id) {
+        item.feature[0].getGeometry()?.setCoordinates(position[0]);
+        item.feature[1].getGeometry()?.setCoordinates(position[1]);
+        this.positions[0].position = position;
+        this.pointsFeatures = this.generatePointsFeatures(this.positions);
+        this.init();
+      }
+    })
+    const features = <Feature<LineString>[]>this.lineLayers.get(id + "_anchorLine");
+    if (features.length > 0) {
+      features[0].getGeometry()?.setCoordinates(position);
+    }
   }
-
 }

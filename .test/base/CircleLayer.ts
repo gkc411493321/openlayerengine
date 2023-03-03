@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-02 14:59:46
+ * @LastEditTime: 2023-03-03 11:16:05
  */
 import CircleLayer from "../../src/base/CircleLayer"
 import { useEarth } from '../../src';
@@ -42,4 +42,8 @@ export const testCircleLayer = () => {
       b: "2"
     },
   })
+  /**
+   * 修改圆位置
+   */
+  // layer.setPosition("circle_2", fromLonLat([120, 45]))
 }

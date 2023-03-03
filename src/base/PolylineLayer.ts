@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 10:21:18
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-01 17:51:16
+ * @LastEditTime: 2023-03-03 13:30:21
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
@@ -60,29 +60,35 @@ export default class Polyline<T = unknown> extends Base {
   /**
    * @description: 增加一个线段
    * @param {IPointParam} param 详细参数 
-   * @return {*} Feature<Geometry>
+   * @return {*} Feature<LineString>
    * @author: wuyue.nan
    */
-  add(param: IPolylineParam<T>): Feature<Geometry> {
+  add(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
-    return super.save(feature);
+    if (param.isArrow) {
+      return this.addLineArrows(param);
+    } else if (param.isFlowingDash) {
+      return this.addFlowingDash(param);
+    } else {
+      return <Feature<LineString>>super.save(feature);
+    }
   }
   /**
    * @description: 增加带箭头的线段
    * @param {IPolylineParam} param 详细参数
    * @param {boolean} repeat 是否重复绘制箭头，默认false。true：除起始点外每个点都带箭头；false:只有结束点存在箭头
-   * @return {*} Feature<Geometry>
+   * @return {*} Feature<LineString>
    * @author: wuyue.nan
    */
-  addLineArrows(param: IPolylineParam<T>, repeat?: boolean): Feature<Geometry> {
+  private addLineArrows(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     const geometry = feature.getGeometry();
     const styles: any = [];
     const style = feature.getStyle();
     if (style) styles.push(style);
-    if (repeat) {
+    if (param.arrowIsRepeat) {
       if (geometry) {
         geometry.forEachSegment((start, end) => {
           styles.push(this.createStyle(start, end, param.stroke?.color))
@@ -99,8 +105,10 @@ export default class Polyline<T = unknown> extends Base {
     feature.setStyle(styles)
     feature.setId(param.id);
     feature.set("data", param.data);
-    feature.set("module", param.module)
-    return super.save(feature);
+    feature.set("module", param.module);
+    feature.set("param", param);
+    feature.set("isArrows", true);
+    return <Feature<LineString>>super.save(feature);
   }
   /**
    * @description: 绘制流动线
@@ -108,21 +116,21 @@ export default class Polyline<T = unknown> extends Base {
    * @return {*} Feature<Geometry>
    * @author: wuyue.nan
    */
-  addFlowingDash(param: IPolylineParam<T>, fullLineColor?: string, dottedLineColor?: string): Feature<Geometry> {
+  private addFlowingDash(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
     const feature: any = this.createFeature(param);
     let textStyle = new Style();
     textStyle = super.setText(textStyle, param.label);
     const fullLineStyle = new Style({
       stroke: new Stroke({
-        color: fullLineColor || "rgba(30,144,255, 1)",
+        color: param.fullLineColor || "rgba(30,144,255, 1)",
         width: param.width || 2,
         lineDash: [0]
       }),
     })
     const dottedLineStyle = new Style({
       stroke: new Stroke({
-        color: dottedLineColor || "rgba(255, 250, 250, 1)",
+        color: param.dottedLineColor || "rgba(255, 250, 250, 1)",
         width: param.width || 2,
         lineDash: [20, 27],
         lineDashOffset: 100
@@ -136,7 +144,7 @@ export default class Polyline<T = unknown> extends Base {
       let lineDashOffset = feature.getStyle()[1].getStroke().getLineDashOffset();
       const newDottedLineStyle = new Style({
         stroke: new Stroke({
-          color: dottedLineColor || "rgba(255, 250, 250, 1)",
+          color: param.dottedLineColor || "rgba(255, 250, 250, 1)",
           width: param.width || 2,
           lineDash: [10, 25],
           lineDashOffset: lineDashOffset == 100 ? 0 : lineDashOffset - 2
@@ -144,7 +152,7 @@ export default class Polyline<T = unknown> extends Base {
       })
       feature.setStyle([fullLineStyle, newDottedLineStyle, textStyle])
     })
-    return super.save(feature);
+    return <Feature<LineString>>super.save(feature);
   }
   /**
    * @description: 添加飞行线 注意！！！删除此线段需使用【removeFlightLine】方法
@@ -156,6 +164,39 @@ export default class Polyline<T = unknown> extends Base {
     const flightline = new Flightline(this.layer, param, param.id);
     this.flyCatch.set(param.id, flightline);
     return flightline;
+  }
+  /**
+   * @description: 修改线段坐标
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Feature<LineString>[]
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate[]): Feature<LineString>[] {
+    const features = <Feature<LineString>[]>super.get(id);
+    const isArrows = features[0].get("isArrows");
+    const param = <IPolylineParam<T>>features[0].get("param");
+    if (isArrows) {
+      super.remove(id);
+      param.positions = position;
+      this.addLineArrows(param);
+    } else {
+      features[0].getGeometry()?.setCoordinates(position);
+    }
+    return features;
+  }
+  /**
+   * @description: 修改飞线坐标
+   * @param {string} id id
+   * @param {Coordinate} position 坐标
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  setFlightPosition(id: string, position: Coordinate[]): void {
+    const flightline = this.flyCatch.get(id);
+    if (flightline) {
+      flightline.setPosition(id, position);
+    }
   }
   /**
    * @description: 删除飞行线

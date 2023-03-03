@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-02 15:59:05
+ * @LastEditTime: 2023-03-03 12:37:46
  */
 import Earth from "../Earth";
 import { IPointParam } from "../interface";
@@ -20,6 +20,7 @@ import RenderEvent from "ol/render/Event";
 import { unByKey } from "ol/Observable";
 import { getVectorContext } from "ol/render";
 import CircleStyle from "ol/style/Circle";
+import { Coordinate } from "ol/coordinate";
 
 
 export default class PointLayer<T = unknown> extends Base {
@@ -33,7 +34,6 @@ export default class PointLayer<T = unknown> extends Base {
     const feature = new Feature({
       geometry: new Point(param.center)
     })
-
     let style = new Style();
     style.setImage(new Circle({
       radius: param.size || 4,
@@ -59,7 +59,6 @@ export default class PointLayer<T = unknown> extends Base {
       size: param.size || 6
     };
     const options = Object.assign(defaultOption, param);
-    console.log('options', options)
     let start = Date.now();
     const geometry = feature.getGeometry();
     if (geometry) {
@@ -94,6 +93,7 @@ export default class PointLayer<T = unknown> extends Base {
           this.layer.changed();
         }
       });
+      feature.set("listenerKey", listenerKey);
     }
   }
   /**
@@ -102,13 +102,101 @@ export default class PointLayer<T = unknown> extends Base {
    * @return {*} Feature
    * @author: wuyue.nan
    */
-  add(param: IPointParam<T>): Feature<Geometry> {
+  add(param: IPointParam<T>): Feature<Point> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     if (param.isFlash) {
+      feature.set("param", param);
       this.flash(feature, param)
     }
-    return super.save(feature);
+    return <Feature<Point>>super.save(feature);
+  }
+  /**
+   * @description: 停止所有点闪烁状态
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  stopFlash(): void;
+  /**
+   * @description: 根据ID停止点闪烁
+   * @param {string} id id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  stopFlash(id: string): void;
+  /**
+   * @description: 停止点闪烁
+   * @param {string} id id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  stopFlash(id?: string): void {
+    if (id) {
+      const features = <Feature<Point>[]>super.get(id);
+      const listenerKey = features[0].get("listenerKey");
+      if (listenerKey) {
+        unByKey(listenerKey);
+        features[0].set("listenerKey", null);
+      }
+    } else {
+      const features = <Feature<Point>[]>super.get();
+      for (const item of features) {
+        const listenerKey = item.get("listenerKey");
+        if (listenerKey) {
+          unByKey(listenerKey);
+          item.set("listenerKey", null);
+        }
+      }
+    }
+  }
+  /**
+   * @description: 所有点重新闪烁
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  continueFlash(): void;
+  /**
+   * @description: 根据id重新闪烁点
+   * @param {string} id id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  continueFlash(id: string): void;
+  /**
+   * @description: 点重新闪烁
+   * @param {string} id id
+   * @return {*} void
+   * @author: wuyue.nan
+   */
+  continueFlash(id?: string): void {
+    let features: Feature<Point>[] = [];
+    if (id) {
+      features = <Feature<Point>[]>super.get(id);
+    } else {
+      features = <Feature<Point>[]>super.get();
+    }
+    for (const item of features) {
+      const param = item.get("param");
+      if (param) this.flash(item, param)
+    }
+  }
+  /**
+   * @description: 修改点坐标
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Feature<Point>[]
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate): Feature<Point>[] {
+    const features = <Feature<Point>[]>super.get(id);
+    features[0].getGeometry()?.setCoordinates(position);
+    const listenerKey = features[0].get("listenerKey");
+    const param = features[0].get("param");
+    if (listenerKey) {
+      unByKey(listenerKey);
+      this.flash(features[0], param);
+    }
+    return features;
   }
 }
 

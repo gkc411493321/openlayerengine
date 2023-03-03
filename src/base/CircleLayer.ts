@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-28 15:14:44
+ * @LastEditTime: 2023-03-03 11:16:48
  */
 import { Utils } from '../common';
 import Earth from "../Earth";
@@ -14,7 +14,8 @@ import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Style from "ol/style/Style";
 import Base from "./Base"
-import { ICircleParam } from 'interface/default';
+import { ICircleParam } from '../interface';
+import { Coordinate } from 'ol/coordinate';
 export default class CircleLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
@@ -49,9 +50,22 @@ export default class CircleLayer<T = unknown> extends Base {
    * @return {*} Feature
    * @author: wuyue.nan
    */
-  add(param: ICircleParam<T>): Feature<Geometry> {
+  add(param: ICircleParam<T>): Feature<Circle> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
-    return super.save(feature);
+    return <Feature<Circle>>super.save(feature);
+  }
+  /**
+   * @description: 修改圆位置
+   * @param {string} id ID
+   * @param {Coordinate} position 坐标
+   * @return {*} Feature<Circle>[]
+   * @author: wuyue.nan
+   */
+  setPosition(id: string, position: Coordinate): Feature<Circle>[] {
+    const features = <Feature<Circle>[]>super.get(id);
+    const geometry = <Circle>features[0].getGeometry();
+    geometry.setCenter(position);
+    return features;
   }
 }

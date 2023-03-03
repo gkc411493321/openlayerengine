@@ -15,11 +15,12 @@ export const testPolylineLayer = () => {
     },
     width: 5
   })
-  layer.addLineArrows({
+  layer.add({
     id: "polyline_3",
     positions: [fromLonLat([80, 30]), fromLonLat([80, 50])],
+    isArrow: true,
   })
-  layer.addLineArrows({
+  layer.add({
     id: "polyline_4",
     positions: [fromLonLat([70, 30]), fromLonLat([70, 50]), fromLonLat([60, 50]), fromLonLat([60, 30])],
     stroke: {
@@ -32,20 +33,26 @@ export const testPolylineLayer = () => {
       fill: {
         color: "red"
       }
-    }
-  }, true)
-  layer.addFlowingDash({
+    },
+    isArrow: true,
+    arrowIsRepeat: true
+  })
+  layer.add({
     id: "polyline_5",
     positions: [fromLonLat([100, 60]), fromLonLat([60, 55])],
+    isFlowingDash: true,
     label: {
       text: "流动线",
       offsetY: -10
     }
   })
-  layer.addFlowingDash({
+  layer.add({
     id: "polyline_6",
     positions: [fromLonLat([60, 60]), fromLonLat([100, 60])],
-  }, "red", "yellow")
+    isFlowingDash: true,
+    fullLineColor: "red",
+    dottedLineColor: "yellow"
+  })
   layer.addFlightLine({
     id: "fly_1",
     position: [fromLonLat([60, 55]), fromLonLat([100, 55])],
@@ -86,4 +93,10 @@ export const testPolylineLayer = () => {
     isShowAnchorPoint: false,
     splitLength: 100,
   })
+  // setTimeout(() => {
+  //   layer.setPositionFlight("fly_4", [fromLonLat([100, 70]), fromLonLat([100, 50])])
+  //   layer.setPositionFlight("fly_3", [fromLonLat([90, 70]), fromLonLat([100, 50])])
+  //   layer.setPositionFlight("fly_2", [fromLonLat([110, 70]), fromLonLat([100, 50])])
+  //   layer.setPositionFlight("fly_1", [fromLonLat([60, 55]), fromLonLat([120, 55])])
+  // }, 3000)
 }

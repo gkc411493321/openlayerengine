@@ -34,4 +34,5 @@ export const testOverlayLayer = () => {
       popup.setElement(div1);
     }
   });
+  // layer.setPosition("overlay_1", fromLonLat([120, 22]))
 }
