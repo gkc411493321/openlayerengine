@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 16:44:05
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 12:36:22
+ * @LastEditTime: 2023-03-03 16:18:42
  */
 import { fromLonLat } from 'ol/proj';
 import { PointLayer, useEarth } from '../../src';
@@ -34,4 +34,32 @@ export const testPointLayer = () => {
     duration: 3000,
     isRepeat: false
   })
+  // setTimeout(() => {
+  //   layer.set({
+  //     id: "point_1",
+  //     center: fromLonLat([125, 60]),
+  //     size: 10,
+  //     label: {
+  //       text: "带标签点2",
+  //       fill: {
+  //         color: "#fff"
+  //       }
+  //     },
+  //     stroke: {
+  //       color: "blue"
+  //     },
+  //     fill: {
+  //       color: "blue"
+  //     },
+  //     duration: 500,
+  //     isFlash: true,
+  //     isRepeat: true,
+  //     flashColor: {
+  //       R: 0,
+  //       G: 0,
+  //       B: 255
+  //     },
+  //   })
+  // }, 3000)
+
 }

@@ -106,6 +106,48 @@ export interface IPointParam<T> extends IAddBaseParam<T> {
    */
   label?: ILabel;
 }
+export interface ISetPointParam {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * 点中心
+   */
+  center?: Coordinate;
+  /**
+   * 点大小
+   */
+  size?: number;
+  /**
+   * 是否开启闪烁点，默认false
+   */
+  isFlash?: boolean;
+  /**
+   * 闪烁颜色，默认为rgb(255,0,0)
+   */
+  flashColor?: IRgbColor;
+  /**
+   * 闪烁一次持续时间，默认1000ms
+   */
+  duration?: number;
+  /**
+   * 是否重复闪烁，默认为true;该属性在isFlash属性为true时生效
+   */
+  isRepeat?: boolean;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+}
 export interface IBillboardParam<T> extends IAddBaseParam<T> {
   /**
   * 点中心

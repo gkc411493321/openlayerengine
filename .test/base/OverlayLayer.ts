@@ -15,25 +15,25 @@ export const testOverlayLayer = () => {
     element: div
   })
 
-  let popup: Overlay;
-  useEarth().map.on('click', function (evt) {
-    const coordinate = evt.coordinate;
-    const hdms = toStringHDMS(toLonLat(coordinate));
-    const div1 = document.createElement("div");
-    div1.className = "overlay";
-    div1.innerHTML = "<div class='title'>" + hdms + "</div>"
-    document.body.appendChild(div1);
-    if (!popup) {
-      popup = layer.add({
-        id: "overlay_2",
-        position: coordinate,
-        element: div1
-      })
-    } else {
-      popup.setPosition(coordinate);
-      popup.setElement(div1);
-    }
-  });
+  // let popup: Overlay;
+  // useEarth().map.on('click', function (evt) {
+  //   const coordinate = evt.coordinate;
+  //   const hdms = toStringHDMS(toLonLat(coordinate));
+  //   const div1 = document.createElement("div");
+  //   div1.className = "overlay";
+  //   div1.innerHTML = "<div class='title'>" + hdms + "</div>"
+  //   document.body.appendChild(div1);
+  //   if (!popup) {
+  //     popup = layer.add({
+  //       id: "overlay_2",
+  //       position: coordinate,
+  //       element: div1
+  //     })
+  //   } else {
+  //     popup.setPosition(coordinate);
+  //     popup.setElement(div1);
+  //   }
+  // });
   // layer.setPosition("overlay_x", fromLonLat([120, 22]))
   // const div2 = document.createElement("div");
   // div2.className = "overlay";

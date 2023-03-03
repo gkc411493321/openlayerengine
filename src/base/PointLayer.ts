@@ -4,10 +4,10 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:33:36
+ * @LastEditTime: 2023-03-03 16:18:12
  */
 import Earth from "../Earth";
-import { IPointParam } from "../interface";
+import { IPointParam, ISetPointParam } from "../interface";
 import { Feature } from "ol";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
@@ -175,6 +175,44 @@ export default class PointLayer<T = unknown> extends Base {
       const param = item.get("param");
       if (param) this.flash(item, param)
     }
+  }
+  /**
+   * @description: 修改点属性
+   * @param {ISetPointParam} param
+   * @return {*}
+   * @author: wuyue.nan
+   */
+  set(param: ISetPointParam): void {
+    const features = <Feature<Point>[]>super.get(param.id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return;
+    }
+    if (param.center) {
+      features[0].getGeometry()?.setCoordinates(param.center);
+    }
+    const listenerKey = features[0].get("listenerKey");
+    const oldParam = features[0].get("param");
+    const newParam = Object.assign(oldParam, param);
+    features[0].set("param", newParam);
+    if (listenerKey) {
+      unByKey(listenerKey);
+      this.flash(features[0], newParam);
+    }
+    const style = <Style>features[0].getStyle();
+    const image = <Circle>style.getImage();
+    style.setImage(new Circle({
+      radius: param.size || image.getRadius(),
+      stroke: new Stroke(Object.assign({
+        color: param.stroke?.color || image.getStroke()?.getColor(),
+      }, param.stroke)),
+      fill: new Fill(Object.assign({
+        color: param.fill?.color || image.getFill()?.getColor(),
+      }, param.fill)),
+    }))
+    const radius = param.size || image.getRadius();
+    super.setText(style, param.label, -(radius + 15));
+    // features[0]
   }
   /**
    * @description: 修改点坐标
