@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:06:58
+ * @LastEditTime: 2023-03-03 15:29:13
  */
 import { Utils } from '../common';
 import Earth from "../Earth";
@@ -63,6 +63,10 @@ export default class CircleLayer<T = unknown> extends Base {
    */
   set(param: ISetCircleParam): Feature<Circle>[] {
     const features = <Feature<Circle>[]>super.get(param.id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     const feature = features[0];
     let style = <Style>feature.getStyle();
     style = super.setStroke(style, param.stroke);
@@ -86,6 +90,10 @@ export default class CircleLayer<T = unknown> extends Base {
    */
   setPosition(id: string, position: Coordinate): Feature<Circle>[] {
     const features = <Feature<Circle>[]>super.get(id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     const geometry = <Circle>features[0].getGeometry();
     geometry.setCenter(position);
     return features;

@@ -71,6 +71,10 @@ export default class BillboardLayer<T = unknown> extends Base {
     if (param.center) {
       this.setPosition(param.id, param.center);
     }
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     const style = <Style>features[0].getStyle();
     const oldIcon = <Icon>style.getImage();
     const iconOptions: { [key: string]: any } = {
@@ -102,6 +106,10 @@ export default class BillboardLayer<T = unknown> extends Base {
    */
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     const geometry = <Point>features[0].getGeometry();
     geometry.setCoordinates(position);
     return features;

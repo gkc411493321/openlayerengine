@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-03-02 16:45:50
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 14:56:15
+ * @LastEditTime: 2023-03-03 15:27:53
  */
 import { fromLonLat } from "ol/proj";
 import { BillboardLayer, useEarth } from "../../src";
@@ -35,10 +35,10 @@ export const testBillboardLayer = () => {
   /**
    * 修改信息
    */
-  // layer.set({
-  //   id: "billboard_1",
-  //   label: {
-  //     text: "a",
-  //   }
-  // })
+  layer.set({
+    id: "billboard_x",
+    label: {
+      text: "a",
+    }
+  })
 }

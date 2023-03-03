@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 12:37:46
+ * @LastEditTime: 2023-03-03 15:33:36
  */
 import Earth from "../Earth";
 import { IPointParam } from "../interface";
@@ -131,21 +131,17 @@ export default class PointLayer<T = unknown> extends Base {
    * @author: wuyue.nan
    */
   stopFlash(id?: string): void {
+    let features: Feature<Point>[] = [];
     if (id) {
-      const features = <Feature<Point>[]>super.get(id);
-      const listenerKey = features[0].get("listenerKey");
+      features = <Feature<Point>[]>super.get(id);
+    } else {
+      features = <Feature<Point>[]>super.get();
+    }
+    for (const item of features) {
+      const listenerKey = item.get("listenerKey");
       if (listenerKey) {
         unByKey(listenerKey);
-        features[0].set("listenerKey", null);
-      }
-    } else {
-      const features = <Feature<Point>[]>super.get();
-      for (const item of features) {
-        const listenerKey = item.get("listenerKey");
-        if (listenerKey) {
-          unByKey(listenerKey);
-          item.set("listenerKey", null);
-        }
+        item.set("listenerKey", null);
       }
     }
   }
@@ -189,6 +185,10 @@ export default class PointLayer<T = unknown> extends Base {
    */
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     features[0].getGeometry()?.setCoordinates(position);
     const listenerKey = features[0].get("listenerKey");
     const param = features[0].get("param");

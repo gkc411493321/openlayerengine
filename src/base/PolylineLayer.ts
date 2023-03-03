@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 10:21:18
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 13:30:21
+ * @LastEditTime: 2023-03-03 15:35:17
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
@@ -174,6 +174,10 @@ export default class Polyline<T = unknown> extends Base {
    */
   setPosition(id: string, position: Coordinate[]): Feature<LineString>[] {
     const features = <Feature<LineString>[]>super.get(id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     const isArrows = features[0].get("isArrows");
     const param = <IPolylineParam<T>>features[0].get("param");
     if (isArrows) {

@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-03-02 17:16:32
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 11:26:44
+ * @LastEditTime: 2023-03-03 15:30:21
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
@@ -45,8 +45,12 @@ export default class OverlayLayer<T = unknown>{
    * @return {*} Overlay
    * @author: wuyue.nan
    */
-  setPosition(id: string, position: Coordinate): Overlay {
+  setPosition(id: string, position: Coordinate): Overlay | null {
     const overlay = this.get(id);
+    if (overlay == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return null;
+    }
     overlay.setPosition(position);
     return overlay;
   }
@@ -98,6 +102,10 @@ export default class OverlayLayer<T = unknown>{
   remove(id?: string): Overlay[] | Overlay {
     if (id) {
       const overlay = this.get(id);
+      if (overlay == undefined) {
+        console.warn("没有找到元素，请检查ID");
+        return [];
+      }
       this.map.removeOverlay(overlay);
       return overlay;
     } else {

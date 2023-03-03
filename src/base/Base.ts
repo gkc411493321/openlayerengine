@@ -146,6 +146,10 @@ export default class Base {
   hide(id?: string): void {
     if (id) {
       const feature = this.get(id);
+      if (feature[0] == undefined) {
+        console.warn("没有找到元素，请检查ID");
+        return;
+      }
       this.hideFeatureMap.set(id, feature[0]);
       this.remove(id);
     } else {

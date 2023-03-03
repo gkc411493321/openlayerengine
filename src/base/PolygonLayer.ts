@@ -4,18 +4,17 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 19:09:09
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 11:31:46
+ * @LastEditTime: 2023-03-03 15:34:46
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolygonParam } from "../interface";
 import { Feature } from "ol";
-import { Geometry, Polygon } from "ol/geom";
+import { Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Style } from "ol/style";
 import Base from "./Base";
-import Text from "ol/style/Text";
 import { Coordinate } from "ol/coordinate";
 
 export default class PolygonLayer<T = unknown> extends Base {
@@ -59,6 +58,10 @@ export default class PolygonLayer<T = unknown> extends Base {
    */
   setPosition(id: string, position: Coordinate[][]): Feature<Polygon>[] {
     const features = <Feature<Polygon>[]>super.get(id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
     features[0].getGeometry()?.setCoordinates(position);
     return features;
   }
