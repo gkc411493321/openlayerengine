@@ -4,11 +4,11 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-28 19:09:09
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:34:46
+ * @LastEditTime: 2023-03-03 16:28:53
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
-import { IPolygonParam } from "../interface";
+import { IPolygonParam, ISetPolygonParam } from "../interface";
 import { Feature } from "ol";
 import { Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
@@ -48,6 +48,27 @@ export default class PolygonLayer<T = unknown> extends Base {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return <Feature<Polygon>>super.save(feature);
+  }
+  set(param: ISetPolygonParam): Feature<Polygon>[] {
+    const features = <Feature<Polygon>[]>super.get(param.id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return [];
+    }
+    if (param.positions) {
+      features[0].getGeometry()?.setCoordinates(param.positions);
+    }
+    let style = <Style>features[0].getStyle();
+    if (param.stroke) {
+      super.setStroke(style, param.stroke);
+    }
+    if (param.fill) {
+      super.setFill(style, param.fill);
+    }
+    if (param.label) {
+      super.setText(style, param.label);
+    }
+    return features;
   }
   /**
    * @description: 修改多边形坐标

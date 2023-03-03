@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-27 15:33:02
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 16:18:12
+ * @LastEditTime: 2023-03-03 16:21:37
  */
 import Earth from "../Earth";
 import { IPointParam, ISetPointParam } from "../interface";
@@ -182,11 +182,11 @@ export default class PointLayer<T = unknown> extends Base {
    * @return {*}
    * @author: wuyue.nan
    */
-  set(param: ISetPointParam): void {
+  set(param: ISetPointParam): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(param.id);
     if (features[0] == undefined) {
       console.warn("没有找到元素，请检查ID");
-      return;
+      return [];
     }
     if (param.center) {
       features[0].getGeometry()?.setCoordinates(param.center);
@@ -212,7 +212,7 @@ export default class PointLayer<T = unknown> extends Base {
     }))
     const radius = param.size || image.getRadius();
     super.setText(style, param.label, -(radius + 15));
-    // features[0]
+    return features;
   }
   /**
    * @description: 修改点坐标

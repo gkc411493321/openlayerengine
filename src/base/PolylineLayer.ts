@@ -8,9 +8,9 @@
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
-import { IPointsFeature, IPolylineFlyParam, IPolylineParam } from "../interface";
+import { IPolylineFlyParam, IPolylineParam } from "../interface";
 import { Feature } from "ol";
-import { Geometry, LineString, Point } from "ol/geom";
+import { LineString, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Icon, Stroke, Style } from "ol/style";

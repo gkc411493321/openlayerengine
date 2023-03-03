@@ -319,6 +319,28 @@ export interface IPolygonParam<T> extends IAddBaseParam<T> {
    */
   label?: ILabel;
 }
+export interface ISetPolygonParam {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * 点集合
+   */
+  positions?: Coordinate[][];
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+}
 export interface IPolylineParam<T> extends IAddBaseParam<T> {
   /**
    * 点集合
