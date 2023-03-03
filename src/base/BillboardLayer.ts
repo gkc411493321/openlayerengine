@@ -1,11 +1,3 @@
-/*
- * @Description: 广告牌
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-03-02 16:07:20
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 14:57:14
- */
 import Earth from "Earth";
 import { IBillboardParam, ISetBillboardParam } from "../interface";
 import { Feature } from "ol";
@@ -50,11 +42,34 @@ export default class BillboardLayer<T = unknown> extends Base {
     return feature;
   }
   /**
-   * @description: 增加一个广告牌
-   * @param {IBillboardParam} param 详细参数 
-   * @return {*} Feature
-   * @author: wuyue.nan
-   */
+   * 创建广告牌(Billbord)
+   * @remarks
+   * 应用唯一的创建入口，用于客户端渲染(CSR)。
+   * @param {@link Coordinate} - 应用配置
+   * @returns
+   * 返回创建的元素，{@link Feature}
+   * @example
+   * ```ts
+   *const layer = new BillboardLayer(useEarth());
+   *layer.add({
+      id: "billboard_1",
+      center: fromLonLat([65, 20]),
+      src: "/image/earth.png",
+      label: {
+      text: "billboard",
+      font: "bold 24px serif",
+      stroke: {
+        color: "red",
+        width: 2
+      },
+      fill: {
+        color: "#fff"
+      },
+        offsetY: -80
+      }
+    })
+   * ```
+  */
   add(param: IBillboardParam<T>): Feature<Point> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);

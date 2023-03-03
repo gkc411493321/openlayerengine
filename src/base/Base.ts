@@ -64,7 +64,7 @@ export default class Base {
    * @return {*}
    * @author: wuyue.nan
    */
-  save(feature: Feature<Geometry>): Feature<Geometry> {
+  protected save(feature: Feature<Geometry>): Feature<Geometry> {
     this.layer.getSource()?.addFeature(feature);
     return feature;
   }
