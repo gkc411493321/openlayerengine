@@ -4,11 +4,11 @@
  * @Author: wuyue.nan
  * @Date: 2023-03-02 17:16:32
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:30:21
+ * @LastEditTime: 2023-03-03 15:43:41
  */
 import { Utils } from "../common";
 import Earth from "../Earth";
-import { IOverlayParam } from "../interface";
+import { IOverlayParam, ISetOverlayParam } from "../interface";
 import { Map, Overlay } from "ol";
 import { Coordinate } from "ol/coordinate";
 
@@ -39,10 +39,36 @@ export default class OverlayLayer<T = unknown>{
     return overlay;
   }
   /**
+   * @description: 修改覆盖物
+   * @param {ISetOverlayParam} param 详细参数
+   * @return {*} Overlay | null
+   * @author: wuyue.nan
+   */
+  set(param: ISetOverlayParam): Overlay | null {
+    const overlay = this.get(param.id);
+    if (overlay == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return null;
+    }
+    if (param.position) {
+      overlay.setPosition(param.position);
+    }
+    if (param.element) {
+      overlay.setElement(param.element);
+    }
+    if (param.offset) {
+      overlay.setOffset(param.offset);
+    }
+    if (param.positioning) {
+      overlay.setPositioning(param.positioning);
+    }
+    return overlay;
+  }
+  /**
    * @description: 修改覆盖物位置
    * @param {string} id ID
    * @param {Coordinate} position 坐标
-   * @return {*} Overlay
+   * @return {*} Overlay | null
    * @author: wuyue.nan
    */
   setPosition(id: string, position: Coordinate): Overlay | null {

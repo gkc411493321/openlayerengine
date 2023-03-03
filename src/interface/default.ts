@@ -237,6 +237,28 @@ export interface IOverlayParam<T> extends IAddBaseParam<T> {
    */
   className?: string;
 }
+export interface ISetOverlayParam {
+  /**
+   * id
+   */
+  id: string
+  /**
+   * DOM容器
+   */
+  element?: HTMLElement;
+  /**
+   * 位置
+   */
+  position?: Coordinate;
+  /**
+   * 偏移量,默认[0,0]
+   */
+  offset?: number[];
+  /**
+   * 定位模式，默认'top-left'
+   */
+  positioning?: Positioning;
+}
 export interface IPolygonParam<T> extends IAddBaseParam<T> {
   /**
    * 点集合

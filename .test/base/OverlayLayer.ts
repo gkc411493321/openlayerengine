@@ -34,5 +34,13 @@ export const testOverlayLayer = () => {
       popup.setElement(div1);
     }
   });
-  layer.setPosition("overlay_x", fromLonLat([120, 22]))
+  // layer.setPosition("overlay_x", fromLonLat([120, 22]))
+  // const div2 = document.createElement("div");
+  // div2.className = "overlay";
+  // div2.innerHTML = "<div class='title'>div，基于Overlay创建2</div>"
+  // document.body.appendChild(div2);
+  // layer.set({
+  //   id: "overlay_1",
+  //   element: div2
+  // })
 }
