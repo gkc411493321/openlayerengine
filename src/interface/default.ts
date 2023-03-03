@@ -42,6 +42,32 @@ export interface ICircleParam<T> extends IAddBaseParam<T> {
    */
   label?: ILabel;
 }
+export interface ISetCircleParam {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * 圆中心
+   */
+  center?: Coordinate;
+  /**
+   * 圆半径，单位m
+   */
+  radius?: number;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+}
 export interface IPointParam<T> extends IAddBaseParam<T> {
   /**
    * 点中心

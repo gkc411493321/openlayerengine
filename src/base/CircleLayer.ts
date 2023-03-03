@@ -4,7 +4,7 @@
  * @Author: wuyue.nan
  * @Date: 2023-02-23 18:12:58
  * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 11:16:48
+ * @LastEditTime: 2023-03-03 15:06:58
  */
 import { Utils } from '../common';
 import Earth from "../Earth";
@@ -14,7 +14,7 @@ import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Style from "ol/style/Style";
 import Base from "./Base"
-import { ICircleParam } from '../interface';
+import { ICircleParam, ISetCircleParam } from '../interface';
 import { Coordinate } from 'ol/coordinate';
 export default class CircleLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
@@ -54,6 +54,28 @@ export default class CircleLayer<T = unknown> extends Base {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return <Feature<Circle>>super.save(feature);
+  }
+  /**
+   * @description: 修改圆
+   * @param {ISetCircleParam} param 详细参数
+   * @return {*} Feature<Circle>[]
+   * @author: wuyue.nan
+   */
+  set(param: ISetCircleParam): Feature<Circle>[] {
+    const features = <Feature<Circle>[]>super.get(param.id);
+    const feature = features[0];
+    let style = <Style>feature.getStyle();
+    style = super.setStroke(style, param.stroke);
+    style = super.setFill(style, param.fill);
+    style = super.setText(style, param.label);
+    feature.setStyle(style);
+    if (param.center) {
+      this.setPosition(param.id, param.center);
+    }
+    if (param.radius) {
+      feature.getGeometry()?.setRadius(param.radius)
+    }
+    return features;
   }
   /**
    * @description: 修改圆位置

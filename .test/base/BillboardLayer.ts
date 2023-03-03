@@ -35,10 +35,10 @@ export const testBillboardLayer = () => {
   /**
    * 修改信息
    */
-  layer.set({
-    id: "billboard_1",
-    label: {
-      text: "a",
-    }
-  })
+  // layer.set({
+  //   id: "billboard_1",
+  //   label: {
+  //     text: "a",
+  //   }
+  // })
 }

@@ -15,16 +15,16 @@ export default class Base {
   }
   protected setStroke(style: Style, param?: IStroke, width?: number): Style {
     const stroke = new Stroke(Object.assign({
-      color: param?.color || "#ffcc33",
-      width: width || 2,
-      lineDash: param?.lineDash
+      color: param?.color || style.getStroke()?.getColor() || "#ffcc33",
+      width: width || style.getStroke()?.getWidth() || 2,
+      lineDash: param?.lineDash || style.getStroke()?.getLineDash()
     }, param));
     style.setStroke(stroke)
     return style;
   }
   protected setFill(style: Style, param?: IFill): Style {
     const fill = new Fill(Object.assign({
-      color: param?.color || '#ffffff57',
+      color: param?.color || style.getFill()?.getColor() || '#ffffff57',
     }, param));
     style.setFill(fill)
     return style;
