@@ -1,18 +1,38 @@
 import Earth from "../Earth";
 import { IFill, ILabel, IStroke } from "../interface";
 import { Feature } from "ol";
-import { Circle, Geometry, LineString, Point, Polygon } from "ol/geom";
+import { Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Style, Stroke, Fill, Text, Icon } from "ol/style";
-
+/**
+ * 基类，提供图层常见的获取，删除及更新方法
+ */
 export default class Base {
+  /**
+   * 图层
+   */
   public layer: VectorLayer<VectorSource<Geometry>>;
+  /**
+   * 缓存featur的集合
+   */
   private hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
+  /**
+   * 图层构造类
+   * @param earth 地图实例
+   * @param layer 图层实例
+   */
   constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>) {
     this.layer = layer;
     earth.map.addLayer(layer);
   }
+  /**
+   * 设置描边样式
+   * @param style style实例 
+   * @param param 描边参数，`可选的`。详见{@link IStroke}
+   * @param width 宽度，`可选的`
+   * @returns 返回style实例
+   */
   protected setStroke(style: Style, param?: IStroke, width?: number): Style {
     const stroke = new Stroke(Object.assign({
       color: param?.color || style.getStroke()?.getColor() || "#ffcc33",
@@ -22,6 +42,12 @@ export default class Base {
     style.setStroke(stroke)
     return style;
   }
+  /**
+   * 设置填充样式
+   * @param style style实例
+   * @param param 填充参数，`可选的`。详见{@link IFill}
+   * @returns 返回style实例
+   */
   protected setFill(style: Style, param?: IFill): Style {
     const fill = new Fill(Object.assign({
       color: param?.color || style.getFill()?.getColor() || '#ffffff57',
@@ -29,6 +55,13 @@ export default class Base {
     style.setFill(fill)
     return style;
   }
+  /**
+   * 设置文本样式
+   * @param style style实例 
+   * @param param 文本参数，`可选的`。详见{@link ILabel}
+   * @param offsetY 纵向偏移量，`可选的`。
+   * @returns 返回style实例
+   */
   protected setText(style: Style, param?: ILabel, offsetY?: number): Style {
     const text = new Text({
       text: param?.text || style.getText()?.getText(),
@@ -59,34 +92,31 @@ export default class Base {
     return style;
   }
   /**
-   * @description: 添加元素
-   * @param {Feature} feature
-   * @return {*}
-   * @author: wuyue.nan
+   * 往图层添加一个矢量元素
+   * @param feature 矢量元素实例
+   * @returns 返回矢量元素实例
    */
   protected save(feature: Feature<Geometry>): Feature<Geometry> {
     this.layer.getSource()?.addFeature(feature);
     return feature;
   }
   /**
-   * @description: 删除图层所有元素
-   * @return {*} void
-   * @author: wuyue.nan
+   * 删除图层所有矢量元素
+   * @example
+   * ```
+   * layer.remove();
+   * ```
    */
   remove(): void;
   /**
-   * @description: 删除图层指定元素
-   * @param {string} id
-   * @return {*} void
-   * @author: wuyue.nan
+   * 删除图层指定矢量元素元素
+   * @param id 矢量元素id
+   * @example
+   * ```
+   * layer.remove("1");
+   * ```
    */
   remove(id: string): void;
-  /**
-   * @description: 删除元素
-   * @param {string} id
-   * @return {*} void
-   * @author: wuyue.nan
-   */
   remove(id?: string): void {
     if (id) {
       this.layer.getSource()?.removeFeature(this.get(id)[0]);
@@ -95,24 +125,24 @@ export default class Base {
     }
   }
   /**
-   * @description: 获取所有元素
-   * @return {*} Feature<Geometry>[];
-   * @author: wuyue.nan
+   * 获取图层中所有矢量元素
+   * @returns 返回矢量元素数组
+   * @example
+   * ```
+   * const features:Feature<Geometry>[] = layer.get();
+   * ```
    */
   get(): Feature<Geometry>[];
   /**
-   * @description: 获取指定元素
-   * @param {string} id 元素id
-   * @return {*} Feature<Geometry>[];
-   * @author: wuyue.nan
+   * 获取图层中指定矢量元素
+   * @param id 矢量元素id
+   * @returns 返回矢量元素数组
+   * @example
+   * ```
+   * const features:Feature<Geometry>[] = layer.get("1");
+   * ```
    */
   get(id: string): Feature<Geometry>[];
-  /**
-   * @description: 获取元素，如不传ID则返回图层所有元素
-   * @param {string} id 元素id
-   * @return {*} Feature<Geometry>[]
-   * @author: wuyue.nan
-   */
   get(id?: string): Feature<Geometry>[] {
     let features: Feature<Geometry>[] = [];
     if (id) {
@@ -125,24 +155,22 @@ export default class Base {
     return features;
   }
   /**
-   * @description: 隐藏所有元素
-   * @return {*} void
-   * @author: wuyue.nan
+   * 隐藏图层所有矢量元素
+   * @example
+   * ```
+   * layer.hide();
+   * ```
    */
   hide(): void;
   /**
-   * @description: 按id隐藏元素
-   * @param {string} id 元素id
-   * @return {*} void
-   * @author: wuyue.nan
+   * 隐藏图层指定矢量元素
+   * @param id 矢量元素id
+   * @example
+   * ```
+   * layer.hide("1");
+   * ```
    */
   hide(id: string): void;
-  /**
-   * @description: 隐藏元素，如不传ID则隐藏图层所有元素
-   * @param {string} id 元素id
-   * @return {*} void
-   * @author: wuyue.nan
-   */
   hide(id?: string): void {
     if (id) {
       const feature = this.get(id);
@@ -157,24 +185,22 @@ export default class Base {
     }
   }
   /**
-   * @description: 显示所有元素
-   * @return {*} void
-   * @author: wuyue.nan
+   * 显示图层所有矢量元素
+   * @example
+   * ```
+   * layer.show();
+   * ```
    */
   show(): void;
   /**
-   * @description: 根据ID显示元素
-   * @param {string} id 元素id
-   * @return {*} void
-   * @author: wuyue.nan
+   * 显示图层指定矢量元素
+   * @param id 矢量元素id
+   * @example
+   * ```
+   * layer.show("1");
+   * ```
    */
   show(id: string): void;
-  /**
-   * @description: 显示元素，如不传ID则显示图层所有元素
-   * @param {string} id
-   * @return {*} void
-   * @author: wuyue.nan
-   */
   show(id?: string): void {
     if (id) {
       const feature = this.hideFeatureMap.get(id);
@@ -186,18 +212,23 @@ export default class Base {
     }
   }
   /**
-   * @description: 设置图层Z-Index
-   * @param {number} index 层级
-   * @return {*} void
-   * @author: wuyue.nan
+   * 设置图层`z-index`等级
+   * @param index 等级
+   * @example
+   * ```
+   * layer.setLayerIndex(999)
+   * ```
    */
   setLayerIndex(index: number): void {
     this.layer.setZIndex(index);
   }
   /**
-   * @description: 移除图层
-   * @return {*} boolean
-   * @author: wuyue.nan
+   * 销毁图层，同时销毁该图层所有元素，不可恢复
+   * @returns 返回boolean值
+   * @example
+   * ```
+   * const flag:boolean = layer.destroy();
+   * ```
    */
   destroy(): boolean {
     let flag = this.earth.removeImageryProvider(this.layer);

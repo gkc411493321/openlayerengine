@@ -1,15 +1,7 @@
-/*
- * @Description: 圆操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:29:13
- */
 import { Utils } from '../common';
 import Earth from "../Earth";
 import { Feature } from "ol";
-import { Circle, Geometry } from "ol/geom";
+import { Circle } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Style from "ol/style/Style";

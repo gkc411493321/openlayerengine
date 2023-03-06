@@ -8,14 +8,29 @@ import { Icon, Style, Text } from "ol/style";
 import Base from "./Base";
 import { Utils } from "../common";
 import { Coordinate } from "ol/coordinate";
-
+/**
+ * 创建广告牌`Billboard`
+ */
 export default class BillboardLayer<T = unknown> extends Base {
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const billboardLayer = new  BillboardLayer(useEarth());
+   * ```
+   */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
     super(earth, layer)
   }
+  /**
+   * 创建矢量元素
+   * @param param 广告牌详细参数，详见{@link IBillboardParam}
+   * @returns 返回`Feature<Point>`矢量元素
+   */
   private createFeature(param: IBillboardParam<T>): Feature<Point> {
     const feature = new Feature({
       geometry: new Point(param.center)
@@ -42,44 +57,33 @@ export default class BillboardLayer<T = unknown> extends Base {
     return feature;
   }
   /**
-   * 创建广告牌(Billbord)
-   * @remarks
-   * 应用唯一的创建入口，用于客户端渲染(CSR)。
-   * @param {@link Coordinate} - 应用配置
-   * @returns
-   * 返回创建的元素，{@link Feature}
+   * 创建广告牌`Billboard`
+   * @param param 广告牌详细参数，详见{@link IBillboardParam}
+   * @returns 返回`Feature<Point>`矢量元素
    * @example
-   * ```ts
-   *const layer = new BillboardLayer(useEarth());
-   *layer.add({
-      id: "billboard_1",
-      center: fromLonLat([65, 20]),
-      src: "/image/earth.png",
-      label: {
-      text: "billboard",
-      font: "bold 24px serif",
-      stroke: {
-        color: "red",
-        width: 2
-      },
-      fill: {
-        color: "#fff"
-      },
-        offsetY: -80
-      }
-    })
    * ```
-  */
+   * const billboardLayer = new  BillboardLayer(useEarth());
+   * billboardLayer.add({
+   *  // ...
+   * })
+   * ```
+   */
   add(param: IBillboardParam<T>): Feature<Point> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return <Feature<Point>>super.save(feature);
   }
   /**
-   * @description: 修改广告牌
-   * @param {ISetBillboardParam} param 详细参数
-   * @return {*} Feature<Point>[]
-   * @author: wuyue.nan
+   * 修改广告牌`Billboard`
+   * @param param 广告牌详细参数，详见{@link ISetBillboardParam}
+   * @returns 返回修改后的`Feature<Point>`矢量元素
+   * @example
+   * ```
+   * const billboardLayer = new  BillboardLayer(useEarth());
+   * billboardLayer.set({
+   *  // ...
+   * })
+   * ```
    */
   set(param: ISetBillboardParam): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(param.id);
@@ -113,11 +117,15 @@ export default class BillboardLayer<T = unknown> extends Base {
     return features;
   }
   /**
-   * @description: 修改广告牌位置
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Feature<Point>[]
-   * @author: wuyue.nan
+   * 修改广告牌坐标位置
+   * @param id 广告牌ID
+   * @param position 位置信息
+   * @returns 返回修改后的`Feature<Point>`矢量元素
+   * @example
+   * ```
+   * const billboardLayer = new  BillboardLayer(useEarth());
+   * billboardLayer.setPosition("billboard_1", fromLonLat([160, 60]));
+   * ```
    */
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
