@@ -15,7 +15,7 @@ import { testPolygonLayer } from "./base/PolygonLayer";
 import { testPolylineLayer } from "./base/PolylineLayer";
 window.onload = () => {
   const earth = useEarth();
-  earth.addImageryProvider(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
+  earth.addLayer(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
   testCircleLayer()
   testPointLayer()
   testPolygonLayer()

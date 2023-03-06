@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-01 11:05:45
- */
 import { Map, View } from "ol";
 import { defaults } from 'ol/control/defaults';
 import { Coordinate } from "ol/coordinate";
@@ -35,11 +27,27 @@ export interface IEarthConstructorOptions {
    */
   attribution?: boolean;
 }
-
+/**
+ * 地图基类
+ */
 export default class Earth {
+  /**
+   * `map`实例
+   */
   public map: Map;
+  /**
+   * `view`实例
+   */
   public view: View;
+  /**
+   * 默认中心点
+   */
   public center: number[] = fromLonLat([119, 39]);
+  /**
+   * 构造器
+   * @param viewOptions 视图参数，详见{@link ViewOptions}
+   * @param options 自定义参数，详见{@link IEarthConstructorOptions}
+   */
   constructor(viewOptions?: ViewOptions, options?: IEarthConstructorOptions) {
     const el = options?.target || 'olContainer';
     const map: Map = new Map({
@@ -65,25 +73,28 @@ export default class Earth {
    * @return {*}
    * @author: wuyue.nan
    */
+  /**
+   * 八进制字符串补0
+   * @param num 
+   * @param len 
+   * @param radix 
+   */
   private zeroFill(num: number, len: number, radix: number): string {
     return num.toString(radix || 10).padStart(len, '0');
   }
   /**
-   * @description: 创建OSM底图图层
-   * @return {TileLayer<OSM>} OSM底图
-   * @author: wuyue.nan
+   * 创建OSM底图图层
+   * @returns `TileLayer<OSM>`实例
    */
-  /** */
   createOsmLayer(): TileLayer<OSM> {
     return new TileLayer({
       source: new OSM(),
     })
   }
   /**
-   * @description: 创建瓦片底图图层
-   * @param {string} url 地图瓦片地址
-   * @return {TileLayer<XYZ>} TileLayer<XYZ>
-   * @author: wuyue.nan
+   * 创建瓦片地图图层
+   * @param url 瓦片地址
+   * @returns `TileLayer<XYZ>`实例
    */
   createXyzLayer(url: string): TileLayer<XYZ> {
     return new TileLayer({
@@ -102,21 +113,18 @@ export default class Earth {
     })
   }
   /**
-   * @description: 添加影像层
-   * @param {BaseLayer} layer
-   * @return {*} void
-   * @author: wuyue.nan
+   * 添加图层
+   * @param layer `layer`图层
    */
-  addImageryProvider(layer: BaseLayer): void {
+  addLayer(layer: BaseLayer): void {
     this.map.addLayer(layer);
   }
   /**
-   * @description: 删除影像层
-   * @param {BaseLayer} layer
-   * @return {*} 返回被删除的图层或undefined
-   * @author: wuyue.nan
+   * 移除图层
+   * @param layer `layer`图层
+   * @returns BaseLayer | undefined
    */
-  removeImageryProvider(layer?: BaseLayer): BaseLayer | undefined {
+  removeLayer(layer?: BaseLayer): BaseLayer | undefined {
     let removeLayer;
     if (layer) {
       removeLayer = this.map.removeLayer(layer);
@@ -131,9 +139,7 @@ export default class Earth {
     return removeLayer
   }
   /**
-   * @description: 移动相机到默认位置
-   * @return {*} void
-   * @author: wuyue.nan
+   * 移动相机到默认位置
    */
   flyHome(): void {
     this.view.animate({
@@ -143,12 +149,10 @@ export default class Earth {
     });
   }
   /**
-   * @description: 移动相机到指定位置(动画)
-   * @param {Coordinate} position 位置
-   * @param {number} zoom 缩放
-   * @param {number} duration 动画时间(毫秒)
-   * @return {*} void
-   * @author: wuyue.nan
+   * 移动相机到指定位置(动画)
+   * @param position 位置
+   * @param zoom 缩放
+   * @param duration 动画时间(毫秒)
    */
   animateFlyTo(position: Coordinate, zoom?: number, duration?: number): void {
     this.view.animate({
@@ -158,37 +162,29 @@ export default class Earth {
     });
   }
   /**
-   * @description: 移动相机到指定位置(无动画)
-   * @param {Coordinate} position 位置
-   * @param {number} zoom 缩放
-   * @return {*} void
-   * @author: wuyue.nan
+   * 移动相机到指定位置(无动画)
+   * @param position 位置
+   * @param zoom 缩放
    */
   flyTo(position: Coordinate, zoom?: number): void {
     this.view.setCenter(position);
     if (zoom) this.view.setZoom(zoom);
   }
   /**
-   * @description: 设置鼠标在地图上的样式
-   * @param {string} cursor
-   * @return {*} void
-   * @author: wuyue.nan
+   * 设置鼠标样式
+   * @param cursor 鼠标样式 
    */
   setMouseStyle(cursor: string): void {
     this.map.getTargetElement().style.cursor = cursor;
   }
   /**
-   * @description: 设置鼠标在地图上的样式为十字准线
-   * @return {*} void
-   * @author: wuyue.nan
+   * 设置鼠标在地图上的样式为十字准线
    */
   setMouseStyleToCrosshair(): void {
     this.setMouseStyle('crosshair');
   }
   /**
-   * @description: 设置鼠标在地图上的样式为默认
-   * @return {*} void
-   * @author: wuyue.nan
+   * 设置鼠标在地图上的样式为默认
    */
   setMouseStyleToDefault(): void {
     this.setMouseStyle('auto');
