@@ -383,6 +383,52 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
    */
   dottedLineColor?: string
 }
+export interface ISetPolylineParam {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * 点集合
+   */
+  positions?: number[][];
+  /**
+   * 线宽，默认为2
+   */
+  width?: number;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式
+   */
+  fill?: IFill;
+  /**
+   * 标签样式
+   */
+  label?: ILabel;
+  /**
+   * 箭头线
+   */
+  isArrow?: boolean;
+  /**
+   * 箭头是否重复,isArrow为true生效
+   */
+  arrowIsRepeat?: boolean;
+  /**
+   * 流水线
+   */
+  isFlowingDash?: boolean;
+  /**
+   * 流水线实线填充色 isFlowingDash为true生效
+   */
+  fullLineColor?: string;
+  /**
+   * 流水线虚线填充色 isFlowingDash为true生效
+   */
+  dottedLineColor?: string
+}
 export interface IPolylineFlyParam<T> extends IAddBaseParam<T>, IFlightLineParams {
   /**
    * 点集合

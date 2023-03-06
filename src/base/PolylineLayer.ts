@@ -1,6 +1,6 @@
 import { Utils } from "../common";
 import Earth from "../Earth";
-import { IPolylineFlyParam, IPolylineParam } from "../interface";
+import { IPolylineFlyParam, IPolylineParam, ISetPolylineParam } from "../interface";
 import { Feature } from "ol";
 import { LineString, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
@@ -47,6 +47,7 @@ export default class Polyline<T = unknown> extends Base {
     style = super.setText(style, param.label);
     feature.setStyle(style)
     feature.setId(param.id);
+    feature.set("param", param);
     feature.set("data", param.data);
     feature.set("module", param.module)
     return feature
@@ -251,5 +252,28 @@ export default class Polyline<T = unknown> extends Base {
     if (flightline) {
       flightline.removeFeatureById(id);
     }
+  }
+  /**
+   * 修改线。注意，此方法不适用飞行线修改
+   * @param param 线参数，详见{@link ISetPolylineParam} 
+   * @returns 返回`Feature<LineString>`实例
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.set({
+   *  // ...
+   * })
+   * ```
+   */
+  set(param: ISetPolylineParam): Feature<LineString> | null {
+    const features = <Feature<LineString>[]>super.get(param.id);
+    if (features[0] == undefined) {
+      console.warn("没有找到元素，请检查ID");
+      return null;
+    }
+    super.remove(param.id);
+    const oldParam = <IPolylineParam<T>>features[0].get("param");
+    const newParam = Object.assign(oldParam, param);
+    return this.add(newParam);
   }
 }
