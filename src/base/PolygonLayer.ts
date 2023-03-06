@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-28 19:09:09
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 16:28:53
- */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolygonParam, ISetPolygonParam } from "../interface";
@@ -17,13 +9,29 @@ import { Style } from "ol/style";
 import Base from "./Base";
 import { Coordinate } from "ol/coordinate";
 
+/**
+ * 创建多边形`Polygon`
+ */
 export default class PolygonLayer<T = unknown> extends Base {
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const polygonLayer = new PolygonLayer(useEarth());
+   * ```
+   */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
     super(earth, layer)
   }
+  /**
+   * 创建矢量元素
+   * @param param 详细参数，详见{@link IPolygonParam} 
+   * @returns 返回`Feature<Polygon>`实例
+   */
   private createFeature(param: IPolygonParam<T>): Feature<Polygon> {
     const feature = new Feature({
       geometry: new Polygon(param.positions)
@@ -39,16 +47,34 @@ export default class PolygonLayer<T = unknown> extends Base {
     return feature
   }
   /**
-   * @description: 增加一个多边形
-   * @param {IPointParam} param 详细参数 
-   * @return {*} Feature<Geometry>
-   * @author: wuyue.nan
+   * 添加多边形
+   * @param param 详细参数，详见{@link IPolygonParam} 
+   * @returns 返回`Feature<Polygon>`实例
+   * @example
+   * ```
+   * const polygonLayer = new PolygonLayer(useEarth());
+   * polygonLayer.add({
+   *  // ...
+   * })
+   * ```
    */
   add(param: IPolygonParam<T>): Feature<Polygon> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     return <Feature<Polygon>>super.save(feature);
   }
+  /**
+   * 修改多边形
+   * @param param 详细参数，详见{@link ISetPolygonParam} 
+   * @returns 返回`Feature<Polygon>`实例数组
+   * @example
+   * ```
+   * const polygonLayer = new PolygonLayer(useEarth());
+   * polygonLayer.set({
+   *  // ...
+   * })
+   * ```
+   */
   set(param: ISetPolygonParam): Feature<Polygon>[] {
     const features = <Feature<Polygon>[]>super.get(param.id);
     if (features[0] == undefined) {
@@ -71,11 +97,15 @@ export default class PolygonLayer<T = unknown> extends Base {
     return features;
   }
   /**
-   * @description: 修改多边形坐标
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Feature<Polygon>[]
-   * @author: wuyue.nan
+   * 修改多边形
+   * @param id `polygon`id
+   * @param position 坐标
+   * @returns 返回`Feature<Polygon>`实例数组
+   * @example
+   * ```
+   * const polygonLayer = new PolygonLayer(useEarth());
+   * polygonLayer.setPosition("polygon_2", [[fromLonLat([100, 50]), fromLonLat([130, 30]), fromLonLat([140, 30]), fromLonLat([140, 50])]]);
+   * ```
    */
   setPosition(id: string, position: Coordinate[][]): Feature<Polygon>[] {
     const features = <Feature<Polygon>[]>super.get(id);
