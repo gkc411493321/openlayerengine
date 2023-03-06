@@ -239,7 +239,16 @@ export default class Polyline<T = unknown> extends Base {
     }
   }
   /**
-   * 删除飞行线
+   * 删除所有飞行线
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.removeFlightLine();
+   * ```
+   */
+  removeFlightLine(): void;
+  /**
+   * 删除指定飞行线
    * @param id `flyLine`id
    * @example
    * ```
@@ -247,10 +256,19 @@ export default class Polyline<T = unknown> extends Base {
    * polyline.removeFlightLine("1");
    * ```
    */
-  removeFlightLine(id: string): void {
-    const flightline = this.flyCatch.get(id);
-    if (flightline) {
-      flightline.removeFeatureById(id);
+  removeFlightLine(id: string): void;
+  removeFlightLine(id?: string): void {
+    if (id) {
+      const flightline = this.flyCatch.get(id);
+      if (flightline) {
+        flightline.removeFeatureById(id);
+        this.flyCatch.delete(id);
+      }
+    } else {
+      this.flyCatch.forEach((item, key) => {
+        item.removeFeatureById(key)
+      })
+      this.flyCatch.clear();
     }
   }
   /**

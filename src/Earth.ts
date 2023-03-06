@@ -1,3 +1,4 @@
+import { DefaultEntities, IEarthConstructorOptions } from "./interface";
 import { Map, View } from "ol";
 import { defaults } from 'ol/control/defaults';
 import { Coordinate } from "ol/coordinate";
@@ -8,25 +9,7 @@ import OSM from "ol/source/OSM";
 import XYZ from "ol/source/XYZ";
 import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
-
-export interface IEarthConstructorOptions {
-  /**
-   * 地图容器ID
-   */
-  target?: string;
-  /**
-   * 缩放控件，默认关闭
-   */
-  zoom?: boolean;
-  /**
-   * 旋转控件，默认关闭
-   */
-  rotate?: boolean;
-  /**
-   * 归属控件，默认关闭
-   */
-  attribution?: boolean;
-}
+import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
 /**
  * 地图基类
  */
@@ -43,6 +26,10 @@ export default class Earth {
    * 默认中心点
    */
   public center: number[] = fromLonLat([119, 39]);
+  /**
+   * 默认实例
+   */
+  private entities?: DefaultEntities;
   /**
    * 构造器
    * @param viewOptions 视图参数，详见{@link ViewOptions}
@@ -188,5 +175,35 @@ export default class Earth {
    */
   setMouseStyleToDefault(): void {
     this.setMouseStyle('auto');
+  }
+  /**
+   * 获取默认实体对象
+   */
+  useDefaultLayer<T>() {
+    if (!this.entities) {
+      this.entities = {
+        billboard: new BillboardLayer<T>(this),
+        circle: new CircleLayer<T>(this),
+        overlay: new OverlayLayer<T>(this),
+        point: new PointLayer<T>(this),
+        polygon: new PolygonLayer<T>(this),
+        polyline: new PolylineLayer<T>(this),
+        reset: () => {
+          this.entities?.billboard.remove();
+          this.entities?.circle.remove();
+          this.entities?.overlay.remove();
+          this.entities?.point.remove();
+          this.entities?.polygon.remove();
+          this.entities?.polyline.remove();
+          this.entities?.polyline.removeFlightLine();
+        }
+      }
+      this.entities.billboard.allowDestroyed = false;
+      this.entities.circle.allowDestroyed = false;
+      this.entities.point.allowDestroyed = false;
+      this.entities.polygon.allowDestroyed = false;
+      this.entities.polyline.allowDestroyed = false;
+    }
+    return this.entities as DefaultEntities<T>;
   }
 }

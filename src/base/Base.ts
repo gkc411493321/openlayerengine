@@ -10,6 +10,10 @@ import { Style, Stroke, Fill, Text, Icon } from "ol/style";
  */
 export default class Base {
   /**
+   * 销毁标记
+   */
+  public allowDestroyed: boolean = true;
+  /**
    * 图层
    */
   public layer: VectorLayer<VectorSource<Geometry>>;
@@ -231,10 +235,15 @@ export default class Base {
    * ```
    */
   destroy(): boolean {
-    let flag = this.earth.removeImageryProvider(this.layer);
-    if (flag) {
-      return true;
+    if (this.allowDestroyed) {
+      let flag = this.earth.removeLayer(this.layer);
+      if (flag) {
+        return true;
+      } else {
+        return false;
+      }
     } else {
+      console.warn("该图层受到保护，无法被销毁");
       return false;
     }
   }
