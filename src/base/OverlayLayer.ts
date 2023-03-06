@@ -1,27 +1,42 @@
-/*
- * @Description: 覆盖物操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-03-02 17:16:32
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:43:41
- */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IOverlayParam, ISetOverlayParam } from "../interface";
 import { Map, Overlay } from "ol";
 import { Coordinate } from "ol/coordinate";
 
+/**
+ * 创建覆盖物`Overlay`
+ */
 export default class OverlayLayer<T = unknown>{
+  /**
+   * 地图map对象
+   */
   private map: Map;
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth()); 
+   * ```
+   */
   constructor(earth: Earth) {
     this.map = earth.map
   }
   /**
-   * @description: 增加一个覆盖物
-   * @param {IOverlayParam} param 详细参数
-   * @return {*} Overlay
-   * @author: wuyue.nan
+   * 添加覆盖物
+   * @param param 覆盖物详细参数，详见{@link IOverlayParam}
+   * @returns 返回`Overlay`实例
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * // element 可以有多种方式创建
+   * const div = document.getElementById("prop");
+   * overlayLayer.add({
+   *  // ...
+   *  element:div,
+   *  // ...
+   * })
    */
   add(param: IOverlayParam<T>): Overlay {
     const overlay = new Overlay({
@@ -39,10 +54,15 @@ export default class OverlayLayer<T = unknown>{
     return overlay;
   }
   /**
-   * @description: 修改覆盖物
-   * @param {ISetOverlayParam} param 详细参数
-   * @return {*} Overlay | null
-   * @author: wuyue.nan
+   * 修改覆盖物
+   * @param param 覆盖物详细参数，详见{@link ISetOverlayParam}
+   * @returns 返回`Overlay`实例或`null`
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.set({
+   *  // ...
+   * })
    */
   set(param: ISetOverlayParam): Overlay | null {
     const overlay = this.get(param.id);
@@ -65,11 +85,15 @@ export default class OverlayLayer<T = unknown>{
     return overlay;
   }
   /**
-   * @description: 修改覆盖物位置
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Overlay | null
-   * @author: wuyue.nan
+   * 修改覆盖物坐标
+   * @param id 覆盖物id
+   * @param position 覆盖物位置信息
+   * @returns 返回`Overlay`实例或`null`
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.setPosition("overlay_x", fromLonLat([120, 22]));
+   * ```
    */
   setPosition(id: string, position: Coordinate): Overlay | null {
     const overlay = this.get(id);
@@ -81,23 +105,26 @@ export default class OverlayLayer<T = unknown>{
     return overlay;
   }
   /**
-   * @description: 获取所有覆盖物
-   * @return {*}  Overlay[]
-   * @author: wuyue.nan
+   * 获取地图内所有覆盖物实例
+   * @returns 返回`Overlay`实例数组
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.get();
+   * ```
    */
   get(): Overlay[];
   /**
-   * @description: 根据ID获取覆盖物
-   * @return {*} Overlay
-   * @author: wuyue.nan
+   * 获取指定覆盖物实例
+   * @param id 覆盖物id
+   * @returns 返回`Overlay`实例数组
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.get("1");
+   * ```
    */
   get(id: string): Overlay;
-  /**
-   * @description: 覆盖物获取方法
-   * @param {string} id id
-   * @return {*} Overlay[] | Overlay
-   * @author: wuyue.nan
-   */
   get(id?: string): Overlay[] | Overlay {
     if (id) {
       const overlay = this.map.getOverlayById(id);
@@ -108,23 +135,26 @@ export default class OverlayLayer<T = unknown>{
     }
   }
   /**
-   * @description: 移除所有覆盖物
-   * @return {*} Overlay[] | Overlay
-   * @author: wuyue.nan
+   * 移除地图内所有覆盖物
+   * @returns 返回`Overlay`实例数组
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.remove();
+   * ```
    */
   remove(): Overlay[] | Overlay;
   /**
-   * @description: 根据ID移除覆盖物
-   * @return {*} Overlay[] | Overlay
-   * @author: wuyue.nan
+   * 移除指定覆盖物
+   * @param id 覆盖物id
+   * @returns 返回`Overlay`实例
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth());
+   * overlayLayer.remove("1");
+   * ```
    */
   remove(id: string): Overlay[] | Overlay;
-  /**
-   * @description: 覆盖物删除方法
-   * @param {string} id 覆盖物ID
-   * @return {*} Overlay[] | Overlay
-   * @author: wuyue.nan
-   */
   remove(id?: string): Overlay[] | Overlay {
     if (id) {
       const overlay = this.get(id);
