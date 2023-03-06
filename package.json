@@ -12,7 +12,8 @@
     "build": "pnpm clean && rollup --bundleConfigAsCjs -c rollup.config.mjs --environment MODE:prod",
     "clean": "rimraf -rf dist/",
     "copy": "copyfiles -u 1 src/**/*.glsl earth-engine",
-    "tsc": "yarn clean && tsc && yarn copy"
+    "tsc": "yarn clean && tsc && yarn copy",
+    "doc": "npx typedoc --options ./typedoc.json"
   },
   "author": "wuyue",
   "dependencies": {
