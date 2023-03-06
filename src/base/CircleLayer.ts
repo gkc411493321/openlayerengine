@@ -8,7 +8,18 @@ import Style from "ol/style/Style";
 import Base from "./Base"
 import { ICircleParam, ISetCircleParam } from '../interface';
 import { Coordinate } from 'ol/coordinate';
+/**
+ * 创建圆`Circle`
+ */
 export default class CircleLayer<T = unknown> extends Base {
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const circleLayer = new CircleLayer(useEarth());
+   * ```
+   */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource(),
@@ -16,10 +27,9 @@ export default class CircleLayer<T = unknown> extends Base {
     super(earth, layer)
   }
   /**
-   * @description: 创建Feature
-   * @param {ICircleParam} param
-   * @return {*} Feature
-   * @author: wuyue.nan
+   * 创建矢量元素
+   * @param param 圆参数，详见{@link ICircleParam} 
+   * @returns 返回`Feature<Circle>`矢量元素
    */
   private createFeature(param: ICircleParam<T>): Feature<Circle> {
     const feature = new Feature({
@@ -37,10 +47,16 @@ export default class CircleLayer<T = unknown> extends Base {
     return feature;
   }
   /**
-   * @description: 增加一个圆
-   * @param {ICircleParam} param 详细参数 
-   * @return {*} Feature
-   * @author: wuyue.nan
+   * 创建一个圆形
+   * @param param 圆详细参数，详见{@link ICircleParam}
+   * @returns 返回`Feature<Circle>`矢量元素
+   * @example
+   * ```
+   * const circleLayer = new CircleLayer(useEarth());
+   * circleLayer.add({
+   *  // ...
+   * })
+   * ```
    */
   add(param: ICircleParam<T>): Feature<Circle> {
     param.id = param.id || Utils.GetGUID();
@@ -48,10 +64,16 @@ export default class CircleLayer<T = unknown> extends Base {
     return <Feature<Circle>>super.save(feature);
   }
   /**
-   * @description: 修改圆
-   * @param {ISetCircleParam} param 详细参数
-   * @return {*} Feature<Circle>[]
-   * @author: wuyue.nan
+   * 修改圆
+   * @param param  圆参数，详见{@link ISetCircleParam} 
+   * @returns 返回`Feature<Circle>`矢量元素
+   * @example
+   * ```
+   * const circleLayer = new CircleLayer(useEarth());
+   * circleLayer.set({
+   *  // ...
+   * })
+   * ```
    */
   set(param: ISetCircleParam): Feature<Circle>[] {
     const features = <Feature<Circle>[]>super.get(param.id);
@@ -74,11 +96,15 @@ export default class CircleLayer<T = unknown> extends Base {
     return features;
   }
   /**
-   * @description: 修改圆位置
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Feature<Circle>[]
-   * @author: wuyue.nan
+   * 修改圆坐标位置
+   * @param id 圆id
+   * @param position 圆位置 
+   * @returns 返回`Feature<Circle>`矢量元素
+   * @example
+   * ```
+   * const circleLayer = new CircleLayer(useEarth());
+   * circleLayer.setPosition("circle_2", fromLonLat([120, 45]));
+   * ```
    */
   setPosition(id: string, position: Coordinate): Feature<Circle>[] {
     const features = <Feature<Circle>[]>super.get(id);
