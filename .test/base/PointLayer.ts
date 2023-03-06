@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-27 16:44:05
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 16:18:42
- */
 import { fromLonLat } from 'ol/proj';
 import { PointLayer, useEarth } from '../../src';
 export const testPointLayer = () => {

@@ -15,6 +15,10 @@ export default class OverlayLayer<T = unknown>{
   /**
    * 构造器
    * @param earth 地图实例
+   * @example
+   * ```
+   * const overlayLayer = new OverlayLayer(useEarth()); 
+   * ```
    */
   constructor(earth: Earth) {
     this.map = earth.map

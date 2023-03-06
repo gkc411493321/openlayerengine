@@ -1,11 +1,3 @@
-/*
- * @Description: 点操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-27 15:33:02
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 16:21:37
- */
 import Earth from "../Earth";
 import { IPointParam, ISetPointParam } from "../interface";
 import { Feature } from "ol";
@@ -22,14 +14,29 @@ import { getVectorContext } from "ol/render";
 import CircleStyle from "ol/style/Circle";
 import { Coordinate } from "ol/coordinate";
 
-
+/**
+ * 创建点`Point`
+ */
 export default class PointLayer<T = unknown> extends Base {
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * ```
+   */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
     super(earth, layer)
   }
+  /**
+   * 创建矢量元素
+   * @param param 创建`Point`参数，详见{@link IPointParam} 
+   * @returns 返回`Feature<Point>`实例
+   */
   private createFeature(param: IPointParam<T>): Feature<Point> {
     const feature = new Feature({
       geometry: new Point(param.center)
@@ -51,7 +58,12 @@ export default class PointLayer<T = unknown> extends Base {
     feature.set("module", param.module)
     return feature
   }
-  private flash(feature: Feature<Geometry>, param: IPointParam<T>) {
+  /**
+   * 动态点刷新方法
+   * @param feature `Point` 实例
+   * @param param 详细参数，详见{@link IPointParam}
+   */
+  private flash(feature: Feature<Geometry>, param: IPointParam<T>): void {
     const defaultOption = {
       duration: 1000,
       flashColor: param.flashColor || { R: 255, G: 0, B: 0 },
@@ -97,10 +109,16 @@ export default class PointLayer<T = unknown> extends Base {
     }
   }
   /**
-   * @description: 增加一个点
-   * @param {IPointParam} param 详细参数 
-   * @return {*} Feature
-   * @author: wuyue.nan
+   * 创建点
+   * @param param 详细参数，详见{@link IPointParam} 
+   * @returns 返回`Feature<Point>`实例
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.add({
+   *  // ...
+   * })
+   * ```
    */
   add(param: IPointParam<T>): Feature<Point> {
     param.id = param.id || Utils.GetGUID();
@@ -112,24 +130,24 @@ export default class PointLayer<T = unknown> extends Base {
     return <Feature<Point>>super.save(feature);
   }
   /**
-   * @description: 停止所有点闪烁状态
-   * @return {*} void
-   * @author: wuyue.nan
+   * 停止当前图层所有点闪烁状态
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.stopFlash();
+   * ```
    */
   stopFlash(): void;
   /**
-   * @description: 根据ID停止点闪烁
-   * @param {string} id id
-   * @return {*} void
-   * @author: wuyue.nan
+   * 停止指定点闪烁状态
+   * @param id `point`id
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.stopFlash("1");
+   * ```
    */
   stopFlash(id: string): void;
-  /**
-   * @description: 停止点闪烁
-   * @param {string} id id
-   * @return {*} void
-   * @author: wuyue.nan
-   */
   stopFlash(id?: string): void {
     let features: Feature<Point>[] = [];
     if (id) {
@@ -146,24 +164,24 @@ export default class PointLayer<T = unknown> extends Base {
     }
   }
   /**
-   * @description: 所有点重新闪烁
-   * @return {*} void
-   * @author: wuyue.nan
+   * 图层内所有暂停的闪烁点重新闪烁
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.continueFlash();
+   * ```
    */
   continueFlash(): void;
   /**
-   * @description: 根据id重新闪烁点
-   * @param {string} id id
-   * @return {*} void
-   * @author: wuyue.nan
+   * 图层内指定暂停的闪烁点重新闪烁
+   * @param id `point`id
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.continueFlash("1");
+   * ```
    */
   continueFlash(id: string): void;
-  /**
-   * @description: 点重新闪烁
-   * @param {string} id id
-   * @return {*} void
-   * @author: wuyue.nan
-   */
   continueFlash(id?: string): void {
     let features: Feature<Point>[] = [];
     if (id) {
@@ -177,10 +195,16 @@ export default class PointLayer<T = unknown> extends Base {
     }
   }
   /**
-   * @description: 修改点属性
-   * @param {ISetPointParam} param
-   * @return {*}
-   * @author: wuyue.nan
+   * 修改点属性
+   * @param param 点详细参数，详见{@link ISetPointParam}
+   * @returns 返回`Feature<Point>`实例数组
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.set({
+   *  // ...
+   * })
+   * ```
    */
   set(param: ISetPointParam): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(param.id);
@@ -215,11 +239,15 @@ export default class PointLayer<T = unknown> extends Base {
     return features;
   }
   /**
-   * @description: 修改点坐标
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Feature<Point>[]
-   * @author: wuyue.nan
+   * 修改点坐标
+   * @param id `point`id
+   * @param position 坐标
+   * @returns 返回`Feature<Point>`实例
+   * @example
+   * ```
+   * const pointLayer = new PointLayer(useEarth());
+   * pointLayer.setPosition("1",fromLonLat([125, 60]));
+   * ```
    */
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
