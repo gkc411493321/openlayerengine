@@ -1,11 +1,3 @@
-/*
- * @Description: 线操作
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-28 10:21:18
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:35:17
- */
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolylineFlyParam, IPolylineParam } from "../interface";
@@ -18,14 +10,33 @@ import Base from "./Base";
 import { Coordinate } from "ol/coordinate";
 import Flightline from "../extends/flight-line/FlightLine";
 
+/**
+ * 创建线`Polyline`
+ */
 export default class Polyline<T = unknown> extends Base {
+  /**
+   * 飞线缓存集合
+   */
   private flyCatch: Map<string, Flightline> = new Map();
+  /**
+   * 构造器
+   * @param earth 地图实例
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * ``` 
+   */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
     super(earth, layer)
   }
+  /**
+   * 创建矢量元素
+   * @param param 详细参数，详见{@link IPolylineParam} 
+   * @returns 返回`Feature<LineString>`实例
+   */
   private createFeature(param: IPolylineParam<T>): Feature<LineString> {
     const feature = new Feature({
       geometry: new LineString(param.positions)
@@ -40,6 +51,13 @@ export default class Polyline<T = unknown> extends Base {
     feature.set("module", param.module)
     return feature
   }
+  /**
+   * 创建样式
+   * @param start 开始点 
+   * @param end 结束点
+   * @param color 填充颜色
+   * @returns 返回`Style`
+   */
   private createStyle(start: Coordinate, end: Coordinate, color?: string): Style {
     const dx = end[0] - start[0];
     const dy = end[1] - start[1];
@@ -58,28 +76,9 @@ export default class Polyline<T = unknown> extends Base {
     return style;
   }
   /**
-   * @description: 增加一个线段
-   * @param {IPointParam} param 详细参数 
-   * @return {*} Feature<LineString>
-   * @author: wuyue.nan
-   */
-  add(param: IPolylineParam<T>): Feature<LineString> {
-    param.id = param.id || Utils.GetGUID();
-    const feature = this.createFeature(param);
-    if (param.isArrow) {
-      return this.addLineArrows(param);
-    } else if (param.isFlowingDash) {
-      return this.addFlowingDash(param);
-    } else {
-      return <Feature<LineString>>super.save(feature);
-    }
-  }
-  /**
-   * @description: 增加带箭头的线段
-   * @param {IPolylineParam} param 详细参数
-   * @param {boolean} repeat 是否重复绘制箭头，默认false。true：除起始点外每个点都带箭头；false:只有结束点存在箭头
-   * @return {*} Feature<LineString>
-   * @author: wuyue.nan
+   * 增加带箭头的线段
+   * @param param 详细参数，详见{@link IPolylineParam}
+   * @returns 返回`Feature<LineString>`
    */
   private addLineArrows(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
@@ -111,10 +110,9 @@ export default class Polyline<T = unknown> extends Base {
     return <Feature<LineString>>super.save(feature);
   }
   /**
-   * @description: 绘制流动线
-   * @param {IPolylineParam} param 详细参数
-   * @return {*} Feature<Geometry>
-   * @author: wuyue.nan
+   * 增加流动线段
+   * @param param 详细参数，详见{@link IPolylineParam}
+   * @returns 返回`Feature<LineString>`
    */
   private addFlowingDash(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
@@ -155,9 +153,39 @@ export default class Polyline<T = unknown> extends Base {
     return <Feature<LineString>>super.save(feature);
   }
   /**
-   * @description: 添加飞行线 注意！！！删除此线段需使用【removeFlightLine】方法
-   * @return {*} Flightline
-   * @author: wuyue.nan
+   * 添加线段
+   * @param param 详细参数，详见{@link IPolylineParam} 
+   * @returns 返回`Feature<LineString>`
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.add({
+   *  // ...
+   * })
+   * ```
+   */
+  add(param: IPolylineParam<T>): Feature<LineString> {
+    param.id = param.id || Utils.GetGUID();
+    const feature = this.createFeature(param);
+    if (param.isArrow) {
+      return this.addLineArrows(param);
+    } else if (param.isFlowingDash) {
+      return this.addFlowingDash(param);
+    } else {
+      return <Feature<LineString>>super.save(feature);
+    }
+  }
+  /**
+   * 添加飞行线
+   * @param param 详细参数，详见{@link IPolylineFlyParam} 
+   * @returns 返回`Flightline`
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.addFlightLine({
+   *  // ...
+   * })
+   * ```
    */
   addFlightLine(param: IPolylineFlyParam<T>): Flightline {
     param.id = param.id || Utils.GetGUID();
@@ -166,11 +194,15 @@ export default class Polyline<T = unknown> extends Base {
     return flightline;
   }
   /**
-   * @description: 修改线段坐标
-   * @param {string} id ID
-   * @param {Coordinate} position 坐标
-   * @return {*} Feature<LineString>[]
-   * @author: wuyue.nan
+   * 修改线段坐标
+   * @param id `polyline`id
+   * @param position 坐标
+   * @returns 返回`Feature<LineString>`实例数组
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.setPosition("1", [fromLonLat([100, 70]), fromLonLat([100, 50])]);
+   * ```
    */
   setPosition(id: string, position: Coordinate[]): Feature<LineString>[] {
     const features = <Feature<LineString>[]>super.get(id);
@@ -190,11 +222,14 @@ export default class Polyline<T = unknown> extends Base {
     return features;
   }
   /**
-   * @description: 修改飞线坐标
-   * @param {string} id id
-   * @param {Coordinate} position 坐标
-   * @return {*} void
-   * @author: wuyue.nan
+   * 修改飞线坐标
+   * @param id `flyLine`id
+   * @param position 坐标
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.setFlightPosition("1", [fromLonLat([100, 70]), fromLonLat([100, 50])]);
+   * ```
    */
   setFlightPosition(id: string, position: Coordinate[]): void {
     const flightline = this.flyCatch.get(id);
@@ -203,10 +238,13 @@ export default class Polyline<T = unknown> extends Base {
     }
   }
   /**
-   * @description: 删除飞行线
-   * @param {string} id 飞行线ID
-   * @return {*} void
-   * @author: wuyue.nan
+   * 删除飞行线
+   * @param id `flyLine`id
+   * @example
+   * ```
+   * const polyline = new Polyline(useEarth());
+   * polyline.removeFlightLine("1");
+   * ```
    */
   removeFlightLine(id: string): void {
     const flightline = this.flyCatch.get(id);
