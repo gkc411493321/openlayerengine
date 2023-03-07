@@ -8,7 +8,8 @@ export const testPointLayer = () => {
     label: {
       text: "带标签点"
     },
-    isFlash: true
+    isFlash: true,
+    module: "point"
   })
   layer.add({
     id: "point_2",
@@ -24,7 +25,8 @@ export const testPointLayer = () => {
       B: 255
     },
     duration: 3000,
-    isRepeat: false
+    isRepeat: false,
+    module: "point"
   })
   // setTimeout(() => {
   //   layer.set({

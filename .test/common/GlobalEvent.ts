@@ -39,19 +39,14 @@ export const testGlobalEvent = () => {
   // useEarth().map.getViewport().onmouseup = (e) => {
   //   console.log(e, "up")
   // }
-  const test = (e: MouseEvent) => {
-    e.preventDefault();
-    let pixel = useEarth().map.getEventPixel({ clientX: e.x, clientY: e.y });
-    let feature = useEarth().map.forEachFeatureAtPixel(pixel, function (feature) {
-      return feature;
-    })
-    if (feature) {
-      let coordinate = useEarth().map.getEventCoordinate(e);
-      console.log(feature, coordinate)
-    }
-  }
-  useEarth().map.getViewport().addEventListener("contextmenu", test)
+  /**
+   * 启用模块鼠标左键按下监听
+   */
+  // useEarth().useGlobalEvent().enableModuleMouseLeftDownEvent();
+  // useEarth().useGlobalEvent().addMouseLeftDownEventByModule("point", (param) => {
+  //   console.log(param)
+  // })
   // setTimeout(() => {
-  //   useEarth().map.getViewport().removeEventListener("contextmenu", test)
-  // }, 3000)
+  //   useEarth().useGlobalEvent().disableModuleMouseLeftDownEvent();
+  // }, 5000)
 }
