@@ -15,7 +15,8 @@ export const testPolygonLayer = () => {
     positions: [[fromLonLat([110, 30]), fromLonLat([110, 50]), fromLonLat([120, 40])]],
     label: {
       text: "带标签多边形"
-    }
+    },
+    module: "polygon"
   })
   layer.add({
     id: "polygon_2",

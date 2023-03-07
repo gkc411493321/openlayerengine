@@ -10,6 +10,7 @@ import XYZ from "ol/source/XYZ";
 import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
+import { GlobalEvent } from "./commponents";
 /**
  * 地图基类
  */
@@ -30,6 +31,10 @@ export default class Earth {
    * 默认实例
    */
   private entities?: DefaultEntities;
+  /**
+   * 全局公共事件
+   */
+  private globalEvent?: GlobalEvent;
   /**
    * 构造器
    * @param viewOptions 视图参数，详见{@link ViewOptions}
@@ -205,5 +210,14 @@ export default class Earth {
       this.entities.polyline.allowDestroyed = false;
     }
     return this.entities as DefaultEntities<T>;
+  }
+  /**
+   * 使用地图事件
+   */
+  useGlobalEvent() {
+    if (!this.globalEvent) {
+      this.globalEvent = new GlobalEvent(this);
+    }
+    return this.globalEvent as GlobalEvent;
   }
 }

@@ -13,6 +13,7 @@ import { testOverlayLayer } from "./base/OverlayLayer";
 import { testPointLayer } from "./base/PointLayer";
 import { testPolygonLayer } from "./base/PolygonLayer";
 import { testPolylineLayer } from "./base/PolylineLayer";
+import { testGlobalEvent } from "./common/GlobalEvent";
 window.onload = () => {
   const earth = useEarth();
   earth.addLayer(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
@@ -21,5 +22,6 @@ window.onload = () => {
   testPolygonLayer()
   testPolylineLayer()
   testBillboardLayer()
-  testOverlayLayer()
+  testOverlayLayer();
+  testGlobalEvent();
 }

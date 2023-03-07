@@ -12,7 +12,7 @@ export const testOverlayLayer = () => {
   layer.add({
     id: "overlay_1",
     position: fromLonLat([80, 22]),
-    element: div
+    element: div,
   })
 
   // let popup: Overlay;
