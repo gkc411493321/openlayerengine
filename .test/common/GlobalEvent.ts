@@ -30,15 +30,6 @@ export const testGlobalEvent = () => {
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableModuleMouseClickEvent();
   // }, 5000)
-  // useEarth().map.getViewport().onclick = (e) => {
-  //   console.log(e, "click")
-  // }
-  // useEarth().map.getViewport().onmousedown = (e) => {
-  //   console.log(e, "down")
-  // }
-  // useEarth().map.getViewport().onmouseup = (e) => {
-  //   console.log(e, "up")
-  // }
   /**
    * 启用模块鼠标左键按下监听
    */
@@ -48,5 +39,15 @@ export const testGlobalEvent = () => {
   // })
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableModuleMouseLeftDownEvent();
+  // }, 5000)
+  /**
+   * 启用全局鼠标左键按下监听
+   */
+  // useEarth().useGlobalEvent().enableGlobalMouseLeftDownEvent();
+  // useEarth().useGlobalEvent().addMouseLeftDownEventByGlobal((param) => {
+  //   console.log(param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableGlobalMouseLeftDownEvent();
   // }, 5000)
 }
