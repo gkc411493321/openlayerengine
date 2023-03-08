@@ -440,7 +440,6 @@ export default class GlobalEvent {
     } else {
       console.warn("重复启用全局下鼠标右键单击事件监听,请检查")
     }
-    this.map.getViewport().addEventListener("contextmenu", this.globalMouseRightClick.bind(this));
   }
   /**
    * 停用模块下鼠标移动事件监听

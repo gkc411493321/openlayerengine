@@ -94,20 +94,21 @@ export const testGlobalEvent = () => {
   /**
    * 启用模块鼠标右键单击
    */
-  // useEarth().useGlobalEvent().enableModuleMouseRightClickEvent();
-  // useEarth().useGlobalEvent().addMouseRightClickEventByModule("point", (param) => {
-  //   console.log('param', param)
-  // })
+  useEarth().useGlobalEvent().enableModuleMouseRightClickEvent();
+  useEarth().useGlobalEvent().addMouseRightClickEventByModule("point", (param) => {
+    console.log('param', param)
+  })
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableModuleMouseRightClickEvent();
   // }, 5000)
   /**
    * 启用全局鼠标右键单击
    */
-  // useEarth().useGlobalEvent().enableGlobalMouseRightClickEvent();
-  // useEarth().useGlobalEvent().addMouseRightClickEventByGlobal((param) => {
-  //   console.log('param', param)
-  // })
+  useEarth().useGlobalEvent().enableGlobalMouseRightClickEvent();
+  useEarth().useGlobalEvent().addMouseRightClickEventByGlobal((param) => {
+    // console.log('param', param)
+    console.log(useEarth().hasFeatureAtPixel(param.pixel))
+  })
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableGlobalMouseRightClickEvent();
   // }, 5000)
