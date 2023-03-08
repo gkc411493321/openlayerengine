@@ -70,4 +70,25 @@ export const testGlobalEvent = () => {
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableGlobalMouseLeftUpEvent();
   // }, 5000)
+  /**
+   * 启用模块鼠标左键双击监听
+   */
+  // useEarth().useGlobalEvent().enableModuleMouseDblClickEvent();
+  // useEarth().useGlobalEvent().addMouseDblClickEventByModule("point", (param) => {
+  //   console.log(param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableModuleMouseDblClickEvent();
+  // }, 5000)
+  /**
+   * 启用全局鼠标左键双击监听
+   */
+  useEarth().useGlobalEvent().enableGlobalMouseDblClickEvent();
+  useEarth().useGlobalEvent().addMouseDblClickEventByGlobal((param) => {
+    const data = useEarth().hasFeatureAtPixel(param.pixel);
+    console.log(param, data)
+  })
+  setTimeout(() => {
+    // useEarth().useGlobalEvent().disableGlobalMouseDblClickEvent();
+  }, 5000)
 }

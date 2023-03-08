@@ -1,5 +1,5 @@
-import { DefaultEntities, IEarthConstructorOptions } from "./interface";
-import { Map, View } from "ol";
+import { DefaultEntities, IEarthConstructorOptions, IFeatureAtPixel } from "./interface";
+import { Feature, Map, View } from "ol";
 import { defaults } from 'ol/control/defaults';
 import { Coordinate } from "ol/coordinate";
 import BaseLayer from "ol/layer/Base";
@@ -11,6 +11,7 @@ import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
 import { GlobalEvent } from "./commponents";
+import { DoubleClickZoom } from 'ol/interaction'
 /**
  * 地图基类
  */
@@ -53,7 +54,12 @@ export default class Earth {
         rotate: false,
         attribution: false
       }, options))
+    });
+    // 删除默认的双击事件
+    const dblClickInteraction = map.getInteractions().getArray().find(interaction => {
+      return interaction instanceof DoubleClickZoom;
     })
+    if (dblClickInteraction) map.removeInteraction(dblClickInteraction);
     this.map = map;
     this.view = map.getView();
   }
@@ -219,5 +225,30 @@ export default class Earth {
       this.globalEvent = new GlobalEvent(this);
     }
     return this.globalEvent as GlobalEvent;
+  }
+  /**
+   * 判断当前像素位置是否存在feature对象
+   * @param pixel 像素坐标
+   * @returns 返回该像素位置信息，详见{@link IFeatureAtPixel}
+   */
+  hasFeatureAtPixel(pixel: number[]): IFeatureAtPixel {
+    let data: IFeatureAtPixel = {
+      isExists: false
+    }
+    if (this.map.hasFeatureAtPixel(pixel)) {
+      const pixelData = this.map.forEachFeatureAtPixel(pixel, (feature, layer) => {
+        return {
+          isExists: true,
+          id: <string>feature.getId(),
+          module: <string>feature.get("module"),
+          feature: <Feature>feature,
+          layer
+        }
+      })
+      if (pixelData) {
+        data = pixelData;
+      }
+    }
+    return data;
   }
 }
