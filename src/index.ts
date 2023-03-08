@@ -6,7 +6,7 @@
  * @LastEditors: wuyue.nan
  * @LastEditTime: 2023-02-28 15:23:15
  */
-export { default as Earth, type IEarthConstructorOptions } from './Earth';
+export { default as Earth } from './Earth';
 export * from './useEarth';
 export * from './ast';
 export * from './common';

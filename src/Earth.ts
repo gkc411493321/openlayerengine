@@ -184,7 +184,7 @@ export default class Earth {
   /**
    * 获取默认实体对象
    */
-  useDefaultLayer<T>() {
+  useDefaultLayer<T>(): DefaultEntities<T> {
     if (!this.entities) {
       this.entities = {
         billboard: new BillboardLayer<T>(this),
@@ -214,7 +214,7 @@ export default class Earth {
   /**
    * 使用地图事件
    */
-  useGlobalEvent() {
+  useGlobalEvent(): GlobalEvent {
     if (!this.globalEvent) {
       this.globalEvent = new GlobalEvent(this);
     }

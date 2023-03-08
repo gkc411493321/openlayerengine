@@ -1,5 +1,6 @@
-import Earth, { IEarthConstructorOptions } from "./Earth";
+import Earth from "./Earth";
 import { ViewOptions } from "ol/View";
+import { IEarthConstructorOptions } from "./interface";
 
 let earth: Earth;
 /**

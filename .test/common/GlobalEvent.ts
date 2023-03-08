@@ -50,4 +50,24 @@ export const testGlobalEvent = () => {
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableGlobalMouseLeftDownEvent();
   // }, 5000)
+  /**
+   * 启用模块鼠标左键弹起监听
+   */
+  // useEarth().useGlobalEvent().enableModuleMouseLeftUpEvent();
+  // useEarth().useGlobalEvent().addMouseLeftUpEventByModule("point", (param) => {
+  //   console.log(param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableModuleMouseLeftUpEvent();
+  // }, 5000)
+  /**
+   * 启用全局鼠标左键弹起监听
+   */
+  // useEarth().useGlobalEvent().enableGlobalMouseLeftUpEvent();
+  // useEarth().useGlobalEvent().addMouseLeftUpEventByGlobal((param) => {
+  //   console.log(param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableGlobalMouseLeftUpEvent();
+  // }, 5000)
 }
