@@ -83,12 +83,32 @@ export const testGlobalEvent = () => {
   /**
    * 启用全局鼠标左键双击监听
    */
-  useEarth().useGlobalEvent().enableGlobalMouseDblClickEvent();
-  useEarth().useGlobalEvent().addMouseDblClickEventByGlobal((param) => {
-    const data = useEarth().hasFeatureAtPixel(param.pixel);
-    console.log(param, data)
-  })
-  setTimeout(() => {
-    // useEarth().useGlobalEvent().disableGlobalMouseDblClickEvent();
-  }, 5000)
+  // useEarth().useGlobalEvent().enableGlobalMouseDblClickEvent();
+  // useEarth().useGlobalEvent().addMouseDblClickEventByGlobal((param) => {
+  //   const data = useEarth().hasFeatureAtPixel(param.pixel);
+  //   console.log(param, data)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableGlobalMouseDblClickEvent();
+  // }, 5000)
+  /**
+   * 启用模块鼠标右键单击
+   */
+  // useEarth().useGlobalEvent().enableModuleMouseRightClickEvent();
+  // useEarth().useGlobalEvent().addMouseRightClickEventByModule("point", (param) => {
+  //   console.log('param', param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableModuleMouseRightClickEvent();
+  // }, 5000)
+  /**
+   * 启用全局鼠标右键单击
+   */
+  // useEarth().useGlobalEvent().enableGlobalMouseRightClickEvent();
+  // useEarth().useGlobalEvent().addMouseRightClickEventByGlobal((param) => {
+  //   console.log('param', param)
+  // })
+  // setTimeout(() => {
+  //   useEarth().useGlobalEvent().disableGlobalMouseRightClickEvent();
+  // }, 5000)
 }

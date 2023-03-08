@@ -37,6 +37,25 @@ export default class Earth {
    */
   private globalEvent?: GlobalEvent;
   /**
+   * 关闭右键菜单监听方法
+   * @param event 鼠标事件
+   */
+  private closeRightMenu(event: MouseEvent): void {
+    event.preventDefault();
+  }
+  /**
+   * 关闭默认事件
+   */
+  private closeDefaultEvent(): void {
+    // 删除默认的双击事件
+    const dblClickInteraction = this.map.getInteractions().getArray().find(interaction => {
+      return interaction instanceof DoubleClickZoom;
+    })
+    if (dblClickInteraction) this.map.removeInteraction(dblClickInteraction);
+    // 关闭浏览器右键菜单
+    document.addEventListener("contextmenu", this.closeRightMenu);
+  }
+  /**
    * 构造器
    * @param viewOptions 视图参数，详见{@link ViewOptions}
    * @param options 自定义参数，详见{@link IEarthConstructorOptions}
@@ -55,13 +74,10 @@ export default class Earth {
         attribution: false
       }, options))
     });
-    // 删除默认的双击事件
-    const dblClickInteraction = map.getInteractions().getArray().find(interaction => {
-      return interaction instanceof DoubleClickZoom;
-    })
-    if (dblClickInteraction) map.removeInteraction(dblClickInteraction);
     this.map = map;
     this.view = map.getView();
+    // 关闭默认事件
+    this.closeDefaultEvent();
   }
   /**
    * @description: 8位字符串补0
