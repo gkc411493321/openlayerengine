@@ -10,7 +10,7 @@ import XYZ from "ol/source/XYZ";
 import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
-import { GlobalEvent } from "./commponents";
+import { DynamicDraw, GlobalEvent } from "./commponents";
 import { DoubleClickZoom } from 'ol/interaction'
 /**
  * 地图基类
@@ -24,6 +24,10 @@ export default class Earth {
    * `view`实例
    */
   public view: View;
+  /**
+   * 动态绘制
+   */
+  private draw?: DynamicDraw;
   /**
    * 默认中心点
    */
@@ -241,6 +245,15 @@ export default class Earth {
       this.globalEvent = new GlobalEvent(this);
     }
     return this.globalEvent as GlobalEvent;
+  }
+  /**
+   * 使用动态绘制工具
+   */
+  useDrawTool(): DynamicDraw {
+    if (!this.draw) {
+      this.draw = new DynamicDraw(this);
+    }
+    return this.draw;
   }
   /**
    * 判断当前像素位置是否存在feature对象
