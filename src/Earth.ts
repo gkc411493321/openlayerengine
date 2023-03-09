@@ -247,7 +247,7 @@ export default class Earth {
    * @param pixel 像素坐标
    * @returns 返回该像素位置信息，详见{@link IFeatureAtPixel}
    */
-  hasFeatureAtPixel(pixel: number[]): IFeatureAtPixel {
+  getFeatureAtPixel(pixel: number[]): IFeatureAtPixel {
     let data: IFeatureAtPixel = {
       isExists: false
     }

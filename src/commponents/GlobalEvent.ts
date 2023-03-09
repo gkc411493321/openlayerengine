@@ -21,7 +21,7 @@ interface IEntity {
 /**
  * 地图事件类：分为`全局事件`和`模块事件`
  * 
- * `全局事件`：返回当前鼠标坐标、像素信息，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素，获取元素信息
+ * `全局事件`：返回当前鼠标坐标、像素信息，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素，获取元素信息
  * 
  * `模块事件`：返回当前鼠标坐标、元素、元素图层、元素Id信息，详见{@link ModuleEventCallback}
  * @example
@@ -32,8 +32,8 @@ interface IEntity {
  * // 添加全局下鼠标双击事件。全局下同类事件监听只可添加一个
  * useEarth().useGlobalEvent().addMouseDblClickEventByGlobal((param) => {
  *  // 触发事件回调函数
- *  // 调用`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
- *  const data = useEarth().hasFeatureAtPixel(param.pixel);
+ *  // 调用`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
+ *  const data = useEarth().getFeatureAtPixel(param.pixel);
  * })
  * // 关闭全局下鼠标双击事件
  * useEarth().useGlobalEvent().disableGlobalMouseDblClickEvent();
@@ -695,49 +695,49 @@ export default class GlobalEvent {
   }
   /**
    * 按全局添加鼠标移动事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseMoveEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseMoveEvent = { callback };
   };
   /**
    * 按全局添加鼠标点击事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseClickEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseClickEvent = { callback };
   };
   /**
    * 按全局添加鼠标左键按下事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseLeftDownEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseLeftDownEvent = { callback };
   }
   /**
    * 按全局添加鼠标左键弹起事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseLeftUpEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseLeftUpEvent = { callback };
   }
   /**
    * 按全局添加鼠标双击事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseDblClickEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseDblClickEvent = { callback };
   };
   /**
    * 按全局添加鼠标右键单击事件
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseRightClickEventByGlobal(callback: GlobalEventCallback): void {
     this.globalMouseRightClickEvent = { callback };
   };
   /**
    * 按全局添加鼠标点击事件,只执行一次。该方法无需启用事件和删除事件，直接调用即可
-   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`hasFeatureAtPixel`方法查询该像素位置是否存在feature元素
+   * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
   addMouseOnceClickEventByGlobal(callback: GlobalEventCallback): void {
     this.map.once("click", (evt) => {

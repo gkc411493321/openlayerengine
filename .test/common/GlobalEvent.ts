@@ -85,7 +85,7 @@ export const testGlobalEvent = () => {
    */
   // useEarth().useGlobalEvent().enableGlobalMouseDblClickEvent();
   // useEarth().useGlobalEvent().addMouseDblClickEventByGlobal((param) => {
-  //   const data = useEarth().hasFeatureAtPixel(param.pixel);
+  //   const data = useEarth().getFeatureAtPixel(param.pixel);
   //   console.log(param, data)
   // })
   // setTimeout(() => {
@@ -94,21 +94,20 @@ export const testGlobalEvent = () => {
   /**
    * 启用模块鼠标右键单击
    */
-  useEarth().useGlobalEvent().enableModuleMouseRightClickEvent();
-  useEarth().useGlobalEvent().addMouseRightClickEventByModule("point", (param) => {
-    console.log('param', param)
-  })
+  // useEarth().useGlobalEvent().enableModuleMouseRightClickEvent();
+  // useEarth().useGlobalEvent().addMouseRightClickEventByModule("point", (param) => {
+  //   console.log('param', param)
+  // })
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableModuleMouseRightClickEvent();
   // }, 5000)
   /**
    * 启用全局鼠标右键单击
    */
-  useEarth().useGlobalEvent().enableGlobalMouseRightClickEvent();
-  useEarth().useGlobalEvent().addMouseRightClickEventByGlobal((param) => {
-    // console.log('param', param)
-    console.log(useEarth().hasFeatureAtPixel(param.pixel))
-  })
+  // useEarth().useGlobalEvent().enableGlobalMouseRightClickEvent();
+  // useEarth().useGlobalEvent().addMouseRightClickEventByGlobal((param) => {
+  //   console.log(useEarth().getFeatureAtPixel(param.pixel))
+  // })
   // setTimeout(() => {
   //   useEarth().useGlobalEvent().disableGlobalMouseRightClickEvent();
   // }, 5000)
