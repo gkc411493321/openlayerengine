@@ -70,13 +70,13 @@ export default class GlobalEvent {
    */
   private moduleMouseClickEvent: Map<string, { callback: ModuleEventCallback }> = new Map();
   /**
-   * 模块的鼠标按下事件
+   * 模块的鼠标左键按下事件
    */
-  private moduleMouseDownEvent: Map<string, { callback: ModuleEventCallback }> = new Map();
+  private moduleMouseLeftDownEvent: Map<string, { callback: ModuleEventCallback }> = new Map();
   /**
-   * 模块的鼠标弹起事件
+   * 模块的鼠标左键抬起事件
    */
-  private moduleMouseUpEvent: Map<string, { callback: ModuleEventCallback }> = new Map();
+  private moduleMouseLeftUpEvent: Map<string, { callback: ModuleEventCallback }> = new Map();
   /**
    * 模块的鼠标双击事件
    */
@@ -94,13 +94,13 @@ export default class GlobalEvent {
    */
   private globalMouseClickEvent?: { callback: GlobalEventCallback };
   /**
-   * 全局的鼠标按下事件
+   * 全局的鼠标左键按下事件
    */
-  private globalMouseDownEvent?: { callback: GlobalEventCallback };
+  private globalMouseLeftDownEvent?: { callback: GlobalEventCallback };
   /**
-   * 全局的鼠标弹起事件
+   * 全局的鼠标左键抬起事件
    */
-  private globalMouseUpEvent?: { callback: GlobalEventCallback };
+  private globalMouseLeftUpEvent?: { callback: GlobalEventCallback };
   /**
    * 全局的鼠标双击事件
    */
@@ -110,10 +110,11 @@ export default class GlobalEvent {
    */
   private globalMouseRightClickEvent?: { callback: GlobalEventCallback };
   /**
-   * 模块下鼠标按下监听器处理方法
+   * 模块下鼠标左键按下监听器处理方法
    * @param event 鼠标事件
    */
-  private moduleMouseDown(event: MouseEvent): void {
+  private moduleMouseLeftDown(event: MouseEvent): void {
+    if (event.button != 0) return;
     let pixel = this.map.getEventPixel({ clientX: event.x, clientY: event.y });
     let features = this.map.forEachFeatureAtPixel(pixel, (feature, layer) => {
       return {
@@ -124,7 +125,7 @@ export default class GlobalEvent {
       }
     })
     if (features && features.feature.get("module")) {
-      const moduleEvent = this.moduleMouseDownEvent.get(features.feature.get("module"));
+      const moduleEvent = this.moduleMouseLeftDownEvent.get(features.feature.get("module"));
       const coordinate = this.map.getEventCoordinate(event);
       if (moduleEvent) {
         moduleEvent.callback.call(this, {
@@ -137,10 +138,11 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 模块下鼠标弹起监听器处理方法
+   * 模块下鼠标左键抬起监听器处理方法
    * @param event 鼠标事件
    */
-  private moduleMouseUp(event: MouseEvent): void {
+  private moduleMouseLeftUp(event: MouseEvent): void {
+    if (event.button != 0) return;
     let pixel = this.map.getEventPixel({ clientX: event.x, clientY: event.y });
     let features = this.map.forEachFeatureAtPixel(pixel, (feature, layer) => {
       return {
@@ -151,7 +153,7 @@ export default class GlobalEvent {
       }
     })
     if (features && features.feature.get("module")) {
-      const moduleEvent = this.moduleMouseUpEvent.get(features.feature.get("module"));
+      const moduleEvent = this.moduleMouseLeftUpEvent.get(features.feature.get("module"));
       const coordinate = this.map.getEventCoordinate(event);
       if (moduleEvent) {
         moduleEvent.callback.call(this, {
@@ -191,20 +193,22 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 全局下鼠标按下监听器处理方法
+   * 全局下鼠标左键按下监听器处理方法
    * @param event 鼠标事件
    */
-  private globalMouseDown(event: MouseEvent): void {
+  private globalMouseLeftDown(event: MouseEvent): void {
+    if (event.button != 0) return;
     const coordinate = this.map.getEventCoordinate(event);
-    this.globalMouseDownEvent?.callback.call(this, { position: toLonLat(coordinate), pixel: [event.x, event.y] });
+    this.globalMouseLeftDownEvent?.callback.call(this, { position: toLonLat(coordinate), pixel: [event.x, event.y] });
   }
   /**
-   * 全局下鼠标弹起监听器处理方法
+   * 全局下鼠标左键抬起监听器处理方法
    * @param event 鼠标事件
    */
-  private globalMouseUp(event: MouseEvent): void {
+  private globalMouseLeftUp(event: MouseEvent): void {
+    if (event.button != 0) return;
     const coordinate = this.map.getEventCoordinate(event);
-    this.globalMouseUpEvent?.callback.call(this, { position: toLonLat(coordinate), pixel: [event.x, event.y] });
+    this.globalMouseLeftUpEvent?.callback.call(this, { position: toLonLat(coordinate), pixel: [event.x, event.y] });
   }
   /**
    * 全局下鼠标右键单击监听器处理方法
@@ -296,25 +300,25 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 启用模块下鼠标按下事件监听
+   * 启用模块下鼠标左键按下事件监听
    */
-  enableModuleMouseDownEvent(): void {
-    if (!this.eventKey?.has("moduleMouseDown")) {
-      this.map.getViewport().addEventListener("mousedown", this.moduleMouseDown.bind(this));
-      this.eventKey?.set("moduleMouseDown", this.moduleMouseDown);
+  enableModuleMouseLfetDownEvent(): void {
+    if (!this.eventKey?.has("moduleMouseLeftDown")) {
+      this.map.getViewport().addEventListener("mousedown", this.moduleMouseLeftDown.bind(this));
+      this.eventKey?.set("moduleMouseLfetDown", this.moduleMouseLeftDown);
     } else {
-      console.warn("重复启用模块下鼠标按下事件监听,请检查")
+      console.warn("重复启用模块下鼠标左键按下事件监听,请检查")
     }
   }
   /**
-   * 启用模块下鼠标弹起事件监听
+   * 启用模块下鼠标左键抬起事件监听
    */
-  enableModuleMouseUpEvent(): void {
-    if (!this.eventKey?.has("moduleMouseUp")) {
-      this.map.getViewport().addEventListener("mouseup", this.moduleMouseUp.bind(this));
-      this.eventKey?.set("moduleMousetUp", this.moduleMouseUp);
+  enableModuleMouseLeftUpEvent(): void {
+    if (!this.eventKey?.has("moduleMouseLeftUp")) {
+      this.map.getViewport().addEventListener("mouseup", this.moduleMouseLeftUp.bind(this));
+      this.eventKey?.set("moduleMouseLeftUp", this.moduleMouseLeftUp);
     } else {
-      console.warn("重复启用模块下鼠标弹起事件监听,请检查")
+      console.warn("重复启用模块下鼠标左键抬起事件监听,请检查")
     }
   }
   /**
@@ -393,25 +397,25 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 启用全局下鼠标按下事件监听
+   * 启用全局下鼠标左键按下事件监听
    */
-  enableGlobalMouseDownEvent(): void {
-    if (!this.eventKey?.has("globalMouseDown")) {
-      this.map.getViewport().addEventListener("mousedown", this.globalMouseDown.bind(this));
-      this.eventKey?.set("globalMouseDown", this.globalMouseDown);
+  enableGlobalMouseLeftDownEvent(): void {
+    if (!this.eventKey?.has("globalMouseLeftDown")) {
+      this.map.getViewport().addEventListener("mousedown", this.globalMouseLeftDown.bind(this));
+      this.eventKey?.set("globalMouseLeftDown", this.globalMouseLeftDown);
     } else {
-      console.warn("重复启用全局下鼠标按下事件监听,请检查")
+      console.warn("重复启用全局下鼠标左键按下事件监听,请检查")
     }
   }
   /**
-   * 启用全局下鼠标弹起事件监听
+   * 启用全局下鼠标左键抬起事件监听
    */
-  enableGlobalMouseUpEvent(): void {
-    if (!this.eventKey?.has("globalMouseUp")) {
-      this.map.getViewport().addEventListener("mouseup", this.globalMouseUp.bind(this));
-      this.eventKey?.set("globalMouseUp", this.globalMouseUp);
+  enableGlobalMouseLeftUpEvent(): void {
+    if (!this.eventKey?.has("globalMouseLeftUp")) {
+      this.map.getViewport().addEventListener("mouseup", this.globalMouseLeftUp.bind(this));
+      this.eventKey?.set("globalMouseLeftUp", this.globalMouseLeftUp);
     } else {
-      console.warn("重复启用全局下鼠标弹起事件监听,请检查")
+      console.warn("重复启用全局下鼠标左键抬起事件监听,请检查")
     }
   }
   /**
@@ -468,29 +472,29 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 停用模块下鼠标按下事件监听
+   * 停用模块下鼠标左键按下事件监听
    */
-  disableModuleMouseDownEvent(): void {
-    const key = this.eventKey?.get("moduleMouseDown");
+  disableModuleMouseLeftDownEvent(): void {
+    const key = this.eventKey?.get("moduleMouseLeftDown");
     if (key) {
-      this.map.getViewport().removeEventListener("mousedown", this.moduleMouseDown);
-      this.eventKey?.delete("moduleMouseDown");
-      this.moduleMouseDownEvent.clear();
+      this.map.getViewport().removeEventListener("mousedown", this.moduleMouseLeftDown);
+      this.eventKey?.delete("moduleMouseLeftDown");
+      this.moduleMouseLeftDownEvent.clear();
     } else {
-      console.warn("未启用模块下鼠标按下事件监听，关闭失败");
+      console.warn("未启用模块下鼠标左键按下事件监听，关闭失败");
     }
   }
   /**
-   * 停用模块下鼠标弹起事件监听
+   * 停用模块下鼠标左键抬起事件监听
    */
-  disableModuleMouseUpEvent(): void {
-    const key = this.eventKey?.get("moduleMouseUp");
+  disableModuleMouseLeftUpEvent(): void {
+    const key = this.eventKey?.get("moduleMouseLeftUp");
     if (key) {
-      this.map.getViewport().removeEventListener("mouseup", this.moduleMouseUp);
-      this.eventKey?.delete("moduleMouseUp");
-      this.moduleMouseUpEvent.clear();
+      this.map.getViewport().removeEventListener("mouseup", this.moduleMouseLeftUp);
+      this.eventKey?.delete("moduleMouseLeftUp");
+      this.moduleMouseLeftUpEvent.clear();
     } else {
-      console.warn("未启用模块下鼠标弹起事件监听，关闭失败");
+      console.warn("未启用模块下鼠标左键抬起事件监听，关闭失败");
     }
   }
   /**
@@ -546,29 +550,29 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 停用全局下鼠标按下事件监听
+   * 停用全局下鼠标左键按下事件监听
    */
-  disableGlobalMouseDownEvent(): void {
-    const key = this.eventKey?.get("globalMouseDown");
+  disableGlobalMouseLeftDownEvent(): void {
+    const key = this.eventKey?.get("globalMouseLeftDown");
     if (key) {
-      this.map.getViewport().removeEventListener("mousedown", this.globalMouseDown);
-      this.eventKey?.delete("globalMouseDown");
-      this.globalMouseDownEvent = undefined;
+      this.map.getViewport().removeEventListener("mousedown", this.globalMouseLeftDown);
+      this.eventKey?.delete("globalMouseLeftDown");
+      this.globalMouseLeftDownEvent = undefined;
     } else {
-      console.warn("未启用全局下鼠标按下事件监听，关闭失败");
+      console.warn("未启用全局下鼠标左键按下事件监听，关闭失败");
     }
   }
   /**
-   * 停用全局下鼠标弹起事件监听
+   * 停用全局下鼠标左键抬起事件监听
    */
-  disableGlobalMouseUpEvent(): void {
-    const key = this.eventKey?.get("globalMouseUp");
+  disableGlobalMouseLeftUpEvent(): void {
+    const key = this.eventKey?.get("globalMouseLeftUp");
     if (key) {
-      this.map.getViewport().removeEventListener("mouseup", this.globalMouseUp);
-      this.eventKey?.delete("globalMouseUp");
-      this.globalMouseUpEvent = undefined;
+      this.map.getViewport().removeEventListener("mouseup", this.globalMouseLeftUp);
+      this.eventKey?.delete("globalMouseLeftUp");
+      this.globalMouseLeftUpEvent = undefined;
     } else {
-      console.warn("未启用全局下鼠标弹起事件监听，关闭失败");
+      console.warn("未启用全局下鼠标左键抬起事件监听，关闭失败");
     }
   }
   /**
@@ -630,35 +634,35 @@ export default class GlobalEvent {
     }
   }
   /**
-   * 按模块添加鼠标按下事件
+   * 按模块添加鼠标左键按下事件
    * @param module 模块名称
    * @param callback 回调函数，详见{@link ModuleEventCallback}
    */
-  addMouseDownEventByModule(module: string, callback: ModuleEventCallback): void {
+  addMouseLeftDownEventByModule(module: string, callback: ModuleEventCallback): void {
     if (module && module !== "") {
-      if (!this.moduleMouseDownEvent.get(module)) {
-        this.moduleMouseDownEvent.set(module, { callback });
+      if (!this.moduleMouseLeftDownEvent.get(module)) {
+        this.moduleMouseLeftDownEvent.set(module, { callback });
       } else {
-        console.warn('按模块追加全局鼠标按下事件: module参数重复', module);
+        console.warn('按模块追加全局鼠标左键按下事件: module参数重复', module);
       }
     } else {
-      console.warn('按模块追加全局鼠标按下事件: module参数不能为空');
+      console.warn('按模块追加全局鼠标左键按下事件: module参数不能为空');
     }
   }
   /**
-   * 按模块添加鼠标弹起事件
+   * 按模块添加鼠标左键抬起事件
    * @param module 模块名称
    * @param callback 回调函数，详见{@link ModuleEventCallback}
    */
-  addMouseUpEventByModule(module: string, callback: ModuleEventCallback): void {
+  addMouseLeftUpEventByModule(module: string, callback: ModuleEventCallback): void {
     if (module && module !== "") {
-      if (!this.moduleMouseUpEvent.get(module)) {
-        this.moduleMouseUpEvent.set(module, { callback });
+      if (!this.moduleMouseLeftUpEvent.get(module)) {
+        this.moduleMouseLeftUpEvent.set(module, { callback });
       } else {
-        console.warn('按模块追加全局鼠标弹起事件: module参数重复', module);
+        console.warn('按模块追加全局鼠标左键抬起事件: module参数重复', module);
       }
     } else {
-      console.warn('按模块追加全局鼠标弹起事件: module参数不能为空');
+      console.warn('按模块追加全局鼠标左键抬起事件: module参数不能为空');
     }
   }
   /**
@@ -708,18 +712,18 @@ export default class GlobalEvent {
     this.globalMouseClickEvent = { callback };
   };
   /**
-   * 按全局添加鼠标按下事件
+   * 按全局添加鼠标左键按下事件
    * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
-  addMouseDownEventByGlobal(callback: GlobalEventCallback): void {
-    this.globalMouseDownEvent = { callback };
+  addMouseLeftDownEventByGlobal(callback: GlobalEventCallback): void {
+    this.globalMouseLeftDownEvent = { callback };
   }
   /**
-   * 按全局添加鼠标弹起事件
+   * 按全局添加鼠标左键抬起事件
    * @param callback 回调函数，详见{@link GlobalEventCallback}。可配合{@link Earth}类`getFeatureAtPixel`方法查询该像素位置是否存在feature元素
    */
-  addMouseUpEventByGlobal(callback: GlobalEventCallback): void {
-    this.globalMouseUpEvent = { callback };
+  addMouseLeftUpEventByGlobal(callback: GlobalEventCallback): void {
+    this.globalMouseLeftUpEvent = { callback };
   }
   /**
    * 按全局添加鼠标双击事件
@@ -775,18 +779,18 @@ export default class GlobalEvent {
     return this.moduleMouseClickEvent.has(module);
   }
   /**
-   * 校验模块是否注册鼠标按下事件
+   * 校验模块是否注册鼠标左键按下事件
    * @param module 模块名称
    */
-  hasModuleMouseDownEvent(module: string): boolean {
-    return this.moduleMouseDownEvent.has(module);
+  hasModuleMouseLeftDownEvent(module: string): boolean {
+    return this.moduleMouseLeftDownEvent.has(module);
   }
   /**
-   * 校验模块是否注册鼠标抬起事件
+   * 校验模块是否注册鼠标左键抬起事件
    * @param module 模块名称
    */
-  hasModuleMouseUpEvent(module: string): boolean {
-    return this.moduleMouseUpEvent.has(module);
+  hasModuleMouseLeftUpEvent(module: string): boolean {
+    return this.moduleMouseLeftUpEvent.has(module);
   }
   /**
    * 校验模块是否注册鼠标双击事件
@@ -815,16 +819,16 @@ export default class GlobalEvent {
     return this.globalMouseClickEvent ? true : false;
   }
   /**
-  * 校验全局是否注册鼠标按下事件
+  * 校验全局是否注册鼠标左键按下事件
   */
-  hasGlobalMouseDownEvent(): boolean {
-    return this.globalMouseDownEvent ? true : false;
+  hasGlobalMouseLeftDownEvent(): boolean {
+    return this.globalMouseLeftDownEvent ? true : false;
   }
   /**
-  * 校验全局是否注册鼠标抬起事件
+  * 校验全局是否注册鼠标左键抬起事件
   */
-  hasGlobalMouseUpEvent(): boolean {
-    return this.globalMouseUpEvent ? true : false;
+  hasGlobalMouseLeftUpEvent(): boolean {
+    return this.globalMouseLeftUpEvent ? true : false;
   }
   /**
   * 校验全局是否注册鼠标双击事件

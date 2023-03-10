@@ -13,7 +13,7 @@ export enum DrawType {
    */
   Drawing = "drawing",
   /**
-   * 绘制结束
+   * 绘制完成
    */
   Drawend = "drawend",
   /**
@@ -23,13 +23,9 @@ export enum DrawType {
   /**
    * 退出绘制
    */
-  Drawexit = "drawexit"
+  Drawexit = "drawexit",
 }
 export interface IDrawBase {
-  /**
-   * 绘制次数。默认为0次：代表重复绘制
-   */
-  limit?: number;
   /**
    * 保留绘制图像。默认为true
    */
@@ -70,5 +66,14 @@ export interface IDrawEvent {
   feature?: Feature<Geometry>
 }
 export interface IDrawPoint extends IDrawBase {
+  /**
+   * 绘制次数。默认为0次：代表重复绘制
+   */
+  limit?: number;
+}
+export interface IDrawLine extends IDrawBase {
+
+}
+export interface IDrawPolygon extends IDrawBase {
 
 }
