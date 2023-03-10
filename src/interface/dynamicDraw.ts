@@ -1,7 +1,6 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
 import { Geometry } from "ol/geom";
-import { IFill, ILabel, IStroke } from "./default";
 
 export enum DrawType {
   /**
@@ -31,18 +30,6 @@ export interface IDrawBase {
    */
   keepGraphics?: boolean;
   /**
-   * 边框样式
-   */
-  stroke?: IStroke;
-  /**
-   * 填充样式
-   */
-  fill?: IFill;
-  /**
-   * 标签样式
-   */
-  label?: ILabel;
-  /**
    * 回调函数
    */
   callback?: (event: IDrawEvent) => void;
@@ -70,10 +57,36 @@ export interface IDrawPoint extends IDrawBase {
    * 绘制次数。默认为0次：代表重复绘制
    */
   limit?: number;
+  /**
+   * 大小,默认2
+   */
+  size?: number;
+  /**
+   * 填充颜色
+   */
+  fillColor?: string;
 }
 export interface IDrawLine extends IDrawBase {
-
+  /**
+   * 边框颜色
+   */
+  strokeColor?: string;
+  /**
+   * 边框大小
+   */
+  strokeWidth?: number;
 }
 export interface IDrawPolygon extends IDrawBase {
-
+  /**
+   * 边框颜色
+   */
+  strokeColor?: string;
+  /**
+   * 边框大小
+   */
+  strokeWidth?: number;
+  /**
+   * 填充颜色
+   */
+  fillColor?: string;
 }

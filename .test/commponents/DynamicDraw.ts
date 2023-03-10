@@ -11,9 +11,10 @@ export const testDynamicDraw = () => {
   //     console.log(e)
   //   }
   // })
-  useEarth().useDrawTool().drawPolygon({
-    callback: (e) => {
-      console.log(e)
-    }
-  })
+  // useEarth().useDrawTool().drawPolygon({
+  //   callback: (e) => {
+  //     console.log(e)
+  //   }
+  // })
+
 }
