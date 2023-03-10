@@ -10,9 +10,11 @@ import { DrawEvent } from "ol/interaction/Draw";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Circle, Fill, Stroke, Style } from "ol/style";
 import CircleStyle from "ol/style/Circle";
-import { OverlayLayer } from "../base";
+import { OverlayLayer, PointLayer, PolygonLayer } from "../base";
 import { unByKey } from "ol/Observable";
 import { Coordinate } from "ol/coordinate";
+import BaseLayer from "ol/layer/Base";
+import { Layer } from "ol/layer";
 /**
  * 动态绘制类
  */
@@ -321,6 +323,35 @@ export default class DynamicDraw {
   drawPolygon(param?: IDrawPolygon) {
     // 初始化绘制工具
     this.initDraw("Polygon", param);
+  }
+  /**
+   * 修改面
+   * @param feature 元素实例
+   * @param callback 回调函数
+   */
+  editPolygon(feature: Feature<Polygon>, callback?: (e: any) => void) {
+    const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(feature);
+    layer?.getSource()?.removeFeature(feature);
+    const position = feature.getGeometry()?.getCoordinates();
+    if (position) {
+      const p = new PointLayer(useEarth())
+      for (let i = 0; i < position[0].length; i++) {
+        p.add({
+          center: position[0][i]
+        })
+        if (i == position[0].length - 1) {
+          const segment = new LineString([position[0][i], position[0][0]]);
+          p.add({
+            center: segment.getCoordinateAt(0.5)
+          })
+        } else {
+          const segment = new LineString([position[0][i], position[0][i + 1]]);
+          p.add({
+            center: segment.getCoordinateAt(0.5)
+          })
+        }
+      }
+    }
   }
   /**
    * 获取所有绘制对象

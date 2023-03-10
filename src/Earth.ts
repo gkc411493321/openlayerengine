@@ -12,6 +12,10 @@ import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
 import { DynamicDraw, GlobalEvent } from "./commponents";
 import { DoubleClickZoom } from 'ol/interaction'
+import { Geometry } from "ol/geom";
+import { Layer } from "ol/layer";
+import { Source } from "ol/source";
+import LayerRenderer from "ol/renderer/Layer";
 /**
  * 地图基类
  */
@@ -200,6 +204,22 @@ export default class Earth {
    */
   setMouseStyleToCrosshair(): void {
     this.setMouseStyle('crosshair');
+  }
+  /**
+   * 根据元素获取元素所在的图层
+   * @param feature 
+   */
+  getLayerAtFeature(feature: Feature<Geometry>): Layer<Source, LayerRenderer<any>> | undefined {
+    const layers = this.map.getAllLayers();
+    const layerId = <string>feature.get("layerId");
+    const filter = layers.filter(item => {
+      return item.get("id") == layerId
+    })
+    if (filter.length) {
+      return filter[0];
+    } else {
+      return undefined;
+    }
   }
   /**
    * 设置鼠标在地图上的样式为默认
