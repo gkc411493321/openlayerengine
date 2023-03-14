@@ -227,6 +227,12 @@ export default class Base {
     this.layer.setZIndex(index);
   }
   /**
+   * 获取图层
+   */
+  getLayer(): VectorLayer<VectorSource<Geometry>> {
+    return this.layer;
+  }
+  /**
    * 销毁图层，同时销毁该图层所有元素，不可恢复
    * @returns 返回boolean值
    * @example

@@ -1,10 +1,10 @@
-import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon } from "../interface";
+import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon, IEditPolygon, IModifyEvent, ModifyType } from "../interface";
 import { Feature, Map } from "ol";
 import { Geometry, LineString, Point, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import Earth from "../Earth";
-import { Draw } from "ol/interaction";
+import { Draw, Modify, Select, Translate } from "ol/interaction";
 import { useEarth } from "../useEarth";
 import { DrawEvent } from "ol/interaction/Draw";
 import { fromLonLat, toLonLat } from "ol/proj";
@@ -329,29 +329,84 @@ export default class DynamicDraw {
    * @param feature 元素实例
    * @param callback 回调函数
    */
-  editPolygon(feature: Feature<Polygon>, callback?: (e: any) => void) {
-    const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(feature);
-    layer?.getSource()?.removeFeature(feature);
-    const position = feature.getGeometry()?.getCoordinates();
-    if (position) {
-      const p = new PointLayer(useEarth())
-      for (let i = 0; i < position[0].length; i++) {
-        p.add({
-          center: position[0][i]
-        })
-        if (i == position[0].length - 1) {
-          const segment = new LineString([position[0][i], position[0][0]]);
-          p.add({
-            center: segment.getCoordinateAt(0.5)
-          })
-        } else {
-          const segment = new LineString([position[0][i], position[0][i + 1]]);
-          p.add({
-            center: segment.getCoordinateAt(0.5)
-          })
-        }
-      }
+  editPolygon(param: IEditPolygon) {
+    // 生成图层
+    const polygonLayer = new PolygonLayer(useEarth());
+    const pointLayer = new PointLayer(useEarth());
+    // 删除原有面
+    const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
+    if (!param.isShowUnderlay) {
+      layer?.getSource()?.removeFeature(param.feature);
     }
+    // 获取原有面坐标信息
+    const position = <Coordinate[][]>param.feature.getGeometry()?.getCoordinates();
+    for (const item of position[0]) {
+      pointLayer.add({
+        center: item,
+        stroke: {
+          color: "#fff"
+        },
+        fill: {
+          color: "#00aaff"
+        },
+        module: "test"
+      })
+    }
+    // 生成编辑面
+    const polygon = polygonLayer.add({
+      positions: position,
+      stroke: {
+        color: "#00aaff",
+        width: 2
+      },
+      fill: {
+        color: "#ffffff61"
+      }
+    })
+    const source = <VectorSource<Geometry>>polygonLayer.getLayer().getSource();
+    const modify = new Modify({ source: source });
+    modify.on("modifystart", () => {
+      pointLayer.remove();
+    })
+    modify.on("modifyend", evt => {
+      const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
+      for (const item of position[0]) {
+        pointLayer.add({
+          center: item,
+          stroke: {
+            color: "#fff"
+          },
+          fill: {
+            color: "#00aaff"
+          },
+          module: "test"
+        })
+      }
+      const transformP = position[0].map(item => {
+        return item = toLonLat(item);
+      })
+      param.callback?.call(this, {
+        type: ModifyType.Modifying,
+        position: transformP
+      })
+    })
+    this.map.addInteraction(modify);
+    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal((e) => {
+      this.map.removeInteraction(modify);
+      layer?.getSource()?.addFeature(param.feature);
+      polygonLayer.destroy();
+      pointLayer.destroy();
+      const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
+      const transformP = position[0].map(item => {
+        return item = toLonLat(item);
+      })
+      param.feature.getGeometry()?.setCoordinates(position);
+      layer?.getSource()?.addFeature(param.feature);
+      param.callback?.call(this, {
+        type: ModifyType.Modifyexit,
+        position: transformP
+      })
+    })
   }
   /**
    * 获取所有绘制对象

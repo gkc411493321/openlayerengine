@@ -1,6 +1,6 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
-import { Geometry } from "ol/geom";
+import { Geometry, Polygon } from "ol/geom";
 
 export enum DrawType {
   /**
@@ -23,6 +23,16 @@ export enum DrawType {
    * 退出绘制
    */
   Drawexit = "drawexit",
+}
+export enum ModifyType {
+  /**
+   * 修改中
+   */
+  Modifying = "modifying",
+  /**
+   * 退出修改
+   */
+  Modifyexit = "modifyexit",
 }
 export interface IDrawBase {
   /**
@@ -51,6 +61,16 @@ export interface IDrawEvent {
    * 元素
    */
   feature?: Feature<Geometry>
+}
+export interface IModifyEvent {
+  /**
+   * 修改类型
+   */
+  type: ModifyType;
+  /**
+   * 元素坐标
+   */
+  position?: Coordinate | Coordinate[];
 }
 export interface IDrawPoint extends IDrawBase {
   /**
@@ -89,4 +109,18 @@ export interface IDrawPolygon extends IDrawBase {
    * 填充颜色
    */
   fillColor?: string;
+}
+export interface IEditPolygon {
+  /**
+   * 元素
+   */
+  feature: Feature<Polygon>;
+  /**
+   * 是否显示参考底图，默认false
+   */
+  isShowUnderlay?: boolean;
+  /**
+   * 回调函数
+   */
+  callback?: (e: IModifyEvent) => void;
 }

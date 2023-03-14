@@ -18,7 +18,7 @@ export const testPolygonLayer = () => {
   const layer = new PolygonLayer(useEarth());
   const polygon = <Feature<Polygon>>layer.add({
     id: "polygon_1",
-    positions: [[fromLonLat([110, 30]), fromLonLat([110, 50]), fromLonLat([120, 40])]],
+    positions: [[fromLonLat([110, 30]), fromLonLat([110, 50]), fromLonLat([120, 40]), fromLonLat([110, 30])]],
     label: {
       text: "带标签多边形"
     },
@@ -31,7 +31,13 @@ export const testPolygonLayer = () => {
       color: "#fffff3"
     }
   })
-  useEarth().useDrawTool().editPolygon(polygon);
+  useEarth().useDrawTool().editPolygon({
+    feature: polygon,
+    isShowUnderlay: true,
+    callback: (e) => {
+      console.log(e)
+    }
+  });
   // const s = new Select();
   // const mo = new Modify({ features: s.getFeatures() })
   // const translate = new Translate({
