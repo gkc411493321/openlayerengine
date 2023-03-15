@@ -5,6 +5,7 @@ import { Geometry } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Style, Stroke, Fill, Text, Icon } from "ol/style";
+import { Utils } from "../common";
 /**
  * 基类，提供图层常见的获取，删除及更新方法
  */
@@ -26,7 +27,10 @@ export default class Base {
    * @param earth 地图实例
    * @param layer 图层实例
    */
-  constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>) {
+  constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>, type: string) {
+    const layerId = Utils.GetGUID();
+    layer.set("type", type);
+    layer.set("id", layerId);
     this.layer = layer;
     earth.map.addLayer(layer);
   }

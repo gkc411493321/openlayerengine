@@ -30,7 +30,7 @@ export default class Polyline<T = unknown> extends Base {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
-    super(earth, layer)
+    super(earth, layer, "Polyline");
   }
   /**
    * 创建矢量元素
@@ -49,7 +49,8 @@ export default class Polyline<T = unknown> extends Base {
     feature.setId(param.id);
     feature.set("param", param);
     feature.set("data", param.data);
-    feature.set("module", param.module)
+    feature.set("module", param.module);
+    feature.set("layerId", this.layer.get("id"));
     return feature
   }
   /**

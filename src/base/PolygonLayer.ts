@@ -13,7 +13,6 @@ import { Coordinate } from "ol/coordinate";
  * 创建多边形`Polygon`
  */
 export default class PolygonLayer<T = unknown> extends Base {
-  layerId: string;
   /**
    * 构造器
    * @param earth 地图实例
@@ -23,14 +22,10 @@ export default class PolygonLayer<T = unknown> extends Base {
    * ```
    */
   constructor(earth: Earth) {
-    const layerId = Utils.GetGUID();
     const layer = new VectorLayer({
       source: new VectorSource()
     })
-    layer.set("id", layerId);
-    layer.set("type", "Polygon");
-    super(earth, layer);
-    this.layerId = layerId;
+    super(earth, layer, "Polygon");
   }
   /**
    * 创建矢量元素
@@ -49,7 +44,7 @@ export default class PolygonLayer<T = unknown> extends Base {
     feature.setId(param.id);
     feature.set("data", param.data);
     feature.set("module", param.module);
-    feature.set("layerId", this.layerId);
+    feature.set("layerId", this.layer.get("id"));
     return feature
   }
   /**

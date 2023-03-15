@@ -30,7 +30,7 @@ export default class PointLayer<T = unknown> extends Base {
     const layer = new VectorLayer({
       source: new VectorSource()
     })
-    super(earth, layer)
+    super(earth, layer, "Point")
   }
   /**
    * 创建矢量元素
@@ -55,7 +55,8 @@ export default class PointLayer<T = unknown> extends Base {
     feature.setStyle(style)
     feature.setId(param.id);
     feature.set("data", param.data);
-    feature.set("module", param.module)
+    feature.set("module", param.module);
+    feature.set("layerId", this.layer.get("id"));
     return feature
   }
   /**
