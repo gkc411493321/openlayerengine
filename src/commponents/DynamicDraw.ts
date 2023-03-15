@@ -61,9 +61,9 @@ export default class DynamicDraw {
   /**
    * 提示牌初始化方法
    */
-  private initHelpTooltip() {
+  private initHelpTooltip(str: string) {
     const div = document.createElement("div");
-    div.innerHTML = "<div class='ol-tooltip'>左击开始绘制，右击退出绘制</div>"
+    div.innerHTML = "<div class='ol-tooltip'>" + str + "</div>"
     document.body.appendChild(div);
     this.overlay.add({
       id: "draw_help_tooltip",
@@ -89,7 +89,7 @@ export default class DynamicDraw {
       this.overlayKey = undefined;
     }
     // 初始化提示标牌
-    this.initHelpTooltip();
+    this.initHelpTooltip("左击开始绘制，右击退出绘制");
     useEarth().setMouseStyle("pointer");
     const drawStyle = new Style({
       fill: new Fill({
@@ -326,10 +326,10 @@ export default class DynamicDraw {
   }
   /**
    * 修改面
-   * @param feature 元素实例
-   * @param callback 回调函数
+   * @param param 参数，详见{@link IEditPolygon}
    */
-  editPolygon(param: IEditPolygon) {
+  editPolygon(param: IEditPolygon): void {
+    this.initHelpTooltip("单击修改面 alt+单击删除点 右击退出编辑")
     // 生成图层
     const polygonLayer = new PolygonLayer(useEarth());
     const pointLayer = new PointLayer(useEarth());
@@ -364,7 +364,9 @@ export default class DynamicDraw {
       }
     })
     const source = <VectorSource<Geometry>>polygonLayer.getLayer().getSource();
-    const modify = new Modify({ source: source });
+    const modify = new Modify({
+      source: source,
+    });
     modify.on("modifystart", () => {
       pointLayer.remove();
     })
@@ -402,6 +404,11 @@ export default class DynamicDraw {
       })
       param.feature.getGeometry()?.setCoordinates(position);
       layer?.getSource()?.addFeature(param.feature);
+      if (this.overlayKey) {
+        this.overlay.remove("draw_help_tooltip");
+        unByKey(this.overlayKey);
+        this.overlayKey = undefined;
+      }
       param.callback?.call(this, {
         type: ModifyType.Modifyexit,
         position: transformP
