@@ -60,56 +60,6 @@ export default class PointLayer<T = unknown> extends Base {
     return feature
   }
   /**
-   * 动态点刷新方法
-   * @param feature `Point` 实例
-   * @param param 详细参数，详见{@link IPointParam}
-   */
-  private flash(feature: Feature<Geometry>, param: IPointParam<T>): void {
-    const defaultOption = {
-      duration: 1000,
-      flashColor: param.flashColor || { R: 255, G: 0, B: 0 },
-      isRepeat: true,
-      size: param.size || 6
-    };
-    const options = Object.assign(defaultOption, param);
-    let start = Date.now();
-    const geometry = feature.getGeometry();
-    if (geometry) {
-      const flashGeom = geometry.clone();
-      const listenerKey = this.layer.on('postrender', (event: RenderEvent) => {
-        const frameState = event.frameState;
-        if (frameState) {
-          let elapsed = frameState.time - start;
-          if (elapsed >= options.duration) {
-            if (options.isRepeat) {
-              start = Date.now();
-            } else {
-              unByKey(listenerKey);
-              return;
-            }
-          }
-          const vectorContext = getVectorContext(event);
-          const elapsedRatio = elapsed / options.duration;
-          const radius = easeOut(elapsedRatio) * 10 + options.size;
-          const opacity = easeOut(1 - elapsedRatio);
-          const style = new Style({
-            image: new CircleStyle({
-              radius: radius,
-              stroke: new Stroke({
-                color: `rgba(${options.flashColor.R}, ${options.flashColor.G}, ${options.flashColor.B},${opacity})`,
-                width: 0.25 + opacity,
-              }),
-            }),
-          });
-          vectorContext.setStyle(style);
-          vectorContext.drawGeometry(flashGeom);
-          this.layer.changed();
-        }
-      });
-      feature.set("listenerKey", listenerKey);
-    }
-  }
-  /**
    * 创建点
    * @param param 详细参数，详见{@link IPointParam} 
    * @returns 返回`Feature<Point>`实例
@@ -126,7 +76,8 @@ export default class PointLayer<T = unknown> extends Base {
     const feature = this.createFeature(param);
     if (param.isFlash) {
       feature.set("param", param);
-      this.flash(feature, param)
+      new Utils().flash(feature, param, this.layer);
+      // this.flash(feature, param)
     }
     return <Feature<Point>>super.save(feature);
   }
@@ -192,7 +143,7 @@ export default class PointLayer<T = unknown> extends Base {
     }
     for (const item of features) {
       const param = item.get("param");
-      if (param) this.flash(item, param)
+      if (param) new Utils().flash(item, param, this.layer);
     }
   }
   /**
@@ -222,7 +173,7 @@ export default class PointLayer<T = unknown> extends Base {
     features[0].set("param", newParam);
     if (listenerKey) {
       unByKey(listenerKey);
-      this.flash(features[0], newParam);
+      new Utils().flash(features[0], newParam, this.layer);
     }
     const style = <Style>features[0].getStyle();
     const image = <Circle>style.getImage();
@@ -261,7 +212,7 @@ export default class PointLayer<T = unknown> extends Base {
     const param = features[0].get("param");
     if (listenerKey) {
       unByKey(listenerKey);
-      this.flash(features[0], param);
+      new Utils().flash(features[0], param, this.layer);
     }
     return features;
   }

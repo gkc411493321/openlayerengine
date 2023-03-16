@@ -110,25 +110,11 @@ export interface IDrawPolygon extends IDrawBase {
    */
   fillColor?: string;
 }
-export interface IEditPolygon {
+export interface IEditParam {
   /**
    * 元素
    */
-  feature: Feature<Polygon>;
-  /**
-   * 是否显示参考底图，默认false
-   */
-  isShowUnderlay?: boolean;
-  /**
-   * 回调函数
-   */
-  callback?: (e: IModifyEvent) => void;
-}
-export interface IEditPolyline {
-  /**
-   * 元素
-   */
-  feature: Feature<LineString>;
+  feature: Feature<Geometry>;
   /**
    * 是否显示参考底图，默认false
    */

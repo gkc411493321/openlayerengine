@@ -11,7 +11,7 @@ export const testPointLayer = () => {
     isFlash: true,
     module: "point"
   })
-  layer.add({
+  let a = layer.add({
     id: "point_2",
     center: fromLonLat([125, 45]),
     size: 10,
@@ -27,6 +27,12 @@ export const testPointLayer = () => {
     duration: 3000,
     isRepeat: false,
     module: "point"
+  })
+  useEarth().useDrawTool().editPoint({
+    feature: a,
+    callback(e) {
+      console.log('e', e)
+    },
   })
   // setTimeout(() => {
   //   layer.set({

@@ -1,4 +1,17 @@
-export default class Utils {
+import { IPointParam } from "interface";
+import { Feature } from "ol";
+import { Coordinate } from "ol/coordinate";
+import { easeOut } from "ol/easing";
+import { Geometry, Point } from "ol/geom";
+import VectorLayer from "ol/layer/Vector";
+import { unByKey } from "ol/Observable";
+import { getVectorContext } from "ol/render";
+import RenderEvent from "ol/render/Event";
+import VectorSource from "ol/source/Vector";
+import { Style, Stroke, Icon } from "ol/style";
+import CircleStyle from "ol/style/Circle";
+
+export default class Utils<T> {
   static separator = '⚝';
   /**
    * @description: 获取一个新的GUID
@@ -76,5 +89,79 @@ export default class Utils {
     let b = this.constantMultiVector2((2 * t * (1 - t)), center)
     let c = this.constantMultiVector2(Math.pow(t, 2), endPos)
     return this.vector2Add(this.vector2Add(a, b), c)
+  }
+  /**
+  * 创建样式
+  * @param start 开始点 
+  * @param end 结束点
+  * @param color 填充颜色
+  * @returns 返回`Style`
+  */
+  static createStyle(start: Coordinate, end: Coordinate, color?: string): Style {
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const rotation = Math.atan2(dy, dx);
+    const style = new Style({
+      geometry: new Point(end),
+      image: new Icon({
+        src: '/image/arrow.png',
+        anchor: [0.75, 0.5],
+        scale: 0.7,
+        rotateWithView: true,
+        rotation: -rotation,
+        color: color || "#ffcc33"
+      })
+    })
+    return style;
+  }
+  /**
+   * 动态点刷新方法
+   * @param feature `Point` 实例
+   * @param param 详细参数，详见{@link IPointParam}
+   */
+  flash(feature: Feature<Geometry>, param: IPointParam<T>, layer: VectorLayer<VectorSource<Geometry>>): void {
+    const defaultOption = {
+      duration: 1000,
+      flashColor: param.flashColor || { R: 255, G: 0, B: 0 },
+      isRepeat: true,
+      size: param.size || 6
+    };
+    const options = Object.assign(defaultOption, param);
+    let start = Date.now();
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      const flashGeom = geometry.clone();
+      const listenerKey = layer.on('postrender', (event: RenderEvent) => {
+        const frameState = event.frameState;
+        if (frameState) {
+          let elapsed = frameState.time - start;
+          if (elapsed >= options.duration) {
+            if (options.isRepeat) {
+              start = Date.now();
+            } else {
+              unByKey(listenerKey);
+              return;
+            }
+          }
+          const vectorContext = getVectorContext(event);
+          const elapsedRatio = elapsed / options.duration;
+          const radius = easeOut(elapsedRatio) * 10 + options.size;
+          const opacity = easeOut(1 - elapsedRatio);
+          const style = new Style({
+            image: new CircleStyle({
+              radius: radius,
+              stroke: new Stroke({
+                color: `rgba(${options.flashColor.R}, ${options.flashColor.G}, ${options.flashColor.B},${opacity})`,
+                width: 0.25 + opacity,
+              }),
+            }),
+          });
+          vectorContext.setStyle(style);
+          vectorContext.drawGeometry(flashGeom);
+          layer.changed();
+        }
+      });
+      feature.set("listenerKey", listenerKey);
+    }
   }
 }

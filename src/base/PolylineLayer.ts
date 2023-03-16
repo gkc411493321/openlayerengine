@@ -54,30 +54,6 @@ export default class Polyline<T = unknown> extends Base {
     return feature
   }
   /**
-   * 创建样式
-   * @param start 开始点 
-   * @param end 结束点
-   * @param color 填充颜色
-   * @returns 返回`Style`
-   */
-  private createStyle(start: Coordinate, end: Coordinate, color?: string): Style {
-    const dx = end[0] - start[0];
-    const dy = end[1] - start[1];
-    const rotation = Math.atan2(dy, dx);
-    const style = new Style({
-      geometry: new Point(end),
-      image: new Icon({
-        src: '/image/arrow.png',
-        anchor: [0.75, 0.5],
-        scale: 0.7,
-        rotateWithView: true,
-        rotation: -rotation,
-        color: color || "#ffcc33"
-      })
-    })
-    return style;
-  }
-  /**
    * 增加带箭头的线段
    * @param param 详细参数，详见{@link IPolylineParam}
    * @returns 返回`Feature<LineString>`
@@ -92,13 +68,13 @@ export default class Polyline<T = unknown> extends Base {
     if (param.arrowIsRepeat) {
       if (geometry) {
         geometry.forEachSegment((start, end) => {
-          styles.push(this.createStyle(start, end, param.stroke?.color))
+          styles.push(Utils.createStyle(start, end, param.stroke?.color))
         });
       }
     } else {
       const start = param.positions[param.positions.length - 2];
       const end = param.positions[param.positions.length - 1];
-      styles.push(this.createStyle(start, end, param.stroke?.color))
+      styles.push(Utils.createStyle(start, end, param.stroke?.color))
     }
     let styleText = new Style()
     styleText = super.setText(styleText, param.label);
