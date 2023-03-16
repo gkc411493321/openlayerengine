@@ -31,11 +31,11 @@ export const testPolygonLayer = () => {
       color: "#fffff3"
     }
   })
-  useEarth().useDrawTool().editPolygon({
-    feature: polygon,
-    isShowUnderlay: true,
-    callback: (e) => {
-      console.log(e)
-    }
-  });
+  // useEarth().useDrawTool().editPolygon({
+  //   feature: polygon,
+  //   isShowUnderlay: true,
+  //   callback: (e) => {
+  //     console.log(e)
+  //   }
+  // });
 }

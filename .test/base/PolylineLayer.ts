@@ -6,6 +6,7 @@ export const testPolylineLayer = () => {
     id: "polyline_1",
     positions: [fromLonLat([90, 30]), fromLonLat([90, 50])],
   })
+
   layer.add({
     id: "polyline_2",
     positions: [fromLonLat([100, 30]), fromLonLat([100, 50])],
@@ -15,6 +16,7 @@ export const testPolylineLayer = () => {
     },
     width: 5
   })
+
   layer.add({
     id: "polyline_3",
     positions: [fromLonLat([80, 30]), fromLonLat([80, 50])],
@@ -99,4 +101,11 @@ export const testPolylineLayer = () => {
   //   layer.setPositionFlight("fly_2", [fromLonLat([110, 70]), fromLonLat([100, 50])])
   //   layer.setPositionFlight("fly_1", [fromLonLat([60, 55]), fromLonLat([120, 55])])
   // }, 3000)
+  // useEarth().useDrawTool().editPolyline({
+  //   feature: a,
+  //   isShowUnderlay: true,
+  //   callback(e) {
+  //     console.log(e)
+  //   },
+  // })
 }

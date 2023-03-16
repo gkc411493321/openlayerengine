@@ -1,4 +1,4 @@
-import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon, IEditPolygon, IModifyEvent, ModifyType } from "../interface";
+import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon, IEditPolygon, IEditPolyline, IModifyEvent, ModifyType } from "../interface";
 import { Feature, Map } from "ol";
 import { Geometry, LineString, Point, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
@@ -8,9 +8,9 @@ import { Draw, Modify, Select, Translate } from "ol/interaction";
 import { useEarth } from "../useEarth";
 import { DrawEvent } from "ol/interaction/Draw";
 import { fromLonLat, toLonLat } from "ol/proj";
-import { Circle, Fill, Stroke, Style } from "ol/style";
+import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
 import CircleStyle from "ol/style/Circle";
-import { OverlayLayer, PointLayer, PolygonLayer } from "../base";
+import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "../base";
 import { unByKey } from "ol/Observable";
 import { Coordinate } from "ol/coordinate";
 import BaseLayer from "ol/layer/Base";
@@ -137,6 +137,30 @@ export default class DynamicDraw {
     this.drawChange((event => {
       param?.callback?.call(this, (event));
     }), type, param);
+  }
+  /**
+   * 创建样式
+   * @param start 开始点 
+   * @param end 结束点
+   * @param color 填充颜色
+   * @returns 返回`Style`
+   */
+  private createStyle(start: Coordinate, end: Coordinate, color?: string): Style {
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const rotation = Math.atan2(dy, dx);
+    const style = new Style({
+      geometry: new Point(end),
+      image: new Icon({
+        src: '/image/arrow.png',
+        anchor: [0.75, 0.5],
+        scale: 0.7,
+        rotateWithView: true,
+        rotation: -rotation,
+        color: color || "#ffcc33"
+      })
+    })
+    return style;
   }
   /**
    * 退出绘制工具
@@ -325,7 +349,7 @@ export default class DynamicDraw {
     this.initDraw("Polygon", param);
   }
   /**
-   * 修改面
+   * 动态修改面
    * @param param 参数，详见{@link IEditPolygon}
    */
   editPolygon(param: IEditPolygon): void {
@@ -348,8 +372,7 @@ export default class DynamicDraw {
         },
         fill: {
           color: "#00aaff"
-        },
-        module: "test"
+        }
       })
     }
     // 生成编辑面
@@ -367,10 +390,8 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source,
     });
-    modify.on("modifystart", () => {
-      pointLayer.remove();
-    })
     modify.on("modifyend", evt => {
+      pointLayer.remove();
       const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
       for (const item of position[0]) {
         pointLayer.add({
@@ -380,8 +401,7 @@ export default class DynamicDraw {
           },
           fill: {
             color: "#00aaff"
-          },
-          module: "test"
+          }
         })
       }
       const transformP = position[0].map(item => {
@@ -400,6 +420,111 @@ export default class DynamicDraw {
       pointLayer.destroy();
       const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
       const transformP = position[0].map(item => {
+        return item = toLonLat(item);
+      })
+      param.feature.getGeometry()?.setCoordinates(position);
+      layer?.getSource()?.addFeature(param.feature);
+      if (this.overlayKey) {
+        this.overlay.remove("draw_help_tooltip");
+        unByKey(this.overlayKey);
+        this.overlayKey = undefined;
+      }
+      param.callback?.call(this, {
+        type: ModifyType.Modifyexit,
+        position: transformP
+      })
+    })
+  }
+  /**
+   * 动态修改线
+   * @param param 参数，详见{@link IEditPolyline}
+   */
+  editPolyline(param: IEditPolyline): void {
+    this.initHelpTooltip("单击修改面 alt+单击删除点 右击退出编辑")
+    // 创建编辑图层
+    const polyline = new PolylineLayer(useEarth());
+    const point = new PointLayer(useEarth());
+    // 删除原有面
+    const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
+    if (!param.isShowUnderlay) {
+      layer?.getSource()?.removeFeature(param.feature);
+    }
+    // 获取原有面坐标信息
+    const position = <Coordinate[]>param.feature.getGeometry()?.getCoordinates();
+    // 生成控制点
+    for (const item of position) {
+      point.add({
+        center: item,
+        stroke: {
+          color: "#fff"
+        },
+        fill: {
+          color: "#00aaff"
+        }
+      })
+    }
+    // 生成编辑面
+    const line = polyline.add({
+      positions: position,
+      stroke: {
+        color: "#00aaff",
+        width: 2
+      }
+    })
+    const source = <VectorSource<Geometry>>polyline.getLayer().getSource();
+    const modify = new Modify({
+      source: source,
+    });
+    modify.on("modifyend", evt => {
+      point.remove()
+      const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
+      for (const item of position) {
+        point.add({
+          center: item,
+          stroke: {
+            color: "#fff"
+          },
+          fill: {
+            color: "#00aaff"
+          }
+        })
+      }
+      const transformP = position.map(item => {
+        return item = toLonLat(item);
+      })
+      param.callback?.call(this, {
+        type: ModifyType.Modifying,
+        position: transformP
+      })
+    })
+    this.map.addInteraction(modify);
+    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal((e) => {
+      this.map.removeInteraction(modify);
+      const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
+      const oldParam = param.feature.get("param");
+      const styles = <Style[]>param.feature.getStyle();
+      if (oldParam.isArrow) {
+        // 删除原有箭头
+        const newStyles = styles.filter(item => {
+          if (item.getImage() == null) {
+            return item
+          }
+        })
+        if (oldParam.arrowIsRepeat) {
+          line.getGeometry()?.forEachSegment((start, end) => {
+            newStyles.push(this.createStyle(start, end, oldParam.stroke?.color))
+          });
+        } else {
+          const start = position[position.length - 2];
+          const end = position[position.length - 1];
+          newStyles.push(this.createStyle(start, end, oldParam.stroke?.color))
+        }
+        param.feature.setStyle(newStyles);
+      }
+      layer?.getSource()?.addFeature(param.feature);
+      polyline.destroy();
+      point.destroy();
+      const transformP = position.map(item => {
         return item = toLonLat(item);
       })
       param.feature.getGeometry()?.setCoordinates(position);

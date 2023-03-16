@@ -1,6 +1,6 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
-import { Geometry, Polygon } from "ol/geom";
+import { Geometry, LineString, Polygon } from "ol/geom";
 
 export enum DrawType {
   /**
@@ -115,6 +115,20 @@ export interface IEditPolygon {
    * 元素
    */
   feature: Feature<Polygon>;
+  /**
+   * 是否显示参考底图，默认false
+   */
+  isShowUnderlay?: boolean;
+  /**
+   * 回调函数
+   */
+  callback?: (e: IModifyEvent) => void;
+}
+export interface IEditPolyline {
+  /**
+   * 元素
+   */
+  feature: Feature<LineString>;
   /**
    * 是否显示参考底图，默认false
    */

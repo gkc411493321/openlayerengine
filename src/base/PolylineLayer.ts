@@ -96,7 +96,7 @@ export default class Polyline<T = unknown> extends Base {
         });
       }
     } else {
-      const start = param.positions[0];
+      const start = param.positions[param.positions.length - 2];
       const end = param.positions[param.positions.length - 1];
       styles.push(this.createStyle(start, end, param.stroke?.color))
     }
