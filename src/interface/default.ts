@@ -577,3 +577,65 @@ export interface ILabel {
    */
   rotation?: number;
 }
+export interface IMeasureData {
+  /**
+   * 开始点
+   */
+  startP: Coordinate;
+  /**
+   * 结束点
+   */
+  endP: Coordinate;
+  /**
+   * 距离(KM)
+   */
+  distance: number;
+}
+export interface IMeasureEvent {
+  /**
+   * 分段测量数据
+   */
+  data: IMeasureData[];
+  /**
+   * 总距
+   */
+  totalDistance: number;
+}
+export interface IMeasure {
+  /**
+   * 线颜色
+   */
+  lineColor?: string;
+  /**
+   * 线宽
+   */
+  lineWidth?: number;
+  /**
+   * 是否展示定位点
+   */
+  pointShow?: boolean;
+  /**
+   * 定位点颜色
+   */
+  pointColor?: string;
+  /**
+   * 定位点大小
+   */
+  pointSzie?: number;
+  /**
+   * 文本颜色
+   */
+  textColor?: string;
+  /**
+   * 文本大小
+   */
+  textSize?: number;
+  /**
+   * 背景色
+   */
+  textBackgroundColor?: string;
+  /**
+   * 回调函数
+   */
+  callback?: (e: IMeasureEvent) => void;
+}

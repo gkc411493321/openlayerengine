@@ -28,12 +28,12 @@ export const testPointLayer = () => {
     isRepeat: false,
     module: "point"
   })
-  useEarth().useDrawTool().editPoint({
-    feature: a,
-    callback(e) {
-      console.log('e', e)
-    },
-  })
+  // useEarth().useDrawTool().editPoint({
+  //   feature: a,
+  //   callback(e) {
+  //     console.log('e', e)
+  //   },
+  // })
   // setTimeout(() => {
   //   layer.set({
   //     id: "point_1",

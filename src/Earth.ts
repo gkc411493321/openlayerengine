@@ -10,7 +10,7 @@ import XYZ from "ol/source/XYZ";
 import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from "./base";
-import { DynamicDraw, GlobalEvent } from "./commponents";
+import { DynamicDraw, GlobalEvent, Measure } from "./commponents";
 import { DoubleClickZoom } from 'ol/interaction'
 import { Geometry } from "ol/geom";
 import { Layer } from "ol/layer";
@@ -32,6 +32,10 @@ export default class Earth {
    * 动态绘制
    */
   private draw?: DynamicDraw;
+  /**
+   * 测量
+   */
+  private measure?: Measure;
   /**
    * 默认中心点
    */
@@ -274,6 +278,15 @@ export default class Earth {
       this.draw = new DynamicDraw(this);
     }
     return this.draw;
+  }
+  /**
+   * 使用测量工具
+   */
+  useMeasure(): Measure {
+    if (!this.measure) {
+      this.measure = new Measure(this);
+    }
+    return this.measure;
   }
   /**
    * 判断当前像素位置是否存在feature对象

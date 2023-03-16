@@ -15,6 +15,7 @@ import { testPolygonLayer } from "./base/PolygonLayer";
 import { testPolylineLayer } from "./base/PolylineLayer";
 import { testDynamicDraw } from "./commponents/DynamicDraw";
 import { testGlobalEvent } from "./commponents/GlobalEvent";
+import { testMeasure } from "./commponents/Measure";
 window.onload = () => {
   const earth = useEarth();
   earth.addLayer(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
@@ -26,4 +27,5 @@ window.onload = () => {
   testOverlayLayer();
   testGlobalEvent();
   testDynamicDraw();
+  testMeasure();
 }
