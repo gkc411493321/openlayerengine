@@ -1,11 +1,11 @@
 import Earth from "Earth";
 import { Feature, Map } from "ol";
-import { Geometry, LineString, Point } from "ol/geom";
+import { Geometry, LineString, Point, Polygon } from "ol/geom";
 import { Draw } from "ol/interaction";
 import VectorSource from "ol/source/Vector";
 import { Fill, RegularShape, Stroke, Style, Text } from "ol/style";
 import CircleStyle from "ol/style/Circle";
-import { getLength } from 'ol/sphere.js';
+import { getLength, getArea } from 'ol/sphere.js';
 import { Coordinate } from "ol/coordinate";
 import { FeatureLike } from "ol/Feature";
 import RenderFeature from "ol/render/Feature";
@@ -105,11 +105,17 @@ export default class Measure {
     output = Math.round((length / 1000) * 100) / 100;
     return output;
   };
+  private formatArea(polygon: Polygon): number {
+    const area = getArea(polygon);
+    let output;
+    output = Math.round((area / 1000000) * 100) / 100;
+    return output;
+  };
   private styleFunction(feature: FeatureLike, param?: IMeasure, drawType?: string, tip?: string): Style[] {
     if (tip) {
       this.style = new Style({
         fill: new Fill({
-          color: param?.lineColor || '#ffcc33',
+          color: '#ffffff70',
         }),
         stroke: new Stroke({
           color: param?.lineColor || '#ffcc33',
@@ -132,13 +138,23 @@ export default class Measure {
     const styles = [this.style];
     const geometry = feature.getGeometry();
     const type = geometry?.getType();
-    let point: Point | undefined, label: String | any, line: LineString | undefined;
-    if (!drawType || drawType === type || type === 'LineString') {
-      const lineString = <LineString>geometry;
-      point = new Point(lineString.getLastCoordinate());
-      label = this.formatLength(lineString);
-      line = lineString;
+    let point: Point | undefined, label: String | any, line: LineString | undefined, unit: string | any;
+    if (!drawType || drawType === type) {
+      if (type === 'Polygon') {
+        const polygon = <Polygon>geometry;
+        point = polygon.getInteriorPoint();
+        label = this.formatArea(polygon);
+        line = new LineString(polygon.getCoordinates()[0]);
+        unit = ' km\xB2';
+      } else if (type === 'LineString') {
+        const lineString = <LineString>geometry;
+        point = new Point(lineString.getLastCoordinate());
+        label = this.formatLength(lineString);
+        line = lineString;
+        unit = ' km';
+      }
     }
+
     if (this.segments && line) {
       this.segmentStyle = new Style({
         text: new Text({
@@ -203,7 +219,7 @@ export default class Measure {
         }),
       })
       this.labelStyle.setGeometry(point);
-      this.labelStyle.getText().setText('合计：' + label + ' km');
+      this.labelStyle.getText().setText('合计：' + label + unit);
       styles.push(this.labelStyle);
     }
     if (tip && type === 'Point') {
@@ -319,6 +335,9 @@ export default class Measure {
         } else {
           return false;
         }
+      },
+      finishCondition: (e) => {
+        return false;
       }
     });
     this.draw.on("drawstart", (e) => {
@@ -377,6 +396,64 @@ export default class Measure {
       }
       useEarth().setMouseStyle("auto");
       param.callback?.call(this, this.measureData);
+    })
+    this.map.addInteraction(this.draw);
+  }
+  /**
+   * 面积测量
+   * @param param 参数，详见{@link IMeasure}
+   */
+  polygonMeasure(param: IMeasure) {
+    this.segments = true;
+    this.labels = true;
+    useEarth().setMouseStyle("pointer");
+    const activeTip = '单击继续绘制线 右击退出测量';
+    const idleTip = '单击开始测量';
+    let tip = idleTip;
+    this.draw = new Draw({
+      source: this.source,
+      type: "Polygon",
+      style: (feature) => {
+        return this.styleFunction(feature, param, "Polygon", tip);
+      },
+      condition: (e) => {
+        if (e.originalEvent.button == 0) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      finishCondition: (e) => {
+        return false;
+      }
+    });
+    this.draw.on("drawstart", (e) => {
+      tip = activeTip;
+    })
+    this.draw.on('drawend', (e) => {
+      tip = idleTip;
+      const polygon = <Feature<Polygon>>e.feature;
+      if (param?.pointShow == undefined || param.pointShow == true) {
+        polygon.getGeometry()?.getCoordinates()[0].map(item => {
+          this.pointLayer.add({
+            center: item,
+            fill: {
+              color: param?.pointColor || "#fff"
+            },
+            size: param?.pointSzie || 3
+          })
+          this.measureData.data.push(toLonLat(item));
+        })
+      }
+      this.measureData.area = this.formatArea(polygon.getGeometry()!);
+      param.callback?.call(this, this.measureData);
+    });
+    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal(e => {
+      if (this.draw) {
+        this.draw.finishDrawing();
+        this.map.removeInteraction(this.draw);
+      }
+      useEarth().setMouseStyle("auto");
     })
     this.map.addInteraction(this.draw);
   }

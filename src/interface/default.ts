@@ -595,11 +595,15 @@ export interface IMeasureEvent {
   /**
    * 分段测量数据
    */
-  data: IMeasureData[];
+  data: IMeasureData[] | any;
   /**
    * 总距
    */
   totalDistance?: number;
+  /**
+   * 面积
+   */
+  area?: number;
 }
 export interface IMeasure {
   /**
