@@ -268,4 +268,11 @@ export default class Measure {
     })
     this.map.addInteraction(this.draw);
   }
+  /**
+   * 清空测量
+   */
+  clear() {
+    this.map.removeLayer(this.layer);
+    this.pointLayer.destroy();
+  }
 }
