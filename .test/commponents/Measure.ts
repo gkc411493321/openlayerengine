@@ -1,7 +1,7 @@
 import { useEarth } from "../../src"
 
 export const testMeasure = () => {
-  useEarth().useMeasure().lineMeasure({
+  useEarth().useMeasure().lineSegmentation({
     pointColor: "red",
     callback: (e) => {
       console.log(e)
@@ -10,4 +10,9 @@ export const testMeasure = () => {
       }, 3000)
     }
   });
+  // useEarth().useMeasure().lineCenter({
+  //   callback: (e) => {
+  //     console.log(e)
+  //   }
+  // });
 }

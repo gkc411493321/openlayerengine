@@ -13,7 +13,7 @@ import VectorLayer from "ol/layer/Vector";
 import { IMeasure, IMeasureEvent } from "interface";
 import { PointLayer } from "../base";
 import { useEarth } from "../useEarth";
-import { toLonLat } from "ol/proj";
+import { fromLonLat, toLonLat } from "ol/proj";
 /**
  * 测量类
  */
@@ -73,8 +73,15 @@ export default class Measure {
   private pointLayer: PointLayer<unknown>;
   private measureData: IMeasureEvent = {
     data: [],
-    totalDistance: 0
   };
+  /**
+   * 分段标签显隐
+   */
+  private segments: boolean = false;
+  /**
+   * 总距标签显隐
+   */
+  private labels: boolean = false;
   /**
    * 
    * @param earth 
@@ -132,7 +139,7 @@ export default class Measure {
       label = this.formatLength(lineString);
       line = lineString;
     }
-    if (line) {
+    if (this.segments && line) {
       this.segmentStyle = new Style({
         text: new Text({
           font: '12px Calibri,sans-serif',
@@ -171,7 +178,7 @@ export default class Measure {
         count++;
       });
     }
-    if (label && point) {
+    if (this.labels && label && point) {
       this.labelStyle = new Style({
         text: new Text({
           font: '12px Calibri,sans-serif',
@@ -206,9 +213,11 @@ export default class Measure {
     return styles;
   }
   /**
-   * 画线测量-分段方距
+   * 画线测量
+   * @param param 参数，详见{@link IMeasure}
    */
-  lineMeasure(param: IMeasure) {
+  private lineMeasure(param: IMeasure) {
+    useEarth().setMouseStyle("pointer");
     const activeTip = '单击继续绘制线 右击退出测量';
     const idleTip = '单击开始测量';
     let tip = idleTip;
@@ -265,6 +274,109 @@ export default class Measure {
         this.draw.finishDrawing();
         this.map.removeInteraction(this.draw);
       }
+      useEarth().setMouseStyle("auto");
+    })
+    this.map.addInteraction(this.draw);
+  }
+  /**
+   * 画线测量-分段方距
+   * @param param 参数，详见{@link IMeasure}
+   */
+  lineSegmentation(param: IMeasure) {
+    this.segments = true;
+    this.labels = false;
+    this.lineMeasure(param);
+  }
+  /**
+   * 画线测量-首点方距
+   * @param param 参数，详见{@link IMeasure}
+   */
+  lineFirst(param: IMeasure) {
+    this.segments = false;
+    this.labels = true;
+    this.lineMeasure(param);
+  }
+  /**
+   * 画线测量-中心方距
+   * @param param 参数，详见{@link IMeasure}
+   */
+  lineCenter(param: IMeasure) {
+    this.segments = true;
+    this.labels = false;
+    useEarth().setMouseStyle("pointer");
+    const activeTip = '单击继续绘制线 右击退出测量';
+    const idleTip = '单击开始测量';
+    let tip = idleTip;
+    this.draw = new Draw({
+      source: this.source,
+      type: "LineString",
+      style: (feature) => {
+        return this.styleFunction(feature, param, "line", tip);
+      },
+      condition: (e) => {
+        if (e.originalEvent.button == 0) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    });
+    this.draw.on("drawstart", (e) => {
+      const line = <LineString>e.feature.getGeometry();
+      tip = activeTip;
+      setTimeout(() => {
+        if (!useEarth().useGlobalEvent().hasGlobalMouseLeftUpEvent()) {
+          useEarth().useGlobalEvent().enableGlobalMouseLeftUpEvent();
+          useEarth().useGlobalEvent().addMouseLeftUpEventByGlobal(() => {
+            if (this.draw) {
+              this.draw.finishDrawing();
+              this.draw.appendCoordinates([line.getCoordinates()[0]])
+            }
+          })
+          this.pointLayer.add({
+            center: line.getCoordinates()[0],
+            fill: {
+              color: param?.pointColor || "#fff"
+            },
+            size: param?.pointSzie || 3
+          })
+        }
+      }, 50);
+    })
+    this.draw.on('drawend', (e) => {
+      tip = idleTip;
+      const line = <Feature<LineString>>e.feature;
+      const positions = <Coordinate[]>line.getGeometry()?.getCoordinates();
+      if (positions.length < 2) return;
+      if (param?.pointShow == undefined || param.pointShow == true) {
+        this.pointLayer.add({
+          center: positions[1],
+          fill: {
+            color: param?.pointColor || "#fff"
+          },
+          size: param?.pointSzie || 3
+        })
+      }
+      line.getGeometry()?.forEachSegment((a: Coordinate, b: Coordinate) => {
+        const segment = new LineString([a, b]);
+        const distance = this.formatLength(segment);
+        this.measureData.data.push({
+          startP: toLonLat(a),
+          endP: toLonLat(b),
+          distance: distance
+        })
+      })
+    });
+    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal(e => {
+      if (useEarth().useGlobalEvent().hasGlobalMouseLeftUpEvent()) {
+        useEarth().useGlobalEvent().disableGlobalMouseLeftUpEvent();
+      }
+      if (this.draw) {
+        this.draw.finishDrawing();
+        this.map.removeInteraction(this.draw);
+      }
+      useEarth().setMouseStyle("auto");
+      param.callback?.call(this, this.measureData);
     })
     this.map.addInteraction(this.draw);
   }
@@ -274,5 +386,7 @@ export default class Measure {
   clear() {
     this.map.removeLayer(this.layer);
     this.pointLayer.destroy();
+    this.measureData = { data: [] };
+    this.segmentStyles = [];
   }
 }

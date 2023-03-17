@@ -599,7 +599,7 @@ export interface IMeasureEvent {
   /**
    * 总距
    */
-  totalDistance: number;
+  totalDistance?: number;
 }
 export interface IMeasure {
   /**
@@ -634,6 +634,10 @@ export interface IMeasure {
    * 背景色
    */
   textBackgroundColor?: string;
+  /**
+   * 显示总距
+   */
+  isShowTotalDistance?: boolean;
   /**
    * 回调函数
    */
