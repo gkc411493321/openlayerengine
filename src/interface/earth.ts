@@ -1,3 +1,4 @@
+import WindLayer from "../base/WindLayer";
 import { Feature } from "ol";
 import { Geometry } from "ol/geom";
 import { Layer } from "ol/layer";
@@ -30,6 +31,10 @@ export interface DefaultEntities<T = unknown> {
    * 线
    */
   polyline: PolylineLayer<T>;
+  /**
+   * 风场
+   */
+  wind: WindLayer;
   /**
    * 重置方法
    */
