@@ -6,6 +6,7 @@ import { PanIntoViewOptions, Positioning } from "ol/Overlay";
 import { Size } from "ol/size";
 import VectorSource from "ol/source/Vector";
 import { IconAnchorUnits, IconOrigin } from "ol/style/Icon";
+import { IField, IOptions } from 'wind-core';
 
 /**
  * 新增元素的基础参数
@@ -646,4 +647,65 @@ export interface IMeasure {
    * 回调函数
    */
   callback?: (e: IMeasureEvent) => void;
+}
+export interface IWindOptions {
+  /**
+  * 粒子透明度，影响粒子拖尾长度，默认0.9
+  */
+  globalAlpha?: number;
+  /**
+   * 粒子运动速度,默认1/25
+   */
+  velocityScale?: number;
+  /**
+   * 粒子数量，默认3000
+   */
+  paths?: number;
+  /**
+   * 粒子宽度，默认1
+   */
+  lineWidth?: number;
+  /**
+   * 粒子颜色
+   */
+  colorScale?: string | string[] | ((e: number) => void);
+}
+export interface ISetWindParam {
+  /**
+   * 数据
+   */
+  data: any;
+  /**
+   * id,唯一标识符
+   */
+  id: string;
+  /**
+   * 属性
+   */
+  options?: Partial<IField>;
+}
+export interface ISetWindOptions {
+  /**
+   * id,唯一标识符
+   */
+  id: string;
+  /**
+   * 属性
+   */
+  options: Partial<IOptions>;
+}
+
+export interface IWindParam extends IWindOptions {
+  /**
+   * 数据
+   */
+  data: any;
+  /**
+   * id,唯一标识符
+   */
+  id?: string;
+  /**
+   * 类名
+   */
+  className?: string;
 }

@@ -13,6 +13,7 @@ import { testOverlayLayer } from "./base/OverlayLayer";
 import { testPointLayer } from "./base/PointLayer";
 import { testPolygonLayer } from "./base/PolygonLayer";
 import { testPolylineLayer } from "./base/PolylineLayer";
+import { testWindLayer } from "./base/WindLayer";
 import { testDynamicDraw } from "./commponents/DynamicDraw";
 import { testGlobalEvent } from "./commponents/GlobalEvent";
 import { testMeasure } from "./commponents/Measure";
@@ -28,4 +29,5 @@ window.onload = () => {
   testGlobalEvent();
   testDynamicDraw();
   testMeasure();
+  testWindLayer();
 }

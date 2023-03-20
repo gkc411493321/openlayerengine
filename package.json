@@ -21,7 +21,8 @@
     "cesium": "1.95.0",
     "heatmap.js": "^2.0.5",
     "mitt": "^3.0.0",
-    "ol": "^7.2.2"
+    "ol": "^7.2.2",
+    "ol-wind": "^1.1.2"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",
