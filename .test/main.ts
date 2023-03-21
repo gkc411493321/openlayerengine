@@ -14,9 +14,11 @@ import { testPointLayer } from "./base/PointLayer";
 import { testPolygonLayer } from "./base/PolygonLayer";
 import { testPolylineLayer } from "./base/PolylineLayer";
 import { testWindLayer } from "./base/WindLayer";
+import { testDescriptor } from "./commponents/Descriptor";
 import { testDynamicDraw } from "./commponents/DynamicDraw";
 import { testGlobalEvent } from "./commponents/GlobalEvent";
 import { testMeasure } from "./commponents/Measure";
+import '../src/style/index.scss';
 window.onload = () => {
   const earth = useEarth();
   earth.addLayer(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
@@ -30,4 +32,5 @@ window.onload = () => {
   testDynamicDraw();
   testMeasure();
   testWindLayer();
+  testDescriptor();
 }

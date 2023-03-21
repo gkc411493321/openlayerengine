@@ -1,0 +1,237 @@
+.earth-engine-component-descriptor {
+  // cursor: move;
+  user-select: none;
+  // pointer-events: none;
+  position: absolute;
+  border: none;
+  background-color: rgba(32, 23, 76, 0.5);
+  color: #ccc;
+  padding: 5px;
+  font-size: 12px;
+  z-index: 10;
+
+  .icon {
+    // pointer-events: all;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+
+    &.icon-lock {
+      cursor: pointer;
+      // background: url('./images/descriptions/lock.png');
+      background-size: contain;
+    }
+
+    &.icon-unlock {
+      cursor: pointer;
+      // background: url('./images/descriptions/unlock.png');
+      background-size: contain;
+    }
+  }
+
+  &.descriptor-list {
+    ul {
+      list-style: none;
+      padding: 0 10px;
+
+      li {
+        display: flex;
+
+        &:first-child {
+          pointer-events: all;
+
+          span {
+            padding-right: 20px;
+          }
+        }
+
+        &.header {
+          margin-bottom: 5px;
+          padding-bottom: 5px;
+          min-height: 24px;
+        }
+
+        &.footer {
+          margin-top: 5px;
+          padding-top: 5px;
+        }
+
+        label {
+          min-width: 51px;
+          display: inline-block;
+          text-align: justify;
+          text-align-last: justify;
+          margin-right: 2px;
+        }
+
+        span {
+          display: inline-block;
+          margin-left: 5px;
+
+          &.normal {
+            color: #00ff00;
+          }
+
+          &.error {
+            color: red;
+          }
+
+          &.warn {
+            color: yellow;
+          }
+        }
+
+        &.separator {
+          margin: 6px 0 5px;
+          border-top: 1px dashed rgba(32, 23, 76, 0.5);
+        }
+      }
+    }
+  }
+
+  &.descriptor-props {
+    .icon-lock {
+      display: none;
+    }
+
+    table.marker-props {
+      pointer-events: all;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-collapse: collapse;
+      font-size: 11px;
+      width: 300px;
+      overflow: auto;
+      border-bottom: 1px solid #ccc;
+      max-height: 189px;
+
+      tbody {
+        tr {
+          th {
+            width: 33.3333%;
+            min-width: 100px;
+            white-space: nowrap;
+            border: 1px solid #ccc;
+          }
+
+          td {
+            width: 60%;
+            border: 1px solid #ccc;
+
+            .range-value {
+              display: inline-block;
+              width: 50px;
+              text-align: center;
+            }
+          }
+        }
+
+        tr:nth-child(even) {
+          th {
+            background-color: #f7f7f733;
+          }
+
+          td {
+            background-color: #f7f7f733;
+          }
+        }
+      }
+
+      input {
+        pointer-events: all;
+
+        &:disabled {
+          pointer-events: none;
+        }
+
+        width: 100%;
+        background: transparent;
+        border: none;
+
+        &:focus {
+          outline: 0;
+        }
+
+        &[type='range'] {
+          width: calc(100% - 50px);
+        }
+      }
+
+      select {
+        pointer-events: all;
+        display: inline-block;
+        background: none;
+        border: none;
+        // color: #edffff;
+        // fill: #edffff;
+        cursor: pointer;
+        overflow: hidden;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        width: 100%;
+        outline: none;
+
+        &:focus {
+          background: none;
+          border: none;
+        }
+      }
+    }
+
+    .buttons {
+      pointer-events: all;
+      margin-top: 5px;
+
+      .delete {
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        float: right;
+        background-color: transparent;
+        border: none;
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+  }
+
+  &.descriptor-custom {
+    color: rgba(255, 255, 255, 0.8);
+    transform: translate(50%, 0);
+
+    .icon-lock {
+      display: none;
+    }
+
+    .descriptor-arrow {
+      left: 0;
+      transform: translate(0, 0);
+      border-bottom: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-left: 5px solid rgba(32, 23, 76, 0.5);
+      border-top: 5px solid rgba(32, 23, 76, 0.5);
+    }
+  }
+
+  .descriptor-arrow {
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    transform: translate(-50%, 0);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid rgba(32, 23, 76, 0.5);
+  }
+}
+
+.earth-svg-component-line {
+  stroke: rgba(32, 23, 76, 0.5); // rgba(32, 23, 76, 0.8);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}

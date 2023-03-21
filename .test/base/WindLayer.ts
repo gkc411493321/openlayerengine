@@ -16,9 +16,9 @@ export const testWindLayer = () => {
   //     }
   //   })
   // }, 3000);
-  useEarth().useDefaultLayer().wind.add({
-    data: gfs,
-    paths: 20000,
-    globalAlpha: 0.9,
-  })
+  // useEarth().useDefaultLayer().wind.add({
+  //   data: gfs,
+  //   paths: 20000,
+  //   globalAlpha: 0.9,
+  // })
 }

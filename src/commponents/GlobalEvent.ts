@@ -302,7 +302,7 @@ export default class GlobalEvent {
   /**
    * 启用模块下鼠标左键按下事件监听
    */
-  enableModuleMouseLfetDownEvent(): void {
+  enableModuleMouseLeftDownEvent(): void {
     if (!this.eventKey?.has("moduleMouseLeftDown")) {
       this.map.getViewport().addEventListener("mousedown", this.moduleMouseLeftDown.bind(this));
       this.eventKey?.set("moduleMouseLfetDown", this.moduleMouseLeftDown);

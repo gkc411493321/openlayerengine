@@ -50,6 +50,7 @@ export default class OverlayLayer<T = unknown>{
       autoPan: param.autoPan,
       className: param.className
     });
+    overlay.set("data", param.data);
     this.map.addOverlay(overlay);
     return overlay;
   }
@@ -95,7 +96,7 @@ export default class OverlayLayer<T = unknown>{
    * overlayLayer.setPosition("overlay_x", fromLonLat([120, 22]));
    * ```
    */
-  setPosition(id: string, position: Coordinate): Overlay | null {
+  setPosition(id: string, position: Coordinate | undefined): Overlay | null {
     const overlay = this.get(id);
     if (overlay == undefined) {
       console.warn("没有找到元素，请检查ID");

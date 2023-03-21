@@ -41,6 +41,10 @@ export default class Earth {
    */
   public center: number[] = fromLonLat([119, 39]);
   /**
+   * 地图容器id
+   */
+  public containerId: string;
+  /**
    * 默认实例
    */
   private entities?: DefaultEntities;
@@ -88,6 +92,7 @@ export default class Earth {
     });
     this.map = map;
     this.view = map.getView();
+    this.containerId = el;
     // 关闭默认事件
     this.closeDefaultEvent();
   }
