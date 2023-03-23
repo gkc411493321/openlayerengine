@@ -24,7 +24,7 @@ window.onload = () => {
   earth.addLayer(earth.createXyzLayer('http://192.168.50.200:8080/_alllayers'));
   testCircleLayer()
   testPointLayer()
-  testPolygonLayer()
+  // testPolygonLayer()
   testPolylineLayer()
   testBillboardLayer()
   testOverlayLayer();

@@ -6,6 +6,8 @@ import Earth from "../Earth";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Overlay } from "ol";
 import { LineString } from "ol/geom";
+import { getVectorContext } from "ol/render";
+import { getWidth } from "ol/extent";
 export interface IDescriptorSetParams<T> {
   /**
    * 位置
@@ -36,11 +38,23 @@ export interface IProperties<T> extends IPropertiesBase<T> {
 }
 export interface IDescriptorParams<T> {
   /**
-   * 描述器类型
+   * 描述器类型，list：列表，custom：自定义
    */
-  type: 'list' | 'props' | 'custom';
+  type: 'list' | 'custom';
   /**
-   * 启用拖动事件
+   * 是否显示定位线
+   */
+  isShowFixedline?: boolean;
+  /**
+   * 定位线颜色
+   */
+  fixedLineColor?: string;
+  /**
+   * 窗口定位模式，默认position。position：跟随地理位置固定， pixel：跟随屏幕坐标固定
+   */
+  fixedModel?: 'position' | 'pixel';
+  /**
+   * 启用拖动事件，默认开启
    */
   drag?: boolean;
   /**
@@ -101,10 +115,6 @@ export default class Descriptor<T = any> {
    */
   private overLayer: OverlayLayer<unknown>;
   /**
-   * line图层
-   */
-  private lineLayer: PolylineLayer<unknown>;
-  /**
    * 容器className
    */
   private classNameList: string = "earth-engine-component-descriptor descriptor-list";
@@ -112,10 +122,10 @@ export default class Descriptor<T = any> {
    * 容器坐标与事件坐标差值
    */
   private positionDValue: number[] = [];
+  pixel: any;
   constructor(private earth: Earth, private options: IDescriptorParams<T>) {
     this.id = Utils.GetGUID();
     this.overLayer = new OverlayLayer(this.earth);
-    this.lineLayer = new PolylineLayer(this.earth);
     this.dom = document.createElement("div");
     this.init();
   }
@@ -139,42 +149,36 @@ export default class Descriptor<T = any> {
     const rt = this.earth.map.getCoordinateFromPixel([newPixel[0] + width, newPixel[1]]);
     const rb = this.earth.map.getCoordinateFromPixel([newPixel[0] + width, newPixel[1] + height]);
     let lineEndPosition: Coordinate = [];
-    let hoverLine: Coordinate[] = []
     if (oldPixel[0] < newPixel[0] && oldPixel[1] + height < newPixel[1]) {
       // 窗口在右下
       lineEndPosition = lt;
-      hoverLine = [lt, lb];
     } else if (oldPixel[0] < newPixel[0] && oldPixel[1] - height > newPixel[1]) {
       // 窗口在右上
       lineEndPosition = lb;
-      hoverLine = [lt, lb];
     } else if (oldPixel[0] > newPixel[0] + width && oldPixel[1] - height > newPixel[1]) {
       // 窗口在左上
       lineEndPosition = rb;
-      hoverLine = [rt, rb];
     } else if (oldPixel[0] > newPixel[0] + width && oldPixel[1] + height < newPixel[1]) {
       // 窗口在左下
       lineEndPosition = rt;
-      hoverLine = [rt, rb];
     } else if (oldPixel[0] < newPixel[0] && (oldPixel[1] < newPixel[1] - height || oldPixel[1] > newPixel[1] - height)) {
       // 窗口在右
       lineEndPosition = new LineString([lt, lb]).getCoordinateAt(0.5);
-      hoverLine = [lt, lb];
     } else if (oldPixel[1] < newPixel[1] && (oldPixel[0] - newPixel[0] < width / 2 || newPixel[0] - oldPixel[0] < width / 2)) {
       // 窗口在下
       lineEndPosition = new LineString([lt, rt]).getCoordinateAt(0.5);
-      hoverLine = [lt, rt];
     } else if (oldPixel[0] > newPixel[0] + width && (oldPixel[1] < newPixel[1] - height || oldPixel[1] > newPixel[1] - height)) {
       // 窗口在左
       lineEndPosition = new LineString([rt, rb]).getCoordinateAt(0.5);
-      hoverLine = [rt, rb];
     } else if (oldPixel[1] > newPixel[1] && (oldPixel[0] - newPixel[0] < width / 2 || newPixel[0] - oldPixel[0] < width / 2)) {
       // 窗口在上
       lineEndPosition = new LineString([lb, rb]).getCoordinateAt(0.5);
-      hoverLine = [lb, rb];
     }
-    useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, lineEndPosition]);
-    useEarth().useDefaultLayer().polyline.setPosition(this.id + "hover", hoverLine);
+    let a = toLonLat(lineEndPosition);
+    if (a[0] < 0) {
+      a[0] = a[0]
+    }
+    useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, fromLonLat(a)]);
   }
   private enableListEvent() {
     if (this.options.drag || this.options.drag == undefined) {
@@ -184,8 +188,13 @@ export default class Descriptor<T = any> {
         const coordinate = this.earth.map.getCoordinateFromPixel([event.x, event.y]);
         coordinate[0] = coordinate[0] - this.positionDValue[0];
         coordinate[1] = coordinate[1] - this.positionDValue[1];
+        if (this.options.fixedModel == "pixel") {
+          this.pixel = this.earth.map.getPixelFromCoordinate(coordinate)
+        }
         overlay.setPosition(coordinate);
-        this.updateLinePosition(coordinate);
+        if (this.options.isShowFixedline || this.options.isShowFixedline == undefined) {
+          this.updateLinePosition(coordinate);
+        }
       };
       const handleMouseLeftUp = () => {
         document.removeEventListener('mousemove', handleMouseMove);
@@ -200,10 +209,18 @@ export default class Descriptor<T = any> {
         document.addEventListener('mouseup', handleMouseLeftUp);
       };
       this.dom.addEventListener('mousedown', handleMouseLeftDown);
-      this.earth.map.on("moveend", (e) => {
+      this.earth.map.on("postrender", () => {
         const overlay = <Overlay>this.overLayer.get(this.id);
         const position = <Coordinate>overlay.getPosition();
-        this.updateLinePosition(position);
+        if (this.options.isShowFixedline || this.options.isShowFixedline == undefined) {
+          this.updateLinePosition(position);
+        }
+        if (this.options.fixedModel == "pixel") {
+          if (!this.pixel) {
+            this.pixel = this.earth.map.getPixelFromCoordinate(position);
+          }
+          overlay.setPosition(this.earth.map.getCoordinateFromPixel(this.pixel));
+        }
       })
     }
   }
@@ -238,33 +255,26 @@ export default class Descriptor<T = any> {
       element: this.dom,
       offset: params.offset,
       data: data,
-      className: this.id
+      className: this.id,
     })
     this.dom.style.display = "none";
     // 绘制定位点、线
-    if (this.options.drag || this.options.drag == undefined) {
+    if ((this.options.drag || this.options.drag == undefined) && (this.options.isShowFixedline || this.options.isShowFixedline == undefined)) {
       useEarth().useDefaultLayer().polyline.add({
         id: this.id,
         isFlowingDash: true,
         fullLineColor: "#ffffff00",
-        dottedLineColor: "#aef",
+        dottedLineColor: this.options.fixedLineColor || "#aef",
         positions: [params.position, params.position]
-      })
-      useEarth().useDefaultLayer().polyline.add({
-        id: this.id + "hover",
-        positions: [params.position, params.position],
-        stroke: {
-          width: 2,
-          color: "#aef"
-        }
       })
       // 控制窗口经度偏移10°
       const tL = toLonLat(params.position);
-      this.overLayer.setPosition(this.id, fromLonLat([tL[0] + 10, tL[1]]));
+      this.overLayer.setPosition(this.id, fromLonLat([tL[0] + 10, tL[1] + 5]));
     }
   }
   show() {
     this.dom.style.display = 'block';
+
   }
 
 }

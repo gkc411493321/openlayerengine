@@ -82,7 +82,7 @@ export default class Earth {
       target: el,
       view: new View(Object.assign({
         center: this.center,
-        zoom: 0,
+        zoom: 4,
       }, viewOptions)),
       controls: defaults(Object.assign({
         zoom: false,

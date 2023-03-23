@@ -1,14 +1,21 @@
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolylineFlyParam, IPolylineParam, ISetPolylineParam } from "../interface";
-import { Feature } from "ol";
-import { LineString, Point } from "ol/geom";
+import { Feature, MapEvent } from "ol";
+import { LineString, Point, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Icon, Stroke, Style } from "ol/style";
+import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
 import Base from "./Base";
 import { Coordinate } from "ol/coordinate";
 import Flightline from "../extends/flight-line/FlightLine";
+import { getVectorContext, toContext } from "ol/render";
+import RenderEvent from "ol/render/Event";
+import { unByKey } from "ol/Observable";
+import { EventsKey } from "ol/events";
+import { useEarth } from "useEarth";
+import { fromLonLat, toLonLat } from "ol/proj";
+import { getWidth } from "ol/extent";
 
 /**
  * 创建线`Polyline`
@@ -19,6 +26,14 @@ export default class Polyline<T = unknown> extends Base {
    */
   private flyCatch: Map<string, Flightline> = new Map();
   /**
+   * 流动线步进集合
+   */
+  private lineDash: Map<string, number> = new Map();
+  /**
+   * 流动线事件key集合
+   */
+  private flashKey: Map<string, EventsKey> = new Map();
+  /**
    * 构造器
    * @param earth 地图实例
    * @example
@@ -28,7 +43,8 @@ export default class Polyline<T = unknown> extends Base {
    */
   constructor(earth: Earth) {
     const layer = new VectorLayer({
-      source: new VectorSource()
+      source: new VectorSource(),
+      declutter: true
     })
     super(earth, layer, "Polyline");
   }
@@ -39,7 +55,7 @@ export default class Polyline<T = unknown> extends Base {
    */
   private createFeature(param: IPolylineParam<T>): Feature<LineString> {
     const feature = new Feature({
-      geometry: new LineString(param.positions)
+      geometry: new LineString(param.positions),
     })
     let style = new Style();
     style = super.setStroke(style, param.stroke, param.width);
@@ -103,31 +119,61 @@ export default class Polyline<T = unknown> extends Base {
         width: param.width || 2,
         lineDash: [0]
       }),
+      image: new Circle({
+        radius: 100,
+        fill: new Fill({
+          color: "red"
+        })
+      })
     })
-    const dottedLineStyle = new Style({
-      stroke: new Stroke({
-        color: param.dottedLineColor || "rgba(255, 250, 250, 1)",
-        width: param.width || 2,
-        lineDash: [20, 27],
-        lineDashOffset: 100
-      }),
-    })
-    feature.setStyle([fullLineStyle, dottedLineStyle, textStyle]);
     feature.setId(param.id);
     feature.set("data", param.data);
+    feature.set("param", param);
     feature.set("module", param.module);
-    this.earth.map.on("postrender", () => {
-      let lineDashOffset = feature.getStyle()[1].getStroke().getLineDashOffset();
-      const newDottedLineStyle = new Style({
-        stroke: new Stroke({
-          color: param.dottedLineColor || "rgba(255, 250, 250, 1)",
-          width: param.width || 2,
-          lineDash: [10, 25],
-          lineDashOffset: lineDashOffset == 100 ? 0 : lineDashOffset - 2
-        }),
-      })
-      feature.setStyle([fullLineStyle, newDottedLineStyle, textStyle])
+    this.lineDash.set(param.id, 100);
+    const key = this.layer.on("postrender", (evt: RenderEvent) => {
+      let vectorContext = getVectorContext(evt);
+      if (param.id) {
+        let lineDashOffset = <number>this.lineDash.get(param.id);
+        lineDashOffset = lineDashOffset == 0 ? 100 : lineDashOffset - 2
+        this.lineDash.set(param.id, lineDashOffset);
+        const newDottedLineStyle = new Style({
+          stroke: new Stroke({
+            color: param.dottedLineColor || "rgba(255, 250, 250, 1)",
+            width: param.width || 2,
+            lineDash: [10, 25],
+            lineDashOffset: lineDashOffset
+          }),
+        })
+        const coords = feature.getGeometry()?.getCoordinates();
+        const line = new LineString(coords);
+        const worldWidth = getWidth(this.earth.map.getView().getProjection().getExtent());
+        const center = <Coordinate>this.earth.view.getCenter();
+        const offset = Math.floor(center[0] / worldWidth);
+        line.translate(offset * worldWidth, 0);
+        vectorContext.setStyle(fullLineStyle)
+        vectorContext.drawGeometry(line)
+        vectorContext.setStyle(newDottedLineStyle)
+        vectorContext.drawGeometry(line)
+        vectorContext.setStyle(textStyle)
+        vectorContext.drawGeometry(line)
+        line.translate(worldWidth, 0);
+        vectorContext.setStyle(fullLineStyle)
+        vectorContext.drawGeometry(line)
+        vectorContext.setStyle(newDottedLineStyle)
+        vectorContext.drawGeometry(line)
+        vectorContext.setStyle(textStyle)
+        vectorContext.drawGeometry(line)
+        this.earth.map.render()
+      }
     })
+    feature.setStyle(new Style({
+      stroke: new Stroke({
+        color: "#ffffff00",
+        width: 1,
+      })
+    }))
+    this.flashKey.set(param.id, key);
     return <Feature<LineString>>super.save(feature);
   }
   /**
@@ -200,6 +246,36 @@ export default class Polyline<T = unknown> extends Base {
     return features;
   }
   /**
+   * 删除所有线段
+   */
+  remove(): void;
+  /**
+   * 删除指定线段
+   * @param id 线段id
+   */
+  remove(id: string): void;
+  remove(id?: string | undefined): void {
+    if (id) {
+      if (this.flashKey.has(id)) {
+        // 流动线
+        const key = <EventsKey>this.flashKey.get(id)
+        unByKey(key);
+        this.flashKey.delete(id);
+        this.lineDash.delete(id);
+      } else {
+        // 普通线
+        super.remove(id);
+      }
+    } else {
+      super.remove();
+      this.flashKey.forEach(item => {
+        unByKey(item);
+      })
+      this.flashKey.clear();
+      this.lineDash.clear();
+    }
+  }
+  /**
    * 修改飞线坐标
    * @param id `flyLine`id
    * @param position 坐标
@@ -266,7 +342,7 @@ export default class Polyline<T = unknown> extends Base {
       console.warn("没有找到元素，请检查ID");
       return null;
     }
-    super.remove(param.id);
+    this.remove(param.id);
     const oldParam = <IPolylineParam<T>>features[0].get("param");
     const newParam = Object.assign(oldParam, param);
     return this.add(newParam);
