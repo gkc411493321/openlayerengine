@@ -6,10 +6,10 @@ export const testDescriptor = () => {
     drag: true,
     fixedModel: "pixel"
   })
-  const b = new Descriptor(useEarth(), {
-    type: "list",
-    drag: true,
-  })
+  // const b = new Descriptor(useEarth(), {
+  //   type: "list",
+  //   drag: true,
+  // })
   a.set({
     position: fromLonLat([20, 60]),
     element: [
@@ -21,15 +21,15 @@ export const testDescriptor = () => {
     ]
   })
   a.show();
-  b.set({
-    position: fromLonLat([30, 60]),
-    element: [
-      { label: "测试", key: "1", value: "123123123123123123123123123123123123123" },
-      { label: "测试", key: "2", value: "123123123123123123123123123123123123123" },
-      { label: "测试", key: "3", value: "123123123123123123123123123123123123123" },
-      { label: "测试", key: "4", value: "123123123123123123123123123123123123123" },
-      { label: "测试长label", key: "5", value: "123123123123123123123123123123123123123" }
-    ]
-  })
-  b.show();
+  // b.set({
+  //   position: fromLonLat([30, 60]),
+  //   element: [
+  //     { label: "测试", key: "1", value: "123123123123123123123123123123123123123" },
+  //     { label: "测试", key: "2", value: "123123123123123123123123123123123123123" },
+  //     { label: "测试", key: "3", value: "123123123123123123123123123123123123123" },
+  //     { label: "测试", key: "4", value: "123123123123123123123123123123123123123" },
+  //     { label: "测试长label", key: "5", value: "123123123123123123123123123123123123123" }
+  //   ]
+  // })
+  // b.show();
 }

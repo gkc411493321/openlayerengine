@@ -140,10 +140,22 @@ export default class Descriptor<T = any> {
     const overlay = <Overlay>this.overLayer.get(this.id);
     const position = overlay.get("data").position;
     // 修改定位线位置
-    const oldPixel = this.earth.map.getPixelFromCoordinate(position);
+    let oldPixel: number[] = [];
     const newPixel = this.earth.map.getPixelFromCoordinate(coordinate);
     const width = this.dom.clientWidth;
     const height = this.dom.clientHeight;
+    const worldWidth = getWidth(this.earth.map.getView().getProjection().getExtent());
+    const center = <Coordinate>this.earth.view.getCenter();
+    const offset = Math.floor(center[0] / worldWidth);
+    if (offset != 0) {
+      const feature = <LineString>useEarth().useDefaultLayer().polyline.get(this.id)[0].getGeometry();
+      const coords = feature.getCoordinates();
+      const line = new LineString(coords);
+      line.translate(offset * worldWidth, 0);
+      oldPixel = this.earth.map.getPixelFromCoordinate(line.getCoordinates()[0])
+    } else {
+      oldPixel = this.earth.map.getPixelFromCoordinate(position)
+    }
     const lt = coordinate;
     const lb = this.earth.map.getCoordinateFromPixel([newPixel[0], newPixel[1] + height]);
     const rt = this.earth.map.getCoordinateFromPixel([newPixel[0] + width, newPixel[1]]);
@@ -209,7 +221,7 @@ export default class Descriptor<T = any> {
         document.addEventListener('mouseup', handleMouseLeftUp);
       };
       this.dom.addEventListener('mousedown', handleMouseLeftDown);
-      this.earth.map.on("postrender", () => {
+      this.earth.map.on("postrender", (e) => {
         const overlay = <Overlay>this.overLayer.get(this.id);
         const position = <Coordinate>overlay.getPosition();
         if (this.options.isShowFixedline || this.options.isShowFixedline == undefined) {
