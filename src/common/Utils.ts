@@ -2,6 +2,7 @@ import { IPointParam } from "interface";
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
 import { easeOut } from "ol/easing";
+import { getWidth } from "ol/extent";
 import { Geometry, Point } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import { unByKey } from "ol/Observable";
@@ -10,9 +11,9 @@ import RenderEvent from "ol/render/Event";
 import VectorSource from "ol/source/Vector";
 import { Style, Stroke, Icon } from "ol/style";
 import CircleStyle from "ol/style/Circle";
+import { useEarth } from "../useEarth";
 
 export default class Utils<T> {
-  static separator = '⚝';
   /**
    * @description: 获取一个新的GUID
    * @param {'N'|'D'|'B'|'P'|'X'} format 输出字符串样式，N-无连接符、D-减号连接符，BPX-未实现，默认D
@@ -132,6 +133,9 @@ export default class Utils<T> {
     if (geometry) {
       const flashGeom = geometry.clone();
       const listenerKey = layer.on('postrender', (event: RenderEvent) => {
+        const worldWidth = getWidth(useEarth().map.getView().getProjection().getExtent());
+        const center = <Coordinate>useEarth().view.getCenter();
+        const offset = Math.floor(center[0] / worldWidth);
         const frameState = event.frameState;
         if (frameState) {
           let elapsed = frameState.time - start;
@@ -156,9 +160,13 @@ export default class Utils<T> {
               }),
             }),
           });
+          const flashGeomClone = flashGeom.clone()
           vectorContext.setStyle(style);
-          vectorContext.drawGeometry(flashGeom);
-          layer.changed();
+          flashGeomClone.translate(offset * worldWidth, 0);
+          vectorContext.drawGeometry(flashGeomClone);
+          flashGeomClone.translate(worldWidth, 0);
+          vectorContext.drawGeometry(flashGeomClone);
+          layer.changed()
         }
       });
       feature.set("listenerKey", listenerKey);
