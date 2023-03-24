@@ -12,6 +12,7 @@ import { IFlyPosition, IPointsFeature, IPolylineFlyParam, IRadialColor } from ".
 import { EventsKey } from "ol/events";
 import { Utils } from "../../common";
 import { Coordinate } from "ol/coordinate";
+import { getWidth } from "ol/extent";
 
 
 
@@ -197,13 +198,20 @@ export default class Flightline<T = unknown> {
         grd.addColorStop(i, radialColor[i]);
       }
     }
+    const worldWidth = getWidth(useEarth().map.getView().getProjection().getExtent());
+    const center = <Coordinate>useEarth().view.getCenter();
+    const offset = Math.floor(center[0] / worldWidth);
     ctx.setStyle(new Style({
       stroke: new Stroke({
         color: grd,
         width: this.params.width,
       })
     }))
+    geometry.translate(offset * worldWidth, 0);
     ctx.drawGeometry(geometry);
+    geometry.translate(worldWidth, 0);
+    ctx.drawGeometry(geometry);
+
   }
 
   /**
@@ -232,7 +240,13 @@ export default class Flightline<T = unknown> {
         color: this.params.arrowColor
       }))
     }
+    const worldWidth = getWidth(useEarth().map.getView().getProjection().getExtent());
+    const center = <Coordinate>useEarth().view.getCenter();
+    const offset = Math.floor(center[0] / worldWidth);
     // 渲染
+    arrowGeometry.translate(offset * worldWidth, 0);
+    ctx.drawGeometry(arrowGeometry)
+    arrowGeometry.translate(worldWidth, 0);
     ctx.drawGeometry(arrowGeometry)
   }
   /**

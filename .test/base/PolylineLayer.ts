@@ -37,62 +37,62 @@ export const testPolylineLayer = () => {
     isArrow: true,
     arrowIsRepeat: true
   })
-  // layer.add({
-  //   id: "polyline_5",
-  //   positions: [fromLonLat([100, 60]), fromLonLat([60, 55])],
-  //   isFlowingDash: true,
-  //   fullLineColor: "#ffffff00",
-  //   dottedLineColor: "red",
-  //   label: {
-  //     text: "流动线",
-  //     offsetY: -10
-  //   }
-  // })
-  // layer.add({
-  //   id: "polyline_6",
-  //   positions: [fromLonLat([60, 60]), fromLonLat([100, 60])],
-  //   isFlowingDash: true,
-  // })
-  // layer.addFlightLine({
-  //   id: "fly_1",
-  //   position: [fromLonLat([60, 55]), fromLonLat([100, 55])],
-  //   isRepeat: true,
-  // })
-  // layer.addFlightLine({
-  //   id: "fly_2",
-  //   position: [fromLonLat([100, 55]), fromLonLat([140, 60])],
-  //   isRepeat: true,
-  //   isShowArrow: true,
-  //   isShowAnchorPoint: false,
-  //   arrowColor: "red",
-  //   color: "red",
-  //   splitLength: 100
-  // })
-  // layer.addFlightLine({
-  //   id: "fly_3",
-  //   position: [fromLonLat([100, 55]), fromLonLat([140, 50])],
-  //   isRepeat: true,
-  //   isShowArrow: true,
-  //   isShowAnchorPoint: false,
-  //   color: {
-  //     0: "#ccfbff",
-  //     0.2: "#ef96c5",
-  //     0.4: "#a0f1ea",
-  //     0.6: "#eebd89",
-  //     0.8: "#d13abd",
-  //     1.0: "#6cc6cb",
-  //   },
-  //   width: 5
-  // })
-  // layer.addFlightLine({
-  //   id: "fly_4",
-  //   position: [fromLonLat([100, 55]), fromLonLat([140, 55])],
-  //   isRepeat: false,
-  //   isShowArrow: false,
-  //   isShowAnchorLine: true,
-  //   isShowAnchorPoint: false,
-  //   splitLength: 100,
-  // })
+  layer.add({
+    id: "polyline_5",
+    positions: [fromLonLat([100, 60]), fromLonLat([60, 55])],
+    isFlowingDash: true,
+    fullLineColor: "#ffffff00",
+    dottedLineColor: "red",
+    label: {
+      text: "流动线",
+      offsetY: -10
+    }
+  })
+  layer.add({
+    id: "polyline_6",
+    positions: [fromLonLat([60, 60]), fromLonLat([100, 60])],
+    isFlowingDash: true,
+  })
+  layer.addFlightLine({
+    id: "fly_1",
+    position: [fromLonLat([60, 55]), fromLonLat([100, 55])],
+    isRepeat: true,
+  })
+  layer.addFlightLine({
+    id: "fly_2",
+    position: [fromLonLat([100, 55]), fromLonLat([140, 60])],
+    isRepeat: true,
+    isShowArrow: true,
+    isShowAnchorPoint: false,
+    arrowColor: "red",
+    color: "red",
+    splitLength: 100
+  })
+  layer.addFlightLine({
+    id: "fly_3",
+    position: [fromLonLat([100, 55]), fromLonLat([140, 50])],
+    isRepeat: true,
+    isShowArrow: true,
+    isShowAnchorPoint: false,
+    color: {
+      0: "#ccfbff",
+      0.2: "#ef96c5",
+      0.4: "#a0f1ea",
+      0.6: "#eebd89",
+      0.8: "#d13abd",
+      1.0: "#6cc6cb",
+    },
+    width: 5
+  })
+  layer.addFlightLine({
+    id: "fly_4",
+    position: [fromLonLat([100, 55]), fromLonLat([140, 55])],
+    isRepeat: false,
+    isShowArrow: false,
+    isShowAnchorLine: true,
+    isShowAnchorPoint: false,
+    splitLength: 100,
+  })
   // setTimeout(() => {
   //   layer.setPositionFlight("fly_4", [fromLonLat([100, 70]), fromLonLat([100, 50])])
   //   layer.setPositionFlight("fly_3", [fromLonLat([90, 70]), fromLonLat([100, 50])])
