@@ -1,12 +1,11 @@
 import { Coordinate } from "ol/coordinate";
 import { useEarth } from "../useEarth";
-import { OverlayLayer, PolylineLayer } from "../base";
+import { OverlayLayer } from "../base";
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { Overlay } from "ol";
 import { LineString } from "ol/geom";
-import { getVectorContext } from "ol/render";
 import { getWidth } from "ol/extent";
 export interface IDescriptorSetParams<T> {
   /**
@@ -29,10 +28,6 @@ export interface IDescriptorSetParams<T> {
 export interface IProperties<T> extends IPropertiesBase<T> {
   type?: 'text';
   options?: IKeyValue<T>[];
-  max?: number;
-  min?: number;
-  step?: number;
-  children?: IProperties<T>[];
   color?: string;
   class?: string;
 }
@@ -58,17 +53,9 @@ export interface IDescriptorParams<T> {
    */
   drag?: boolean;
   /**
-   * 保存按钮文本
+   * 是否开启关闭按钮，默认开启
    */
-  saveText?: string;
-  /**
-   * 关闭按钮文本
-   */
-  closeText?: string;
-  /**
-   * 删除按钮文本
-   */
-  deleteText?: string;
+  isShowClose?: boolean;
   /**
    * 头部
    */
@@ -78,17 +65,9 @@ export interface IDescriptorParams<T> {
    */
   footer?: string;
   /**
-   * 保存按钮回调函数
-   */
-  save?: (arg: { data?: T; props: IPropertiesBase<string>[] }) => void;
-  /**
    * 关闭按钮回调函数
    */
   close?: (arg: { data?: T }) => void;
-  /**
-   * 删除按钮回调函数
-   */
-  delete?: (arg: { data?: T }) => void;
 }
 interface IPropertiesBase<T> extends IKeyValue<T> {
   key?: string;
@@ -109,7 +88,7 @@ export default class Descriptor<T = any> {
   /**
    * 容器dom
    */
-  private dom: HTMLDivElement;
+  private dom!: HTMLDivElement;
   /**
    * overlay图层
    */
@@ -126,10 +105,9 @@ export default class Descriptor<T = any> {
   constructor(private earth: Earth, private options: IDescriptorParams<T>) {
     this.id = Utils.GetGUID();
     this.overLayer = new OverlayLayer(this.earth);
-    this.dom = document.createElement("div");
-    this.init();
   }
   private init() {
+    this.dom = document.createElement("div");
     const container = document.getElementById(this.earth.containerId);
     container?.append(this.dom);
     if (this.options.type === 'list') {
@@ -186,11 +164,11 @@ export default class Descriptor<T = any> {
       // 窗口在上
       lineEndPosition = new LineString([lb, rb]).getCoordinateAt(0.5);
     }
-    let a = toLonLat(lineEndPosition);
-    if (a[0] < 0) {
-      a[0] = a[0]
+    let positions = toLonLat(lineEndPosition);
+    if (positions[0] < 0) {
+      positions[0] = positions[0]
     }
-    useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, fromLonLat(a)]);
+    useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, fromLonLat(positions)]);
   }
   private enableListEvent() {
     if (this.options.drag || this.options.drag == undefined) {
@@ -235,9 +213,26 @@ export default class Descriptor<T = any> {
         }
       })
     }
+    if (this.options.isShowClose || this.options.isShowClose == undefined) {
+      const closeDom = document.getElementById(this.id);
+      debugger
+      closeDom?.addEventListener("click", (e) => {
+        console.log(e)
+      })
+    }
   }
   private createHtmlList(element: IProperties<string | number>[]): string {
     const list: string[] = [];
+    let header: string = "";
+    if (this.options.isShowClose || this.options.isShowClose == undefined) {
+      header += `<img src='image/close.png' id=${this.id} />`;
+    }
+    if (this.options.header) {
+      header += `<span>${this.options.header}</span>`;
+    }
+    if (header != "") {
+      list.push(`<li class="header">${header}</li>`);
+    }
     element.forEach(item => {
       if (item.type == "text") {
       } else {
@@ -249,9 +244,13 @@ export default class Descriptor<T = any> {
         )
       }
     })
+    if (this.options.footer) {
+      list.push(`<li class="footer">${this.options.footer}</li>`);
+    }
     return `<ul class="descriptor-list">${list.join('')}</ul>`;
   }
   set(params: IDescriptorSetParams<T>) {
+    this.init();
     let html = "";
     if (params.element) {
       if (this.options.type === 'list' && params.element instanceof Array) {
@@ -286,7 +285,6 @@ export default class Descriptor<T = any> {
   }
   show() {
     this.dom.style.display = 'block';
-
   }
 
 }
