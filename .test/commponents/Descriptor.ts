@@ -27,6 +27,9 @@ export const testDescriptor = () => {
         { label: "测试", key: "4", value: "123123123123123123123123123123123123123" },
       ]
     })
+    setTimeout(() => {
+      a.destroy()
+    }, 3000);
   }, 3000);
   // const b = new Descriptor(useEarth(), {
   //   type: "list",

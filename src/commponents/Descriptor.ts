@@ -10,6 +10,7 @@ import { getWidth } from "ol/extent";
 import { unByKey } from "ol/Observable";
 import { Pixel } from "ol/pixel";
 import { IDescriptorParams, IDescriptorSetParams, IProperties } from "../interface/descriptor";
+import { EventsKey } from "ol/events";
 
 /**
  * 描述列表
@@ -162,7 +163,7 @@ export default class Descriptor<T = any> {
       this.hook.set('eventListener', () => {
         this.dom.removeEventListener('mousedown', handleMouseLeftDown);
       });
-      const key = this.earth.map.on("postrender", (e) => {
+      const postrender = this.earth.map.on("postrender", (e) => {
         const overlay = <Overlay>this.overLayer.get(this.id);
         const position = <Coordinate>overlay.getPosition();
         if (this.options.isShowFixedline || this.options.isShowFixedline == undefined) {
@@ -175,7 +176,7 @@ export default class Descriptor<T = any> {
           overlay.setPosition(this.earth.map.getCoordinateFromPixel(this.pixel));
         }
       })
-      this.hook.set('key', key);
+      this.hook.set('postrender', postrender);
     }
   }
   /**
@@ -212,12 +213,26 @@ export default class Descriptor<T = any> {
     return `<ul class="descriptor-list">${list.join('')}</ul>`;
   }
   /**
+   * 销毁事件
+   */
+  private destoryEvent() {
+    this.hook.forEach((value, key) => {
+      if (key == "postrender") {
+        unByKey(value);
+      } else {
+        value();
+      }
+    });
+    this.hook.clear();
+  }
+  /**
    * 设置标牌
    * @param params 标牌参数，详见{@link IDescriptorSetParams<T>}
    */
   set(params: IDescriptorSetParams<T>) {
     if (this.dom) {
       document.getElementsByClassName(this.id)[0].remove();
+      this.destoryEvent();
     }
     this.init();
     let html = "";
@@ -291,13 +306,7 @@ export default class Descriptor<T = any> {
   destroy() {
     this.overLayer.remove(this.id);
     useEarth().useDefaultLayer().polyline.remove(this.id);
-    this.hook.forEach((value: any, key: string) => {
-      if (key == "key") {
-        unByKey(value);
-      } else {
-        value();
-      }
-    });
+    this.destoryEvent();
   }
 
 }
