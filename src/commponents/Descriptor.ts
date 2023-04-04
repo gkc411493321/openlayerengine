@@ -38,7 +38,7 @@ export default class Descriptor<T = any> {
   /**
    * 记录容器初始化屏幕坐标
    */
-  private pixel: Pixel = [];
+  private pixel?: Pixel;
   /**
    * 事件缓存
    */
@@ -126,8 +126,6 @@ export default class Descriptor<T = any> {
     param.positions = [position, fromLonLat(positions)];
     line[0].set("param", param);
     useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, fromLonLat(positions)]);
-    console.log(line)
-
   }
   /**
    * 开始列表下容器事件
