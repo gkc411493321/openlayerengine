@@ -21,7 +21,7 @@ export default class Base {
   /**
    * 缓存featur的集合
    */
-  private hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
+  public hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
   /**
    * 图层构造类
    * @param earth 地图实例

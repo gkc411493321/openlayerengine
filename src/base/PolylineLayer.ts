@@ -2,7 +2,7 @@ import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolylineFlyParam, IPolylineParam, ISetPolylineParam } from "../interface";
 import { Feature, MapEvent } from "ol";
-import { LineString, Point, Polygon } from "ol/geom";
+import { Geometry, LineString, Point, Polygon } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
@@ -33,6 +33,7 @@ export default class Polyline<T = unknown> extends Base {
    * 流动线事件key集合
    */
   private flashKey: Map<string, EventsKey> = new Map();
+
   /**
    * 构造器
    * @param earth 地图实例
@@ -145,8 +146,7 @@ export default class Polyline<T = unknown> extends Base {
             lineDashOffset: lineDashOffset
           }),
         })
-        const coords = feature.getGeometry()?.getCoordinates();
-        const line = new LineString(coords);
+        const line = new LineString(param.positions);
         const worldWidth = getWidth(this.earth.map.getView().getProjection().getExtent());
         const center = <Coordinate>this.earth.view.getCenter();
         const offset = Math.floor(center[0] / worldWidth);
@@ -236,11 +236,12 @@ export default class Polyline<T = unknown> extends Base {
     }
     const isArrows = features[0].get("isArrows");
     const param = <IPolylineParam<T>>features[0].get("param");
+    param.positions = position;
     if (isArrows) {
       super.remove(id);
-      param.positions = position;
       this.addLineArrows(param);
     } else {
+      features[0].set("param", param);
       features[0].getGeometry()?.setCoordinates(position);
     }
     return features;
@@ -346,5 +347,63 @@ export default class Polyline<T = unknown> extends Base {
     const oldParam = <IPolylineParam<T>>features[0].get("param");
     const newParam = Object.assign(oldParam, param);
     return this.add(newParam);
+  }
+  /**
+   * 隐藏图层所有矢量元素
+   * @example
+   * ```
+   * layer.hide();
+   * ```
+   */
+  hide(): void;
+  /**
+   * 隐藏图层指定矢量元素
+   * @param id 矢量元素id
+   * @example
+   * ```
+   * layer.hide("1");
+   * ```
+   */
+  hide(id: string): void;
+  hide(id?: string | undefined): void {
+    if (id) {
+      const feature = this.get(id);
+      if (feature[0] == undefined) {
+        console.warn("没有找到元素，请检查ID");
+        return;
+      }
+      this.hideFeatureMap.set(id, feature[0]);
+      this.remove(id);
+    } else {
+      this.layer.setVisible(false);
+    }
+  }
+  /**
+   * 显示图层所有矢量元素
+   * @example
+   * ```
+   * layer.show();
+   * ```
+   */
+  show(): void;
+  /**
+  * 显示图层指定矢量元素
+  * @param id 矢量元素id
+  * @example
+  * ```
+  * layer.show("1");
+  * ```
+  */
+  show(id: string): void;
+  show(id?: string | undefined): void {
+    if (id) {
+      const feature = <Feature<LineString>>this.hideFeatureMap.get(id);
+      const a = feature?.get("param")
+      if (feature) this.add(a);
+      this.hideFeatureMap.delete(id);
+    } else {
+      this.hideFeatureMap.clear();
+      this.layer.setVisible(true);
+    }
   }
 }

@@ -7,76 +7,10 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { Overlay } from "ol";
 import { LineString } from "ol/geom";
 import { getWidth } from "ol/extent";
-export interface IDescriptorSetParams<T> {
-  /**
-   * 位置
-   */
-  position: Coordinate;
-  /**
-   * 容器内容
-   */
-  element?: IProperties<string | number>[] | string;
-  /**
-   * 偏移量,默认[0,0]
-   */
-  offset?: number[];
-  /**
-   * 自定义数据
-   */
-  data?: T;
-}
-export interface IProperties<T> extends IPropertiesBase<T> {
-  type?: 'text';
-  options?: IKeyValue<T>[];
-  color?: string;
-  class?: string;
-}
-export interface IDescriptorParams<T> {
-  /**
-   * 描述器类型，list：列表，custom：自定义
-   */
-  type: 'list' | 'custom';
-  /**
-   * 是否显示定位线
-   */
-  isShowFixedline?: boolean;
-  /**
-   * 定位线颜色
-   */
-  fixedLineColor?: string;
-  /**
-   * 窗口定位模式，默认position。position：跟随地理位置固定， pixel：跟随屏幕坐标固定
-   */
-  fixedModel?: 'position' | 'pixel';
-  /**
-   * 启用拖动事件，默认开启
-   */
-  drag?: boolean;
-  /**
-   * 是否开启关闭按钮，默认开启
-   */
-  isShowClose?: boolean;
-  /**
-   * 头部
-   */
-  header?: string;
-  /**
-   * 底部
-   */
-  footer?: string;
-  /**
-   * 关闭按钮回调函数
-   */
-  close?: (arg: { data?: T }) => void;
-}
-interface IPropertiesBase<T> extends IKeyValue<T> {
-  key?: string;
-  parent?: string;
-}
-interface IKeyValue<T> {
-  label: string;
-  value: T;
-}
+import { unByKey } from "ol/Observable";
+import { Pixel } from "ol/pixel";
+import { IDescriptorParams, IDescriptorSetParams, IProperties } from "../interface/descriptor";
+
 /**
  * 描述列表
  */
@@ -101,11 +35,26 @@ export default class Descriptor<T = any> {
    * 容器坐标与事件坐标差值
    */
   private positionDValue: number[] = [];
-  pixel: any;
+  /**
+   * 记录容器初始化屏幕坐标
+   */
+  private pixel: Pixel = [];
+  /**
+   * 事件缓存
+   */
+  private hook: Map<string, any> = new Map();
+  /**
+   * 构造器
+   * @param earth 地图实列 
+   * @param options 标牌参数，详见{@link IDescriptorParams<T>}
+   */
   constructor(private earth: Earth, private options: IDescriptorParams<T>) {
     this.id = Utils.GetGUID();
     this.overLayer = new OverlayLayer(this.earth);
   }
+  /**
+   * 初始化地图容器及相关事件
+   */
   private init() {
     this.dom = document.createElement("div");
     const container = document.getElementById(this.earth.containerId);
@@ -114,6 +63,10 @@ export default class Descriptor<T = any> {
       this.enableListEvent();
     }
   }
+  /**
+   * 更新连接线位置
+   * @param coordinate 容器坐标点 
+   */
   private updateLinePosition(coordinate: Coordinate) {
     const overlay = <Overlay>this.overLayer.get(this.id);
     const position = overlay.get("data").position;
@@ -168,8 +121,17 @@ export default class Descriptor<T = any> {
     if (positions[0] < 0) {
       positions[0] = positions[0]
     }
+    const line = useEarth().useDefaultLayer().polyline.get(this.id);
+    const param = line[0].get("param");
+    param.positions = [position, fromLonLat(positions)];
+    line[0].set("param", param);
     useEarth().useDefaultLayer().polyline.setPosition(this.id, [position, fromLonLat(positions)]);
+    console.log(line)
+
   }
+  /**
+   * 开始列表下容器事件
+   */
   private enableListEvent() {
     if (this.options.drag || this.options.drag == undefined) {
       const handleMouseMove = (event: any) => {
@@ -199,7 +161,10 @@ export default class Descriptor<T = any> {
         document.addEventListener('mouseup', handleMouseLeftUp);
       };
       this.dom.addEventListener('mousedown', handleMouseLeftDown);
-      this.earth.map.on("postrender", (e) => {
+      this.hook.set('eventListener', () => {
+        this.dom.removeEventListener('mousedown', handleMouseLeftDown);
+      });
+      const key = this.earth.map.on("postrender", (e) => {
         const overlay = <Overlay>this.overLayer.get(this.id);
         const position = <Coordinate>overlay.getPosition();
         if (this.options.isShowFixedline || this.options.isShowFixedline == undefined) {
@@ -212,20 +177,19 @@ export default class Descriptor<T = any> {
           overlay.setPosition(this.earth.map.getCoordinateFromPixel(this.pixel));
         }
       })
-    }
-    if (this.options.isShowClose || this.options.isShowClose == undefined) {
-      const closeDom = document.getElementById(this.id);
-      debugger
-      closeDom?.addEventListener("click", (e) => {
-        console.log(e)
-      })
+      this.hook.set('key', key);
     }
   }
+  /**
+   * 创建html文本
+   * @param element 容器内容
+   * @returns 返回创建的html文本
+   */
   private createHtmlList(element: IProperties<string | number>[]): string {
     const list: string[] = [];
     let header: string = "";
     if (this.options.isShowClose || this.options.isShowClose == undefined) {
-      header += `<img src='image/close.png' id=${this.id} />`;
+      header += `<img class="close" src='image/close.png' id=${this.id} />`;
     }
     if (this.options.header) {
       header += `<span>${this.options.header}</span>`;
@@ -249,7 +213,14 @@ export default class Descriptor<T = any> {
     }
     return `<ul class="descriptor-list">${list.join('')}</ul>`;
   }
+  /**
+   * 设置标牌
+   * @param params 标牌参数，详见{@link IDescriptorSetParams<T>}
+   */
   set(params: IDescriptorSetParams<T>) {
+    if (this.dom) {
+      document.getElementsByClassName(this.id)[0].remove();
+    }
     this.init();
     let html = "";
     if (params.element) {
@@ -268,9 +239,10 @@ export default class Descriptor<T = any> {
       data: data,
       className: this.id,
     })
-    this.dom.style.display = "none";
+
+    const line = useEarth().useDefaultLayer().polyline.get(this.id)
     // 绘制定位点、线
-    if ((this.options.drag || this.options.drag == undefined) && (this.options.isShowFixedline || this.options.isShowFixedline == undefined)) {
+    if (line.length == 0 && (this.options.drag || this.options.drag == undefined) && (this.options.isShowFixedline || this.options.isShowFixedline == undefined)) {
       useEarth().useDefaultLayer().polyline.add({
         id: this.id,
         isFlowingDash: true,
@@ -278,13 +250,56 @@ export default class Descriptor<T = any> {
         dottedLineColor: this.options.fixedLineColor || "#aef",
         positions: [params.position, params.position]
       })
+    }
+    if (line.length == 0) {
+      this.dom.style.display = "none";
+    }
+    if ((this.options.drag || this.options.drag == undefined) && (this.options.isShowFixedline || this.options.isShowFixedline == undefined)) {
       // 控制窗口经度偏移10°
       const tL = toLonLat(params.position);
       this.overLayer.setPosition(this.id, fromLonLat([tL[0] + 10, tL[1] + 5]));
     }
+    if ((this.options.isShowClose || this.options.isShowClose == undefined) && (this.options.drag || this.options.drag == undefined)) {
+      const callback = (event: Event) => {
+        const item = event.target as HTMLElement;
+        if (item.className === 'close') {
+          this.hide();
+        };
+      }
+      this.dom.addEventListener('click', callback);
+      this.hook.set('setListener', () => {
+        this.dom.removeEventListener('click', callback);
+      });
+    }
+
   }
+  /**
+   * 显示标牌
+   */
   show() {
     this.dom.style.display = 'block';
+    useEarth().useDefaultLayer().polyline.show(this.id);
+  }
+  /**
+   * 隐藏标牌
+   */
+  hide() {
+    this.dom.style.display = 'none';
+    useEarth().useDefaultLayer().polyline.hide(this.id);
+  }
+  /**
+   * 销毁标牌及相关事件
+   */
+  destroy() {
+    this.overLayer.remove(this.id);
+    useEarth().useDefaultLayer().polyline.remove(this.id);
+    this.hook.forEach((value: any, key: string) => {
+      if (key == "key") {
+        unByKey(value);
+      } else {
+        value();
+      }
+    });
   }
 
 }
