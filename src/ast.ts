@@ -75,12 +75,6 @@ export interface ICircle {
   radius: number;
 }
 
-
-export interface IKeyValue<T> {
-  label: string;
-  value: T;
-}
-
 export interface IHpr {
   heading: number;
   pitch: number;
