@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "SET NODE_OPTIONS=--openssl-legacy-provider && vuepress dev --temp .temp",
+    "build": "SET NODE_OPTIONS=--openssl-legacy-provider && vuepress build"
+  },
+  "dependencies": {
+    "vuepress": "^1.9.9"
+  },
+  "devDependencies": {
+    "vuepress-theme-reco": "^1.6.17"
+  }
+}

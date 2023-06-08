@@ -1,6 +1,11 @@
 {
+  "excludePrivate": true, // 导出不包含private声明内容
+  "excludeProtected": true, // 导出不包含protected声明内容
   "entryPoints": [
     "./src"
   ],
-  "out": "./docs"
+  "out": "./docs",
+  "plugin": [
+    "typedoc-plugin-markdown"
+  ]
 }

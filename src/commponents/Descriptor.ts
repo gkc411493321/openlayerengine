@@ -47,7 +47,7 @@ export default class Descriptor<T = any> {
   /**
    * 构造器
    * @param earth 地图实列 
-   * @param options 标牌参数，详见{@link IDescriptorParams<T>}
+   * @param options 标牌参数，详见{@link IDescriptorParams}
    */
   constructor(private earth: Earth, private options: IDescriptorParams<T>) {
     this.id = Utils.GetGUID();
@@ -227,7 +227,7 @@ export default class Descriptor<T = any> {
   }
   /**
    * 设置标牌
-   * @param params 标牌参数，详见{@link IDescriptorSetParams<T>}
+   * @param params 标牌参数，详见{@link IDescriptorSetParams}
    */
   set(params: IDescriptorSetParams<T>) {
     if (this.dom) {
