@@ -23,7 +23,17 @@
 **`Example`**
 
 ```
+// 打开.test文件夹下 main.ts 文件，修改如下代码，二者选其一
+
+// 本地或在线瓦片地图 需要填入可用的瓦片地址。如无有效的瓦片地址，请使用OSM地图
+earth.addLayer(earth.createXyzLayer(‘http://xxxx’));
+
+// OSM地图，在科学上网的环境能有限提示底图的加载速度
+earth.addLayer(earth.createOsmLayer());
+
+npm install
 npm run dev
+
 ```
 
 ## 生成文档
