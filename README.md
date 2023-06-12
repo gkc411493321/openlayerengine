@@ -37,6 +37,7 @@ npm run doc
 ## 运行文档
 
 **`Example`**
+目前文档只支持API查看，相关示例及及开发文档会在之后逐步完善
 ```
 // 注意，文档运行需要node 18.0及以上版本，若node低于该版本请将`.docs`文件夹下 package.json中`dev`命令替换为`"dev": "vuepress dev --temp .temp"`
 
