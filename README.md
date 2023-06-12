@@ -1,6 +1,6 @@
 # 地图基础功能封装(Openlayers)
 
-该组件库基于Openlayers 7.0进行开发。目的是为了向不懂gis的开发人员提供快捷高效的地图创建与业务开发，本组件库将持续更新。
+该组件库基于Openlayers 7.0进行开发，目的旨在为开发人员提供快捷高效的地图创建与业务开发，本组件库将持续更新。
 
 `支持内容`
 
@@ -18,7 +18,7 @@
 
 ## 运行测试环境
 
-测试代码在`.test`文件夹中
+测试代码在`.test`文件夹中，若要进行组件库的预览及测试，请执行如下命令
 
 **`Example`**
 
@@ -37,20 +37,28 @@ npm run doc
 ## 运行文档
 
 **`Example`**
-将`docs`文件夹下内容复制粘贴至`.docs`文件夹下，`注意`:docs文件夹下`readme.md`文件无需复制
 ```
+// 注意，文档运行需要node 18.0及以上版本，若node低于该版本请将`.docs`文件夹下 package.json中`dev`命令替换为`"dev": "vuepress dev --temp .temp"`
+
+// 将`docs`文件夹下内容复制粘贴至`.docs`文件夹下，`注意`:docs文件夹下`readme.md`文件无需复制
+
 cd .docs
+
 // 进入.docs文件下执行如下命令
+
 npm install
+
 npm run dev
 ```
 
-## 打包项目
+## 打包项目与使用
 
 **`Example`**
 
 ```
 npm run build
+
+// 将打包后的包放入node_modules即可使用
 ```
 
 
