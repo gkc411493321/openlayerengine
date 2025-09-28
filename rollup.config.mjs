@@ -47,6 +47,6 @@ export default defineConfig({
     }
   ],
   plugins: [typescript(), shader(), nodeResolve(), commonjs(),
-    //terser()
+    terser()
   ]
 });

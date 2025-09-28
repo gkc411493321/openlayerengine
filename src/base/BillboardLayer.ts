@@ -1,13 +1,16 @@
-import Earth from "Earth";
-import { IBillboardParam, ISetBillboardParam } from "../interface";
-import { Feature } from "ol";
-import { Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import { Icon, Style, Text } from "ol/style";
-import Base from "./Base";
-import { Utils } from "../common";
-import { Coordinate } from "ol/coordinate";
+import Earth from 'Earth';
+import { IBillboardParam, ISetBillboardParam } from '../interface';
+import { Point } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { Icon, Style } from 'ol/style';
+import Base from './Base';
+import { Utils } from '../common';
+import { Coordinate } from 'ol/coordinate';
+import { useEarth } from '../useEarth';
+import { Feature } from 'ol';
+
+
 /**
  * 创建广告牌`Billboard`
  */
@@ -23,8 +26,8 @@ export default class BillboardLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
-    })
-    super(earth, layer, "Billboard")
+    });
+    super(earth, layer, 'Billboard');
   }
   /**
    * 创建矢量元素
@@ -34,7 +37,7 @@ export default class BillboardLayer<T = unknown> extends Base {
   private createFeature(param: IBillboardParam<T>): Feature<Point> {
     const feature = new Feature({
       geometry: new Point(param.center)
-    })
+    });
     const icon = new Icon({
       src: param.src,
       size: param.size,
@@ -45,16 +48,16 @@ export default class BillboardLayer<T = unknown> extends Base {
       anchor: param.anchor,
       anchorOrigin: param.anchorOrigin,
       anchorXUnits: param.anchorXUnits,
-      anchorYUnits: param.anchorYUnits,
-    })
+      anchorYUnits: param.anchorYUnits
+    });
     let style = new Style();
     style = super.setText(style, param.label);
     style.setImage(icon);
     feature.setStyle(style);
     feature.setId(param.id);
-    feature.set("data", param.data);
-    feature.set("module", param.module);
-    feature.set("layerId", this.layer.get("id"));
+    feature.set('data', param.data);
+    feature.set('module', param.module);
+    feature.set('layerId', this.layer.get('id'));
     return feature;
   }
   /**
@@ -92,7 +95,7 @@ export default class BillboardLayer<T = unknown> extends Base {
       this.setPosition(param.id, param.center);
     }
     if (features[0] == undefined) {
-      console.warn("没有找到元素，请检查ID");
+      console.warn('没有找到元素，请检查ID');
       return [];
     }
     const style = <Style>features[0].getStyle();
@@ -104,14 +107,14 @@ export default class BillboardLayer<T = unknown> extends Base {
       displacement: param.displacement || oldIcon.getDisplacement(),
       scale: param.scale || oldIcon.getScale(),
       rotation: param.rotation || oldIcon.getRotation(),
-      anchor: param.anchor || oldIcon.getAnchor(),
-    }
+      anchor: param.anchor || oldIcon.getAnchor()
+    };
     for (const key in iconOptions) {
       if (iconOptions[key] == null) {
-        delete iconOptions[key]
+        delete iconOptions[key];
       }
     }
-    const newIcon = new Icon(iconOptions)
+    const newIcon = new Icon(iconOptions);
     const newStyle = super.setText(style, param.label);
     style.setImage(newIcon);
     features[0].setStyle(newStyle);
@@ -131,11 +134,54 @@ export default class BillboardLayer<T = unknown> extends Base {
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
     if (features[0] == undefined) {
-      console.warn("没有找到元素，请检查ID");
+      console.warn('没有找到元素，请检查ID');
       return [];
     }
     const geometry = <Point>features[0].getGeometry();
     geometry.setCoordinates(position);
     return features;
+  }
+  /**
+   * 计算广告牌(Point)图标在地图上的经纬度范围
+   * @param feature 广告牌要素
+   * @returns [minLon, minLat, maxLon, maxLat]
+   */
+  getIconExtent(feature: Feature<Point>): [number, number, number, number] | null {
+    const map = useEarth().map;
+    const style = feature.getStyle() as Style;
+    const icon = style.getImage() as Icon;
+    if (!icon || !icon.getSize()) return null;
+
+    const center = (feature.getGeometry() as Point).getCoordinates();
+    const size = icon.getSize()!;
+    const scale: any = Array.isArray(icon.getScale()) ? icon.getScale() : [icon.getScale() || 1, icon.getScale() || 1];
+    const anchor = icon.getAnchor() || [0, 0];
+    const displacement = icon.getDisplacement() || [0, 0];
+
+    // 计算像素四角相对中心的偏移
+    const w = size[0] * scale[0];
+    const h = size[1] * scale[1];
+    const anchorPx = [anchor[0], anchor[1]];
+    // 以左上为(0,0)，anchor为图标锚点像素
+    const offsets = [
+      [-anchorPx[0], -anchorPx[1]], // 左上
+      [w - anchorPx[0], -anchorPx[1]], // 右上
+      [w - anchorPx[0], h - anchorPx[1]], // 右下
+      [-anchorPx[0], h - anchorPx[1]] // 左下
+    ].map(([dx, dy]) => [dx + displacement[0], dy + displacement[1]]);
+
+    // 中心点转像素
+    const centerPx = map.getPixelFromCoordinate(center);
+
+    // 四角像素转经纬度
+    const corners = offsets.map(([dx, dy]) => {
+      const px = [centerPx[0] + dx, centerPx[1] + dy];
+      return map.getCoordinateFromPixel(px);
+    });
+
+    // 计算经纬度范围
+    const lons = corners.map((c) => c[0]);
+    const lats = corners.map((c) => c[1]);
+    return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
   }
 }

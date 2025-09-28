@@ -10,7 +10,6 @@ import { getWidth } from "ol/extent";
 import { unByKey } from "ol/Observable";
 import { Pixel } from "ol/pixel";
 import { IDescriptorParams, IDescriptorSetParams, IProperties } from "../interface/descriptor";
-import { EventsKey } from "ol/events";
 
 /**
  * 描述列表

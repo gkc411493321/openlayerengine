@@ -1,11 +1,11 @@
-import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { Geometry, Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import { PanIntoViewOptions, Positioning } from "ol/Overlay";
-import { Size } from "ol/size";
-import VectorSource from "ol/source/Vector";
-import { IconAnchorUnits, IconOrigin } from "ol/style/Icon";
+import { ETransferType } from 'enum';
+import { Feature } from 'ol';
+import { Coordinate } from 'ol/coordinate';
+import { Point } from 'ol/geom';
+import { Layer } from 'ol/layer';
+import { PanIntoViewOptions, Positioning } from 'ol/Overlay';
+import { Size } from 'ol/size';
+import { IconAnchorUnits, IconOrigin } from 'ol/style/Icon';
 import { IField, IOptions } from 'wind-core';
 
 /**
@@ -151,8 +151,8 @@ export interface ISetPointParam {
 }
 export interface IBillboardParam<T> extends IAddBaseParam<T> {
   /**
-  * 点中心
-  */
+   * 点中心
+   */
   center: Coordinate;
   /**
    * 图片地址
@@ -205,8 +205,8 @@ export interface ISetBillboardParam {
    */
   id: string;
   /**
-  * 点中心
-  */
+   * 点中心
+   */
   center?: Coordinate;
   /**
    * 图片地址
@@ -284,7 +284,7 @@ export interface ISetOverlayParam {
   /**
    * id
    */
-  id: string
+  id: string;
   /**
    * DOM容器
    */
@@ -382,7 +382,7 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
   /**
    * 流水线虚线填充色 isFlowingDash为true生效
    */
-  dottedLineColor?: string
+  dottedLineColor?: string;
 }
 export interface ISetPolylineParam {
   /**
@@ -428,7 +428,7 @@ export interface ISetPolylineParam {
   /**
    * 流水线虚线填充色 isFlowingDash为true生效
    */
-  dottedLineColor?: string
+  dottedLineColor?: string;
 }
 export interface IPolylineFlyParam<T> extends IAddBaseParam<T>, IFlightLineParams {
   /**
@@ -481,7 +481,6 @@ export interface IFlightLineParams {
    * 线段弯曲程度，默认为1。值越大，则弯曲程度越高
    */
   controlRatio?: number;
-
 }
 export interface IPointsFeature {
   id: string;
@@ -520,9 +519,9 @@ export interface IStroke {
 }
 export interface IFill {
   /**
-  * 颜色
-  */
-  color?: string,
+   * 颜色
+   */
+  color?: string;
 }
 export interface ILabel {
   /**
@@ -546,7 +545,7 @@ export interface ILabel {
    */
   scale?: number;
   /**
-   * 文本对齐方式，'left' | 'right' | 'center' | 'end' 
+   * 文本对齐方式，'left' | 'right' | 'center' | 'end'
    */
   textAlign?: CanvasTextAlign;
   /**
@@ -650,8 +649,8 @@ export interface IMeasure {
 }
 export interface IWindOptions {
   /**
-  * 粒子透明度，影响粒子拖尾长度，默认0.9
-  */
+   * 粒子透明度，影响粒子拖尾长度，默认0.9
+   */
   globalAlpha?: number;
   /**
    * 粒子运动速度,默认1/25
@@ -708,4 +707,51 @@ export interface IWindParam extends IWindOptions {
    * 类名
    */
   className?: string;
+}
+
+export interface ISetTransferCallback {
+  /**
+   * 修改状态枚举
+   */
+  type: ETransferType;
+}
+
+export interface ITransfromParams {
+  /**
+   * 点选容差，默认值2，即将鼠标所在位置扩大2px进行选择
+   */
+  hitTolerance?: number;
+  /**
+   * 是否可以平移，默认true
+   */
+  translate?: boolean;
+  /**
+   * translate为true时生效
+   * 是否点击要素任意位置触发平移，默认false
+   */
+  translateFeature?: boolean;
+  /**
+   * 是否可以拉伸，默认true
+   */
+  stretch?: boolean;
+  /**
+   * 是否可以缩放，默认true
+   */
+  scale?: boolean;
+  /**
+   * 是否可以旋转，默认true
+   */
+  rotate?: boolean;
+  /**
+   * 传入一个函数，判断该要素是否可以执行变换，true表示可以，false表示不可以
+   */
+  beforeTransform?: (e: Feature) => boolean;
+  /**
+   * 传入一个可参与变换的图层数组，默认全部地图图层都可参与变换
+   */
+  transformLayers?: Array<Layer>;
+  /**
+   * 传入一个可参与变换的元素数组，默认全部地图元素都可参与变换
+   */
+  transformFeatures?: Array<Feature>;
 }

@@ -4,7 +4,6 @@ export const testDescriptor = () => {
   const a = new Descriptor(useEarth(), {
     type: "list",
     drag: true,
-    fixedModel: "pixel",
     header: "ceshi",
     footer: "尾部"
   })
@@ -18,19 +17,6 @@ export const testDescriptor = () => {
     ]
   })
   a.show();
-  setTimeout(() => {
-    a.set({
-      position: fromLonLat([20, 60]),
-      element: [
-        { label: "测试1", key: "1", value: "123123123123123123123123123123123123123" },
-        { label: "测试", key: "2", value: "123123123123123123123123123123123123123" },
-        { label: "测试", key: "4", value: "123123123123123123123123123123123123123" },
-      ]
-    })
-    setTimeout(() => {
-      a.destroy()
-    }, 3000);
-  }, 3000);
   // const b = new Descriptor(useEarth(), {
   //   type: "list",
   //   drag: true,

@@ -398,7 +398,7 @@ export default class DynamicDraw {
         return item = toLonLat(item);
       })
       geometry?.setCoordinates(position);
-      layer?.getSource()?.addFeature(param.feature);
+      // layer?.getSource()?.addFeature(param.feature);
       if (this.overlayKey) {
         this.overlay.remove("draw_help_tooltip");
         unByKey(this.overlayKey);

@@ -5,4 +5,5 @@ export * from './ast';
 export * from './common';
 export * from './base';
 export * from './interface';
+export * from './enum';
 export * from './extends';

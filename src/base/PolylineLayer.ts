@@ -1,20 +1,18 @@
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IPolylineFlyParam, IPolylineParam, ISetPolylineParam } from "../interface";
-import { Feature, MapEvent } from "ol";
-import { Geometry, LineString, Point, Polygon } from "ol/geom";
+import { Feature } from "ol";
+import { LineString } from "ol/geom";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
+import { Circle, Fill, Stroke, Style } from "ol/style";
 import Base from "./Base";
 import { Coordinate } from "ol/coordinate";
 import Flightline from "../extends/flight-line/FlightLine";
-import { getVectorContext, toContext } from "ol/render";
+import { getVectorContext } from "ol/render";
 import RenderEvent from "ol/render/Event";
 import { unByKey } from "ol/Observable";
 import { EventsKey } from "ol/events";
-import { useEarth } from "useEarth";
-import { fromLonLat, toLonLat } from "ol/proj";
 import { getWidth } from "ol/extent";
 
 /**
@@ -133,7 +131,7 @@ export default class Polyline<T = unknown> extends Base {
     feature.set("module", param.module);
     this.lineDash.set(param.id, 100);
     const key = this.layer.on("postrender", (evt: RenderEvent) => {
-      let vectorContext = getVectorContext(evt);
+      const vectorContext = getVectorContext(evt);
       if (param.id) {
         let lineDashOffset = <number>this.lineDash.get(param.id);
         lineDashOffset = lineDashOffset == 0 ? 100 : lineDashOffset - 2

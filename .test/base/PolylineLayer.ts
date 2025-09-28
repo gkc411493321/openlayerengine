@@ -6,7 +6,7 @@ export const testPolylineLayer = () => {
     id: "polyline_1",
     positions: [fromLonLat([90, 30]), fromLonLat([90, 50])],
   })
-  layer.add({
+  const e = layer.add({
     id: "polyline_2",
     positions: [fromLonLat([100, 30]), fromLonLat([100, 50])],
     stroke: {
@@ -15,6 +15,7 @@ export const testPolylineLayer = () => {
     },
     width: 5
   })
+  console.log(e)
   layer.add({
     id: "polyline_3",
     positions: [fromLonLat([80, 30]), fromLonLat([80, 50])],
@@ -48,7 +49,7 @@ export const testPolylineLayer = () => {
       offsetY: -10
     }
   })
-  layer.add({
+  const a = layer.add({
     id: "polyline_6",
     positions: [fromLonLat([60, 60]), fromLonLat([100, 60])],
     isFlowingDash: true,

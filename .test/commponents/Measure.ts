@@ -3,11 +3,11 @@ import { useEarth } from "../../src"
 export const testMeasure = () => {
   // useEarth().useMeasure().lineSegmentation({
   //   pointColor: "red",
-  //   callback: (e) => {
-  //     console.log(e)
-  //     setTimeout(() => {
-  //       useEarth().useMeasure().clear();
-  //     }, 3000)
+  //   callback: () => {
+  //     // console.log(e)
+  //     // setTimeout(() => {
+  //     //   useEarth().useMeasure().clear();
+  //     // }, 3000)
   //   }
   // });
   // useEarth().useMeasure().lineCenter({

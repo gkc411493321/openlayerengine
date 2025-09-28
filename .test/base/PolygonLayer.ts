@@ -13,7 +13,6 @@ import VectorLayer from 'ol/layer/Vector';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import { PointLayer, PolygonLayer, useEarth } from '../../src';
-import * as turf from '@turf/turf';
 export const testPolygonLayer = () => {
   const layer = new PolygonLayer(useEarth());
   const polygon = <Feature<Polygon>>layer.add({
