@@ -745,7 +745,6 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       case 'translate': {
         var deltaX = pt[0] - pt0[0];
         var deltaY = pt[1] - pt0[1];
-
         //this.feature_.getGeometry().translate(deltaX, deltaY);
         // eslint-disable-next-line no-cond-assign
         for (i = 0, f; (f = this.selection_.item(i)); i++) {
@@ -781,13 +780,28 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
 
         var downCoordinate = this.coordinate_;
         var dragCoordinate = evt.coordinate;
+        // 修复：保证缩放时两个坐标都 wrap 到和 center 一致的区间
+        // eslint-disable-next-line no-inner-declarations
+        function wrapToCenter(x, centerX, extentWidth) {
+          if (Math.abs(x - centerX) > extentWidth / 2) {
+            return x + Math.round((centerX - x) / extentWidth) * extentWidth;
+          }
+          return x;
+        }
+        downCoordinate = [
+          wrapToCenter(downCoordinate[0], center[0], extentWidth),
+          downCoordinate[1]
+        ];
+        dragCoordinate = [
+          wrapToCenter(dragCoordinate[0], center[0], extentWidth),
+          dragCoordinate[1]
+        ];
         if (this.get('enableRotatedTransform') && viewRotation !== 0) {
-          var downPoint = new ol_geom_Point(this.coordinate_);
+          var downPoint = new ol_geom_Point(downCoordinate);
           downPoint.rotate(viewRotation * -1, center);
           downCoordinate = downPoint.getCoordinates();
 
-          // eslint-disable-next-line no-undef
-          var dragPoint = new ol_geom_Point([evt.coordinate[0] + wrapOffset, evt.coordinate[1]]);
+          var dragPoint = new ol_geom_Point(dragCoordinate);
           dragPoint.rotate(viewRotation * -1, center);
           dragCoordinate = dragPoint.getCoordinates();
         }
