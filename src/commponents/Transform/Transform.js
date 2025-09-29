@@ -671,7 +671,8 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       this.iscircle_ = this.selection_.getLength() === 1 ? this.selection_.item(0).getGeometry().getType() == 'Circle' : false;
       this.drawSketch_();
       this.watchFeatures_();
-      this.dispatchEvent({ type: 'select', feature: feature, features: this.selection_, pixel: evt.pixel, coordinate: evt.coordinate });
+      const type = feature ? 'select' : 'selectend';
+      this.dispatchEvent({ type, feature: feature, features: this.selection_, pixel: evt.pixel, coordinate: evt.coordinate });
       return false;
     }
   }
@@ -788,14 +789,8 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           }
           return x;
         }
-        downCoordinate = [
-          wrapToCenter(downCoordinate[0], center[0], extentWidth),
-          downCoordinate[1]
-        ];
-        dragCoordinate = [
-          wrapToCenter(dragCoordinate[0], center[0], extentWidth),
-          dragCoordinate[1]
-        ];
+        downCoordinate = [wrapToCenter(downCoordinate[0], center[0], extentWidth), downCoordinate[1]];
+        dragCoordinate = [wrapToCenter(dragCoordinate[0], center[0], extentWidth), dragCoordinate[1]];
         if (this.get('enableRotatedTransform') && viewRotation !== 0) {
           var downPoint = new ol_geom_Point(downCoordinate);
           downPoint.rotate(viewRotation * -1, center);

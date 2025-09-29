@@ -1,10 +1,11 @@
-import { ETransferType } from 'enum';
+import { ETransfrom } from '../enum';
 import { Feature } from 'ol';
 import { Coordinate } from 'ol/coordinate';
-import { Point } from 'ol/geom';
-import { Layer } from 'ol/layer';
+import { Geometry, Point } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
 import { PanIntoViewOptions, Positioning } from 'ol/Overlay';
 import { Size } from 'ol/size';
+import VectorSource from 'ol/source/Vector';
 import { IconAnchorUnits, IconOrigin } from 'ol/style/Icon';
 import { IField, IOptions } from 'wind-core';
 
@@ -709,11 +710,31 @@ export interface IWindParam extends IWindOptions {
   className?: string;
 }
 
-export interface ISetTransferCallback {
+export interface ITransformCallback {
   /**
-   * 修改状态枚举
+   * 绘制类型
    */
-  type: ETransferType;
+  type: ETransfrom;
+  /**
+   * 坐标位置
+   */
+  eventPosition: Coordinate | Coordinate[];
+  /**
+   * 像素位置
+   */
+  eventPixel: number[];
+  /**
+   * 元素id
+   */
+  featureId?: string;
+  /**
+   * 元素
+   */
+  feature?: Feature<Geometry>;
+  /**
+   * 元素坐标
+   */
+  featurePosition?: Coordinate | Coordinate[];
 }
 
 export interface ITransfromParams {
@@ -727,7 +748,7 @@ export interface ITransfromParams {
   translate?: boolean;
   /**
    * translate为true时生效
-   * 是否点击要素任意位置触发平移，默认false
+   * 是否点击要素任意位置触发平移，默认true
    */
   translateFeature?: boolean;
   /**
@@ -749,7 +770,7 @@ export interface ITransfromParams {
   /**
    * 传入一个可参与变换的图层数组，默认全部地图图层都可参与变换
    */
-  transformLayers?: Array<Layer>;
+  transformLayers?: Array<VectorLayer<VectorSource<Geometry>>>;
   /**
    * 传入一个可参与变换的元素数组，默认全部地图元素都可参与变换
    */

@@ -1,5 +1,9 @@
-import { Transfrom } from '../../src';
+import { ETransfrom, Transfrom } from '../../src';
 
 export const testTransfrom = () => {
-  new Transfrom({});
+  const a = new Transfrom({
+  });
+  a.on(ETransfrom.Select, (e) => {
+    console.log('选中', e);
+  });
 };

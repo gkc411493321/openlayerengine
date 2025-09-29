@@ -1,18 +1,14 @@
-import Earth from "../Earth";
-import { IPointParam, ISetPointParam } from "../interface";
-import { Feature } from "ol";
-import { Geometry, Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import Base from "./Base";
+import Earth from '../Earth';
+import { IPointParam, ISetPointParam } from '../interface';
+import { Feature } from 'ol';
+import { Point } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import Base from './Base';
 import { Circle, Fill, Stroke, Style } from 'ol/style.js';
-import { Utils } from "../common";
-import { easeOut } from 'ol/easing.js';
-import RenderEvent from "ol/render/Event";
-import { unByKey } from "ol/Observable";
-import { getVectorContext } from "ol/render";
-import CircleStyle from "ol/style/Circle";
-import { Coordinate } from "ol/coordinate";
+import { Utils } from '../common';
+import { unByKey } from 'ol/Observable';
+import { Coordinate } from 'ol/coordinate';
 
 /**
  * 创建点`Point`
@@ -29,39 +25,51 @@ export default class PointLayer<T = unknown> extends Base {
   constructor(earth: Earth) {
     const layer = new VectorLayer({
       source: new VectorSource()
-    })
-    super(earth, layer, "Point")
+    });
+    super(earth, layer, 'Point');
   }
   /**
    * 创建矢量元素
-   * @param param 创建`Point`参数，详见{@link IPointParam} 
+   * @param param 创建`Point`参数，详见{@link IPointParam}
    * @returns 返回`Feature<Point>`实例
    */
   private createFeature(param: IPointParam<T>): Feature<Point> {
     const feature = new Feature({
       geometry: new Point(param.center)
-    })
+    });
     let style = new Style();
-    style.setImage(new Circle({
-      radius: param.size || 4,
-      stroke: new Stroke(Object.assign({
-        color: param.fill?.color || 'red',
-      }, param.stroke)),
-      fill: new Fill(Object.assign({
-        color: 'red',
-      }, param.fill)),
-    }))
+    style.setImage(
+      new Circle({
+        radius: param.size || 4,
+        stroke: new Stroke(
+          Object.assign(
+            {
+              color: param.fill?.color || 'red'
+            },
+            param.stroke
+          )
+        ),
+        fill: new Fill(
+          Object.assign(
+            {
+              color: 'red'
+            },
+            param.fill
+          )
+        )
+      })
+    );
     style = super.setText(style, param.label, -15);
-    feature.setStyle(style)
+    feature.setStyle(style);
     feature.setId(param.id);
-    feature.set("data", param.data);
-    feature.set("module", param.module);
-    feature.set("layerId", this.layer.get("id"));
-    return feature
+    feature.set('data', param.data);
+    feature.set('module', param.module);
+    feature.set('layerId', this.layer.get('id'));
+    return feature;
   }
   /**
    * 创建点
-   * @param param 详细参数，详见{@link IPointParam} 
+   * @param param 详细参数，详见{@link IPointParam}
    * @returns 返回`Feature<Point>`实例
    * @example
    * ```
@@ -75,7 +83,7 @@ export default class PointLayer<T = unknown> extends Base {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
     if (param.isFlash) {
-      feature.set("param", param);
+      feature.set('param', param);
       new Utils().flash(feature, param, this.layer);
       // this.flash(feature, param)
     }
@@ -108,10 +116,10 @@ export default class PointLayer<T = unknown> extends Base {
       features = <Feature<Point>[]>super.get();
     }
     for (const item of features) {
-      const listenerKey = item.get("listenerKey");
+      const listenerKey = item.get('listenerKey');
       if (listenerKey) {
         unByKey(listenerKey);
-        item.set("listenerKey", null);
+        item.set('listenerKey', null);
       }
     }
   }
@@ -142,7 +150,7 @@ export default class PointLayer<T = unknown> extends Base {
       features = <Feature<Point>[]>super.get();
     }
     for (const item of features) {
-      const param = item.get("param");
+      const param = item.get('param');
       if (param) new Utils().flash(item, param, this.layer);
     }
   }
@@ -161,31 +169,43 @@ export default class PointLayer<T = unknown> extends Base {
   set(param: ISetPointParam): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(param.id);
     if (features[0] == undefined) {
-      console.warn("没有找到元素，请检查ID");
+      console.warn('没有找到元素，请检查ID');
       return [];
     }
     if (param.center) {
       features[0].getGeometry()?.setCoordinates(param.center);
     }
-    const listenerKey = features[0].get("listenerKey");
-    const oldParam = features[0].get("param");
+    const listenerKey = features[0].get('listenerKey');
+    const oldParam = features[0].get('param');
     const newParam = Object.assign(oldParam, param);
-    features[0].set("param", newParam);
+    features[0].set('param', newParam);
     if (listenerKey) {
       unByKey(listenerKey);
       new Utils().flash(features[0], newParam, this.layer);
     }
     const style = <Style>features[0].getStyle();
     const image = <Circle>style.getImage();
-    style.setImage(new Circle({
-      radius: param.size || image.getRadius(),
-      stroke: new Stroke(Object.assign({
-        color: param.stroke?.color || image.getStroke()?.getColor(),
-      }, param.stroke)),
-      fill: new Fill(Object.assign({
-        color: param.fill?.color || image.getFill()?.getColor(),
-      }, param.fill)),
-    }))
+    style.setImage(
+      new Circle({
+        radius: param.size || image.getRadius(),
+        stroke: new Stroke(
+          Object.assign(
+            {
+              color: param.stroke?.color || image.getStroke()?.getColor()
+            },
+            param.stroke
+          )
+        ),
+        fill: new Fill(
+          Object.assign(
+            {
+              color: param.fill?.color || image.getFill()?.getColor()
+            },
+            param.fill
+          )
+        )
+      })
+    );
     const radius = param.size || image.getRadius();
     super.setText(style, param.label, -(radius + 15));
     return features;
@@ -204,12 +224,12 @@ export default class PointLayer<T = unknown> extends Base {
   setPosition(id: string, position: Coordinate): Feature<Point>[] {
     const features = <Feature<Point>[]>super.get(id);
     if (features[0] == undefined) {
-      console.warn("没有找到元素，请检查ID");
+      console.warn('没有找到元素，请检查ID');
       return [];
     }
     features[0].getGeometry()?.setCoordinates(position);
-    const listenerKey = features[0].get("listenerKey");
-    const param = features[0].get("param");
+    const listenerKey = features[0].get('listenerKey');
+    const param = features[0].get('param');
     if (listenerKey) {
       unByKey(listenerKey);
       new Utils().flash(features[0], param, this.layer);
@@ -217,5 +237,3 @@ export default class PointLayer<T = unknown> extends Base {
     return features;
   }
 }
-
-

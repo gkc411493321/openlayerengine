@@ -1,25 +1,115 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import ExtTransform from './Transform/Transform';
 import { useEarth } from '../useEarth';
-import { ITransfromParams } from '../interface';
+import { ITransformCallback, ITransfromParams } from '../interface';
+import { ETransfrom } from '../enum';
+import { Feature } from 'ol';
+import { toLonLat } from 'ol/proj';
+import { Coordinate } from 'ol/coordinate';
+import { LineString, Point, Polygon } from 'ol/geom';
 
 export default class Transfrom {
+  /**
+   * 参数
+   */
+  private options: ITransfromParams;
+  /**
+   * 实列
+   */
+  private transforms: any;
   constructor(options: ITransfromParams) {
-    this.createTransform();
+    this.options = options;
+    this.transforms = this.createTransform();
   }
 
-  createTransform() {
+  /**
+   * 创建变换实例
+   */
+  private createTransform() {
     // 添加 Transform 交互
     const transforms = new ExtTransform({
-      enableRotatedTransform: true,
-      hitTolerance: 2,
-      translate: true, // 拖拽
-      translateFeature: false,
-      stretch: true, // 拉伸
-      scale: true, // 缩放
-      rotate: true // 旋转
+      hitTolerance: this.options.hitTolerance || 2,
+      translate: this.options.translate || true,
+      translateFeature: this.options.translateFeature || true,
+      stretch: this.options.stretch || true,
+      scale: this.options.scale || true,
+      rotate: this.options.rotate || true,
+      filter: this.options.beforeTransform,
+      layers: this.options.transformLayers,
+      features: this.options.transformFeatures
     });
     useEarth().map.addInteraction(transforms);
+    return transforms;
+  }
+  /**
+   * 转换坐标系
+   */
+  private transformCoordinates(feature: Feature): Coordinate | Coordinate[] | Coordinate[][] {
+    const geometry = feature.getGeometry();
+    const type = geometry?.getType();
+    let coordinates: Coordinate | Coordinate[] | Coordinate[][] = [];
+    if (geometry instanceof Point) {
+      coordinates = geometry.getCoordinates();
+    } else if (geometry instanceof LineString) {
+      coordinates = geometry.getCoordinates();
+    } else if (geometry instanceof Polygon) {
+      coordinates = geometry.getCoordinates();
+    }
+    if (type == 'Point' || type == 'MultiPoint') {
+      coordinates = toLonLat(coordinates as Coordinate);
+    } else if (type == 'Polygon' || type == 'MultiPolygon') {
+      coordinates = (coordinates as Coordinate[][]).map((item: Coordinate[]) => {
+        item = item.map((items: Coordinate) => {
+          items = toLonLat(items);
+          return items;
+        });
+        return item;
+      });
+    } else if (type == 'LineString' || type == 'MultiLineString') {
+      coordinates = (coordinates as Coordinate[]).map((item: Coordinate) => {
+        item = toLonLat(item);
+        return item;
+      });
+    }
+    return coordinates;
+  }
+  /**
+   * 封装事件监听器
+   */
+  public on(eventName: ETransfrom, callback: (e: ITransformCallback) => void): void {
+    switch (eventName) {
+      case ETransfrom.Select:
+        // 选中元素
+        this.transforms.on(eventName, (e: any) => {
+          const params: ITransformCallback = {
+            type: ETransfrom.Select,
+            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+            eventPixel: e.pixel,
+            featureId: e.feature && e.feature.getId() ? e.feature.getId() : '',
+            featurePosition: e.feature && this.transformCoordinates(e.feature),
+            feature: e.feature
+          };
+          callback(params);
+        });
+        break;
+      case ETransfrom.SelectEnd:
+        // 退出选中
+        this.transforms.on(eventName, (e: Feature) => {
+          // callback({
+          //   type: ETransfrom.SelectEnd
+          // });
+        });
+        break;
+      default:
+        throw new Error('事件类型错误');
+    }
+  }
+  /**
+   * 移除变换实例
+   */
+  public remove(): boolean {
+    const interaction = useEarth().map.removeInteraction(this.transforms);
+    return interaction ? true : false;
   }
 }
 
