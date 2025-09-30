@@ -4,9 +4,12 @@ import { useEarth } from '../useEarth';
 import { ITransformCallback, ITransfromParams } from '../interface';
 import { ETransfrom } from '../enum';
 import { Feature } from 'ol';
-import { toLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import { LineString, Point, Polygon } from 'ol/geom';
+import { OverlayLayer } from '../base';
+import { unByKey } from 'ol/Observable';
+import { EventsKey } from 'ol/events';
 
 export default class Transfrom {
   /**
@@ -17,8 +20,18 @@ export default class Transfrom {
    * 实列
    */
   private transforms: any;
+  /**
+   * 提示牌
+   */
+  private overlay: OverlayLayer<unknown>;
+  /**
+   * 提示覆盖物监听器key
+   */
+  private overlayKey: EventsKey | EventsKey[] | undefined;
   constructor(options: ITransfromParams) {
     this.options = options;
+    this.overlayKey = undefined;
+    this.overlay = new OverlayLayer(useEarth());
     this.transforms = this.createTransform();
   }
 
@@ -40,6 +53,23 @@ export default class Transfrom {
     });
     useEarth().map.addInteraction(transforms);
     return transforms;
+  }
+  /**
+   * 提示牌初始化方法
+   */
+  private initHelpTooltip(str: string) {
+    const div = document.createElement('div');
+    div.innerHTML = "<div class='ol-tooltip'>" + str + '</div>';
+    document.body.appendChild(div);
+    this.overlay.add({
+      id: 'help_tooltip',
+      position: fromLonLat([0, 0]),
+      element: div,
+      offset: [15, -11]
+    });
+    this.overlayKey = useEarth().map.on('pointermove', (evt) => {
+      this.overlay.setPosition('help_tooltip', evt.coordinate);
+    });
   }
   /**
    * 转换坐标系
@@ -74,6 +104,16 @@ export default class Transfrom {
     return coordinates;
   }
   /**
+   * 删除提示牌
+   */
+  private removeHelpTooltip() {
+    if (this.overlayKey) {
+      this.overlay.remove('help_tooltip');
+      unByKey(this.overlayKey);
+      this.overlayKey = undefined;
+    }
+  }
+  /**
    * 封装事件监听器
    */
   public on(eventName: ETransfrom, callback: (e: ITransformCallback) => void): void {
@@ -81,6 +121,10 @@ export default class Transfrom {
       case ETransfrom.Select:
         // 选中元素
         this.transforms.on(eventName, (e: any) => {
+          // 初始化提示标牌
+          this.removeHelpTooltip();
+          this.initHelpTooltip('进入变换状态，选择控制点后可进行平移、旋转、缩放、拉伸等操作');
+          /// 回调函数
           const params: ITransformCallback = {
             type: ETransfrom.Select,
             eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
@@ -94,10 +138,15 @@ export default class Transfrom {
         break;
       case ETransfrom.SelectEnd:
         // 退出选中
-        this.transforms.on(eventName, (e: Feature) => {
-          // callback({
-          //   type: ETransfrom.SelectEnd
-          // });
+        this.transforms.on(eventName, (e: any) => {
+          // 删除提示标牌
+          this.removeHelpTooltip();
+          // 回调函数
+          callback({
+            type: ETransfrom.SelectEnd,
+            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+            eventPixel: e.pixel
+          });
         });
         break;
       default:
