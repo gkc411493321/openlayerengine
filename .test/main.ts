@@ -20,8 +20,8 @@ window.onload = () => {
   earth.addLayer(earth.createOsmLayer());
   testBillboardLayer();
 
-  // testCircleLayer()
-  // testPointLayer()
+  testCircleLayer()
+  testPointLayer()
   testPolygonLayer();
   testPolylineLayer();
   testTransfrom();

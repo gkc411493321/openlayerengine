@@ -507,7 +507,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         }
       }
       // Rotate
-      if (!this.iscircle_ && this.get('rotate')) {
+      if (!this.iscircle_ && !this.ispt_ && this.get('rotate')) {
         f = new ol_Feature({ geometry: new ol_geom_Point([(g[0][0] + g[2][0]) / 2, g[2][1]]), handle: 'rotate' });
         features.push(f);
       }
