@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import ExtTransform from './Transform/Transform';
 import { useEarth } from '../useEarth';
 import { ITransformCallback, ITransfromParams } from '../interface';
-import { ETransfrom } from '../enum';
+import { ECursor, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
@@ -27,32 +28,92 @@ export default class Transfrom {
   /**
    * 提示覆盖物监听器key
    */
-  private overlayKey: EventsKey | EventsKey[] | undefined;
+  private overlayKey: EventsKey | EventsKey[] | undefined = undefined;
+  /**
+   * 校验选中状态
+   */
+  private checkSelect: boolean = false;
+  /**
+   * 校验鼠标进入状态
+   */
+  private checkEnterHandle: boolean = false;
+  /**
+   * 默认参数
+   */
+  private defaultParams: ITransfromParams = {
+    hitTolerance: 2,
+    translateType: ETranslateType.Center,
+    scale: true,
+    stretch: true,
+    rotate: true
+  };
+
   constructor(options: ITransfromParams) {
     this.options = options;
-    this.overlayKey = undefined;
     this.overlay = new OverlayLayer(useEarth());
     this.transforms = this.createTransform();
+    this.initEvent();
   }
-
   /**
    * 创建变换实例
    */
   private createTransform() {
     // 添加 Transform 交互
+    const params = {
+      ...this.defaultParams,
+      ...this.options
+    };
+    let translate = false;
+    let translateFeature = false;
+    // 处理平移参数
+    if (params.translateType == ETranslateType.None) {
+      translate = false;
+      translateFeature = false;
+    } else if (params.translateType == ETranslateType.Center) {
+      translate = true;
+      translateFeature = false;
+    } else if (params.translateType == ETranslateType.Feature) {
+      translate = true;
+      translateFeature = true;
+    }
     const transforms = new ExtTransform({
-      hitTolerance: this.options.hitTolerance || 2,
-      translate: this.options.translate || true,
-      translateFeature: this.options.translateFeature || true,
-      stretch: this.options.stretch || true,
-      scale: this.options.scale || true,
-      rotate: this.options.rotate || true,
-      filter: this.options.beforeTransform,
-      layers: this.options.transformLayers,
-      features: this.options.transformFeatures
+      hitTolerance: params.hitTolerance,
+      translate: translate,
+      translateFeature: translateFeature,
+      stretch: params.stretch,
+      scale: params.scale,
+      rotate: params.rotate,
+      filter: params.beforeTransform,
+      layers: params.transformLayers,
+      features: params.transformFeatures
     });
     useEarth().map.addInteraction(transforms);
     return transforms;
+  }
+  /**
+   * 初始化内部事件监听
+   */
+  private initEvent() {
+    this.transforms.on(ETransfrom.Select, (e: any) => {
+      // 选中元素
+      this.removeHelpTooltip();
+      this.initHelpTooltip('选择控制点进行变换操作');
+    });
+    this.transforms.on(ETransfrom.SelectEnd, (e: any) => {
+      // 退出选中元素
+      this.removeHelpTooltip();
+    });
+    this.transforms.on(ETransfrom.EnterHandle, (e: any) => {
+      // 根据鼠标类型更新提示牌
+      this.updateHelpTooltipByCursorType(e);
+    });
+    this.transforms.on(ETransfrom.LeaveHandle, (e: any) => {
+      if (this.overlayKey) {
+        this.updateHelpTooltip('选择控制点进行变换操作');
+      } else {
+        this.removeHelpTooltip();
+      }
+    });
   }
   /**
    * 提示牌初始化方法
@@ -70,6 +131,31 @@ export default class Transfrom {
     this.overlayKey = useEarth().map.on('pointermove', (evt) => {
       this.overlay.setPosition('help_tooltip', evt.coordinate);
     });
+  }
+  /**
+   * 更新提示牌
+   */
+  private updateHelpTooltip(str: string) {
+    if (this.overlayKey) {
+      const div = document.createElement('div');
+      div.innerHTML = "<div class='ol-tooltip'>" + str + '</div>';
+      document.body.appendChild(div);
+      const params = {
+        id: 'help_tooltip',
+        element: div
+      };
+      this.overlay.set(params);
+    }
+  }
+  /**
+   * 删除提示牌
+   */
+  private removeHelpTooltip() {
+    if (this.overlayKey) {
+      this.overlay.remove('help_tooltip');
+      unByKey(this.overlayKey);
+      this.overlayKey = undefined;
+    }
   }
   /**
    * 转换坐标系
@@ -103,14 +189,30 @@ export default class Transfrom {
     }
     return coordinates;
   }
+
   /**
-   * 删除提示牌
+   * 根据鼠标事件类型，更新标牌文本
    */
-  private removeHelpTooltip() {
-    if (this.overlayKey) {
-      this.overlay.remove('help_tooltip');
-      unByKey(this.overlayKey);
-      this.overlayKey = undefined;
+  private updateHelpTooltipByCursorType(e: ITransformCallback) {
+    if (e.cursor == ECursor.Move) {
+      // 平移
+      this.updateHelpTooltip('鼠标左键按下平移');
+    } else if (e.cursor == ECursor.Pointer) {
+      // 平移
+      if (this.options.translateType == ETranslateType.Feature || this.defaultParams.translateType == ETranslateType.Feature) {
+        this.updateHelpTooltip('鼠标左键按下平移');
+      } else {
+        this.updateHelpTooltip('选择控制点进行变换操作');
+      }
+    } else if (e.cursor == ECursor.Grab) {
+      // 旋转
+      this.updateHelpTooltip('鼠标左键按下旋转');
+    } else if (e.cursor == ECursor.NsResize || e.cursor == ECursor.EwResize) {
+      // 拉伸
+      this.updateHelpTooltip('鼠标左键按下拉伸，Ctrl键以基准点拉伸');
+    } else if (e.cursor == ECursor.NeswResize || e.cursor == ECursor.NwseResize) {
+      // 缩放
+      this.updateHelpTooltip('鼠标左键按下缩放，Shift键保持比例缩放');
     }
   }
   /**
@@ -121,10 +223,7 @@ export default class Transfrom {
       case ETransfrom.Select:
         // 选中元素
         this.transforms.on(eventName, (e: any) => {
-          // 初始化提示标牌
-          this.removeHelpTooltip();
-          this.initHelpTooltip('进入变换状态，选择控制点后可进行平移、旋转、缩放、拉伸等操作');
-          /// 回调函数
+          // 回调函数
           const params: ITransformCallback = {
             type: ETransfrom.Select,
             eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
@@ -134,19 +233,47 @@ export default class Transfrom {
             feature: e.feature
           };
           callback(params);
+          this.checkSelect = true;
         });
         break;
       case ETransfrom.SelectEnd:
         // 退出选中
         this.transforms.on(eventName, (e: any) => {
-          // 删除提示标牌
-          this.removeHelpTooltip();
           // 回调函数
-          callback({
-            type: ETransfrom.SelectEnd,
-            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-            eventPixel: e.pixel
-          });
+          if (this.checkSelect) {
+            callback({
+              type: ETransfrom.SelectEnd,
+              eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+              eventPixel: e.pixel
+            });
+            this.checkSelect = false;
+          }
+        });
+        break;
+      case ETransfrom.EnterHandle:
+        // 进入变换点
+        this.transforms.on(eventName, (e: any) => {
+          if (!this.checkEnterHandle) {
+            callback({
+              type: ETransfrom.EnterHandle,
+              cursor: e.cursor,
+              eventPixel: e.eventPixel
+            });
+            this.checkEnterHandle = true;
+          }
+        });
+        break;
+      case ETransfrom.LeaveHandle:
+        // 离开变换点
+        this.transforms.on(eventName, (e: any) => {
+          if (this.checkEnterHandle) {
+            callback({
+              type: ETransfrom.LeaveHandle,
+              cursor: e.cursor,
+              eventPixel: e.eventPixel
+            });
+            this.checkEnterHandle = false;
+          }
         });
         break;
       default:

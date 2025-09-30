@@ -630,12 +630,12 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       if (this.get('enableRotatedTransform') && viewRotation !== 0) {
         this.rotatedExtent_ = ol_geom_Polygon_fromExtent(rotExtent).getCoordinates()[0];
       }
+      // 设置鼠标为 grabbing
+      var element = evt.map.getTargetElement();
+      this._prevCursorStyle = element.style.cursor;
+      ol_ext_element.setCursor(element, this.Cursors.mouseDown || 'grabbing');
       if (this.mode_ === 'rotate') {
         this.center_ = this.getCenter() || ol_extent_getCenter(extent);
-        // we are now rotating (cursor down on rotate mode), so apply the grabbing cursor
-        var element = evt.map.getTargetElement();
-        ol_ext_element.setCursor(element, this.Cursors.rotate0);
-        this.previousCursor_ = element.style.cursor;
       } else {
         this.center_ = ol_extent_getCenter(extent);
       }
@@ -936,22 +936,30 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    */
   handleMoveEvent_(evt) {
     if (!this._handleEvent(evt, this.features_)) return;
-    // console.log("handleMoveEvent");
-    if (!this.mode_) {
+    // 仅在有选中元素且未处于编辑模式下触发 enterHandle/leaveHandle 事件
+    if (!this.mode_ && this.selection_ && this.selection_.getLength() > 0) {
       var sel = this.getFeatureAtPixel_(evt.pixel);
       var element = evt.map.getTargetElement();
       if (sel.feature) {
         var c = sel.handle ? this.Cursors[(sel.handle || 'default') + (sel.constraint || '') + (sel.option || '')] : this.Cursors.select;
-
         if (this.previousCursor_ === undefined) {
           this.previousCursor_ = element.style.cursor;
         }
         ol_ext_element.setCursor(element, c);
+        this.dispatchEvent({
+          type: 'enterHandle',
+          cursor: c,
+          eventPixel: evt.pixel
+        });
       } else {
         if (this.previousCursor_ !== undefined) {
           ol_ext_element.setCursor(element, this.previousCursor_);
         }
         this.previousCursor_ = undefined;
+        this.dispatchEvent({
+          type: 'leaveHandle',
+          eventPixel: evt.pixel
+        });
       }
     }
   }
@@ -960,9 +968,12 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    * @return {boolean} `false` to stop the drag sequence.
    */
   handleUpEvent_(evt) {
-    // remove rotate0 cursor on Up event, otherwise it's stuck on grab/grabbing
-    if (this.mode_ === 'rotate') {
-      var element = evt.map.getTargetElement();
+    // 鼠标抬起时恢复为按下前的样式
+    var element = evt.map.getTargetElement();
+    if (this._prevCursorStyle !== undefined) {
+      ol_ext_element.setCursor(element, this._prevCursorStyle);
+      this._prevCursorStyle = undefined;
+    } else if (this.mode_ === 'rotate') {
       ol_ext_element.setCursor(element, this.Cursors.default);
       this.previousCursor_ = undefined;
     }
@@ -1118,8 +1129,8 @@ ol_interaction_Transform.prototype.Cursors = {
   default: 'auto',
   select: 'pointer',
   translate: 'move',
-  rotate: 'move',
-  rotate0: 'move',
+  rotate: 'grab',
+  rotate0: 'grab',
   scale: 'nesw-resize',
   scale1: 'nwse-resize',
   scale2: 'nesw-resize',
@@ -1127,7 +1138,8 @@ ol_interaction_Transform.prototype.Cursors = {
   scalev: 'ew-resize',
   scaleh1: 'ns-resize',
   scalev2: 'ew-resize',
-  scaleh3: 'ns-resize'
+  scaleh3: 'ns-resize',
+  mouseDown: 'grabbing'
 };
 
 export default ol_interaction_Transform;

@@ -1,4 +1,4 @@
-import { ETransfrom } from '../enum';
+import { ECursor, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { Coordinate } from 'ol/coordinate';
 import { Geometry, Point } from 'ol/geom';
@@ -716,13 +716,17 @@ export interface ITransformCallback {
    */
   type: ETransfrom;
   /**
-   * 坐标位置
-   */
-  eventPosition: Coordinate | Coordinate[];
-  /**
    * 像素位置
    */
   eventPixel: number[];
+  /**
+   * 鼠标事件类型，用于鼠标进入和离开变换点事件
+   */
+  cursor?: ECursor;
+  /**
+   * 坐标位置
+   */
+  eventPosition?: Coordinate | Coordinate[];
   /**
    * 元素id
    */
@@ -743,22 +747,17 @@ export interface ITransfromParams {
    */
   hitTolerance?: number;
   /**
-   * 是否可以平移，默认true
+   * 是否可以平移，默认点击要素任意位置平移 ETranslateType.feature
    */
-  translate?: boolean;
-  /**
-   * translate为true时生效
-   * 是否点击要素任意位置触发平移，默认true
-   */
-  translateFeature?: boolean;
-  /**
-   * 是否可以拉伸，默认true
-   */
-  stretch?: boolean;
+  translateType?: ETranslateType;
   /**
    * 是否可以缩放，默认true
    */
   scale?: boolean;
+  /**
+   * 是否可以拉伸，默认true, scale属性为false时该属性无效
+   */
+  stretch?: boolean;
   /**
    * 是否可以旋转，默认true
    */
