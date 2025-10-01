@@ -1108,7 +1108,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           if (style && typeof style.getSize === 'function') {
             let size = style.getSize();
             if (size && size[0] && size[1]) {
-              return Math.max(size[0], size[1]);
+              return Math.max(size[0], size[1]) / 2;
             }
           }
         }
