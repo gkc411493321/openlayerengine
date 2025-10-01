@@ -7,7 +7,7 @@
  * @LastEditTime: 2023-03-03 19:11:58
  */
 import { fromLonLat } from 'ol/proj';
-import { BillboardLayer, ETransferType, useEarth } from '../../src';
+import { BillboardLayer, useEarth } from '../../src';
 
 export const testBillboardLayer = () => {
   const layer = new BillboardLayer(useEarth());
@@ -16,7 +16,7 @@ export const testBillboardLayer = () => {
     center: fromLonLat([65, 20]),
     src: '/image/fly.svg',
     color: 'red',
-    scale: 0.5,
+    scale: 1,
     label: {
       text: 'billboard',
       font: 'bold 24px serif',

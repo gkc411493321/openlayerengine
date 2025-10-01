@@ -159,7 +159,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       // this.selection_ = options.select.getFeatures();
       this.on(
         'change:active',
-        function (e) {
+        function () {
           if (this.getActive()) {
             this.setSelection(options.select.getFeatures().getArray());
           } else {
@@ -174,7 +174,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
     } else {
       this.on(
         'change:active',
-        function (e) {
+        function () {
           this.select(null);
         }.bind(this)
       );
@@ -238,7 +238,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
     var stroke = options.pointStroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1 });
     var strokedash = options.stroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1, lineDash: [4, 4] });
     var fill0 = options.fill || new ol_style_Fill({ color: [255, 0, 0, 0.01] });
-    var fillScale = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] });
+  // var fillScale = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] }); // 未使用，移除
     var fill = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] });
     var circle = new ol_style_RegularShape({
       fill: fill,
@@ -315,66 +315,116 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    */
   getFeatureAtPixel_(pixel) {
     var self = this;
-    return (
+    let hit =
       this.getMap().forEachFeatureAtPixel(
         pixel,
         function (feature, layer) {
           var found = false;
           // Overlay ?
-          if (!layer) {
-            if (feature === self.bbox_) {
-              if (self.get('translateBBox')) {
-                return { feature: feature, handle: 'translate', constraint: '', option: '' };
-              } else {
+            if (!layer) {
+              if (feature === self.bbox_) {
+                // 对点要素：允许点击 bbox 内部也能触发操作，避免只能点像素中心
+                if (self.ispt_) {
+                  // 如果开启平移功能，返回 translate 句柄，否则当作普通选中
+                  if (self.get('translate')) {
+                    return { feature: self.selection_.item(0) || feature, handle: 'translate', constraint: '', option: '' };
+                  }
+                  return { feature: self.selection_.item(0) || feature };
+                }
+                if (self.get('translateBBox')) {
+                  return { feature: feature, handle: 'translate', constraint: '', option: '' };
+                }
                 return false;
               }
+              self.handles_.forEach(function (f) {
+                if (f === feature) found = true;
+              });
+              if (found) return { feature: feature, handle: feature.get('handle'), constraint: feature.get('constraint'), option: feature.get('option') };
             }
-            self.handles_.forEach(function (f) {
-              if (f === feature) found = true;
-            });
-            if (found) return { feature: feature, handle: feature.get('handle'), constraint: feature.get('constraint'), option: feature.get('option') };
-          }
-          // No seletion
-          if (!self.get('selection')) {
-            // Return the currently selected feature the user is interacting with.
-            if (
-              self.selection_.getArray().some(function (f) {
-                return feature === f;
-              })
-            ) {
-              return { feature: feature };
+            // No seletion
+            if (!self.get('selection')) {
+              // Return the currently selected feature the user is interacting with.
+              if (
+                self.selection_.getArray().some(function (f) {
+                  return feature === f;
+                })
+              ) {
+                return { feature: feature };
+              }
+              return null;
             }
-            return null;
-          }
-          // filter condition
-          if (self._filter) {
-            if (self._filter(feature, layer)) return { feature: feature };
-            else return null;
-          }
-
-          // feature belong to a layer
-          else if (self.layers_) {
-            for (var i = 0; i < self.layers_.length; i++) {
-              if (self.layers_[i] === layer) return { feature: feature };
+            // filter condition
+            if (self._filter) {
+              if (self._filter(feature, layer)) return { feature: feature };
+              else return null;
             }
-            return null;
-          }
 
-          // feature in the collection
-          else if (self.features_) {
-            self.features_.forEach(function (f) {
-              if (f === feature) found = true;
-            });
-            if (found) return { feature: feature };
-            else return null;
-          }
+            // feature belong to a layer
+            else if (self.layers_) {
+              for (var i = 0; i < self.layers_.length; i++) {
+                if (self.layers_[i] === layer) return { feature: feature };
+              }
+              return null;
+            }
 
-          // Others
-          else return { feature: feature };
+            // feature in the collection
+            else if (self.features_) {
+              self.features_.forEach(function (f) {
+                if (f === feature) found = true;
+              });
+              if (found) return { feature: feature };
+              else return null;
+            }
+
+            // Others
+            else return { feature: feature };
         },
         { hitTolerance: this.get('hitTolerance') }
-      ) || {}
-    );
+      ) || {};
+
+    // 如果常规命中失败，额外对 Point 做一次“视觉半径”拾取，解决缩放后命中困难
+    if (!hit.feature) {
+      const map = this.getMap();
+      if (!map) return hit;
+      // 收集候选点要素（优先指定集合 / 图层）
+      let candidates = [];
+      if (this.features_) {
+        candidates = this.features_.getArray();
+      } else if (this.layers_) {
+        this.layers_.forEach(l => {
+          const src = l && l.getSource && l.getSource();
+            if (src && src.getFeatures) candidates = candidates.concat(src.getFeatures());
+        });
+      } else {
+        // 遍历地图所有 vector 图层（可能稍慢，但只在第一次命中失败时走）
+        map.getLayers().forEach(l => {
+          const src = l && l.getSource && l.getSource();
+          if (src && src.getFeatures) candidates = candidates.concat(src.getFeatures());
+        });
+      }
+      const px = pixel[0];
+      const py = pixel[1];
+      let best, bestDist = Infinity;
+      for (let i = 0; i < candidates.length; i++) {
+        const f = candidates[i];
+        if (!f.getGeometry || f.getGeometry().getType() !== 'Point') continue;
+        const p = f.getGeometry().getCoordinates();
+        const fpixel = map.getPixelFromCoordinate(p);
+        if (!fpixel) continue;
+        const visualR = this._getPointVisualRadiusPixel_(f); // 已经考虑缩放的视觉半径
+        const dx = fpixel[0] - px;
+        const dy = fpixel[1] - py;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= visualR + 2 && dist < bestDist) { // +2 做轻微松弛
+          best = f;
+          bestDist = dist;
+        }
+      }
+      if (best) {
+        hit = { feature: best };
+      }
+    }
+    return hit;
   }
   /** Rotate feature from map view rotation
    * @param {ol.Feature} f the feature
@@ -506,10 +556,27 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           features.push(f);
         }
       }
-      // Rotate
-      if (!this.iscircle_ && !this.ispt_ && this.get('rotate')) {
-        f = new ol_Feature({ geometry: new ol_geom_Point([(g[0][0] + g[2][0]) / 2, g[2][1]]), handle: 'rotate' });
-        features.push(f);
+      // Rotate handle: lines/polygons always; point only if it has Icon-like image (getSrc or getImageSize)
+      if (!this.iscircle_ && this.get('rotate')) {
+        let allowRotate = true;
+        if (this.ispt_) {
+          allowRotate = false;
+          if (this.selection_.getLength() === 1) {
+            const pf = this.selection_.item(0);
+            if (this._pointHasIconImage_(pf)) allowRotate = true;
+          }
+        }
+        if (allowRotate) {
+          f = new ol_Feature({ geometry: new ol_geom_Point([(g[0][0] + g[2][0]) / 2, g[2][1]]), handle: 'rotate' });
+          features.push(f);
+        }
+      }
+      // 点要素也添加四个角的scale handle
+      if (this.ispt_ && this.get('scale')) {
+        for (i = 0; i < g.length - 1; i++) {
+          f = new ol_Feature({ geometry: new ol_geom_Point(g[i]), handle: 'scale', option: i });
+          features.push(f);
+        }
       }
       // Add sketch
       this.overlayLayer_.getSource().addFeatures(features);
@@ -650,6 +717,23 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       }
       this.angle_ = Math.atan2(this.center_[1] - evt.coordinate[1], this.center_[0] - mouseX);
 
+      // 点缩放：记录归一化起点与基准长度，避免跨屏 wrap 造成缩放比例跳变
+      if (this.mode_ === 'scale' && this.ispt_) {
+        const view = this.getMap().getView();
+        const proj = view.getProjection();
+        const extentWidth = proj.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849;
+        const normalize = (coord, center) => {
+          let x = coord[0];
+          if (Math.abs(x - center[0]) > extentWidth / 2) {
+            x = x + Math.round((center[0] - x) / extentWidth) * extentWidth;
+          }
+          return [x, coord[1]];
+        };
+        this._ptDownCoordNorm = normalize(this.coordinate_, this.center_);
+        const v = [this._ptDownCoordNorm[0] - this.center_[0], this._ptDownCoordNorm[1] - this.center_[1]];
+        this._ptBaseLen = Math.sqrt(v[0] * v[0] + v[1] * v[1]) || 1;
+      }
+
       this.dispatchEvent({
         type: this.mode_ + 'start',
         feature: this.selection_.item(0),
@@ -696,40 +780,63 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    */
   handleDragEvent_(evt) {
     if (!this._handleEvent(evt, this.features_)) return;
-    var map = this.getMap();
-    var view = map.getView();
-    var proj = view.getProjection();
-    var extentWidth = proj.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849; // EPSG:3857
-    var centerX = view.getCenter()[0];
-    var geomCenter = this.center_ || [0, 0];
+    function wrapToCenter(x, centerX, extentWidth) {
+      if (Math.abs(x - centerX) > extentWidth / 2) {
+        return x + Math.round((centerX - x) / extentWidth) * extentWidth;
+      }
+      return x;
+    }
+    const map = this.getMap();
+    const view = map.getView();
+    const proj = view.getProjection();
+    const extentWidth = proj.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849; // EPSG:3857
+    const centerX = view.getCenter()[0];
+    let geomCenter = this.center_ || [0, 0];
     if (this.selection_ && this.selection_.getLength()) {
       geomCenter = ol_extent_getCenter(this.selection_.item(0).getGeometry().getExtent());
     }
-    var wrapOffset = 0;
+    let wrapOffset = 0;
     if (Math.abs(geomCenter[0] - centerX) > extentWidth / 2) {
       wrapOffset = Math.round((centerX - geomCenter[0]) / extentWidth) * extentWidth;
     }
-    var viewRotation = view.getRotation();
-    var i, j, f, geometry;
-    var pt0 = [this.coordinate_[0], this.coordinate_[1]];
-    var pt = [evt.coordinate[0], evt.coordinate[1]];
+    const viewRotation = view.getRotation();
+    let i, j, f, geometry;
+    const pt0 = [this.coordinate_[0], this.coordinate_[1]];
+    const pt = [evt.coordinate[0], evt.coordinate[1]];
     this.isUpdating_ = true;
     this.hasChanged_ = true;
     switch (this.mode_) {
       case 'rotate': {
-        // 保证旋转时鼠标点与中心点在同一 wrap 区间
-        // 保证旋转时鼠标点与中心点在同一 wrap 区间
+        // ...existing code...
         var mouseX = pt[0];
         if (Math.abs(mouseX - this.center_[0]) > extentWidth / 2) {
           mouseX = mouseX + Math.round((this.center_[0] - mouseX) / extentWidth) * extentWidth;
         }
         var a = Math.atan2(this.center_[1] - pt[1], this.center_[0] - mouseX);
-        if (!this.ispt) {
-          for (i = 0, f; (f = this.selection_.item(i)); i++) {
-            geometry = this.geoms_[i].clone();
+        for (i = 0, f; (f = this.selection_.item(i)); i++) {
+          geometry = this.geoms_[i].clone();
+          // 对非点几何直接旋转 geometry
+          if (geometry.getType() !== 'Point') {
             geometry.rotate(a - this.angle_, this.center_);
             if (geometry.getType() == 'Circle') geometry.setCenterAndRadius(geometry.getCenter(), geometry.getRadius());
             f.setGeometry(geometry);
+          } else {
+            // Point：仅当是 Icon / image 样式时才旋转（不旋转纯 RegularShape/Circle）
+            if (this._pointHasIconImage_(f)) {
+              const style = f.getStyle && f.getStyle();
+              if (style && typeof style.getImage === 'function') {
+                const img = style.getImage();
+                if (img && typeof img.setRotation === 'function') {
+                  const baseRot = this._ptBaseRotation != null ? this._ptBaseRotation : (typeof img.getRotation === 'function' ? img.getRotation() || 0 : 0);
+                  if (this._ptBaseRotation == null) this._ptBaseRotation = baseRot; // 记录初始角度
+                  // 修复：Point 图标旋转方向与鼠标拖动方向相反 => 取反增量
+                  // geometry.rotate 使用 (a - this.angle_) 获得正确方向；Icon 在 OL 中正角度同为逆时针
+                  // 若出现方向相反，说明此处需要反向增量
+                  img.setRotation(baseRot - (a - this.angle_));
+                  if (typeof f.changed === 'function') f.changed();
+                }
+              }
+            }
           }
         }
         this.drawSketch_(true);
@@ -744,17 +851,15 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         break;
       }
       case 'translate': {
+        // ...existing code...
         var deltaX = pt[0] - pt0[0];
         var deltaY = pt[1] - pt0[1];
-        //this.feature_.getGeometry().translate(deltaX, deltaY);
-        // eslint-disable-next-line no-cond-assign
         for (i = 0, f; (f = this.selection_.item(i)); i++) {
           f.getGeometry().translate(deltaX, deltaY);
         }
         this.handles_.forEach(function (f) {
           f.getGeometry().translate(deltaX, deltaY);
         });
-
         this.coordinate_ = evt.coordinate;
         this.dispatchEvent({
           type: 'translating',
@@ -767,41 +872,122 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         break;
       }
       case 'scale': {
-        var center = this.center_;
+        // 点要素缩放/拉伸
+        if (this.ispt_) {
+          const feature = this.selection_.item(0);
+          const style = feature.getStyle ? feature.getStyle() : null;
+          const center = this.center_;
+          const view = this.getMap().getView();
+          const proj = view.getProjection();
+          const extentWidth = proj.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849;
+          // 归一化（wrap）当前拖拽坐标与起始坐标
+          const normalize = (coord, ctr) => {
+            let x = coord[0];
+            if (Math.abs(x - ctr[0]) > extentWidth / 2) {
+              x = x + Math.round((ctr[0] - x) / extentWidth) * extentWidth;
+            }
+            return [x, coord[1]];
+          };
+          const downCoordinate = this._ptDownCoordNorm || normalize(this.coordinate_, center);
+          const dragCoordinate = normalize(evt.coordinate, center);
+          const v0 = [downCoordinate[0] - center[0], downCoordinate[1] - center[1]];
+          const v1 = [dragCoordinate[0] - center[0], dragCoordinate[1] - center[1]];
+          const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
+          const baseLen = this._ptBaseLen || Math.sqrt(v0[0] * v0[0] + v0[1] * v0[1]) || 1;
+          const minScale = 0.2;
+            let scale = len1 / baseLen;
+          if (scale < minScale) scale = minScale;
+          // 始终等比缩放
+          const scx = scale, scy = scale;
+          // 修改 image size 或 style size
+          if (style && typeof style.getImage === 'function' && style.getImage()) {
+            const image = style.getImage();
+            // Circle / RegularShape 情况：只有 radius，没有 width/height
+            if (typeof image.getRadius === 'function' && typeof image.setRadius === 'function') {
+              if (!this._ptCircleBaseRadius) {
+                this._ptCircleBaseRadius = image.getRadius();
+                this._ptCircleBaseLen = baseLen;
+              }
+              let newRadius = this._ptCircleBaseRadius * (len1 / (this._ptCircleBaseLen || 1));
+              if (newRadius < 2) newRadius = 2; // 最小半径保护
+              image.setRadius(newRadius);
+            }
+            // 优先 setScale，避免 setSize 导致锯齿 (针对 Icon / 图像样式)
+            else if (typeof image.setScale === 'function' && typeof image.getScale === 'function') {
+              const baseScale = image.getScale() || 1;
+              if (!this._ptImageBaseScale) {
+                this._ptImageBaseScale = baseScale;
+                this._ptImageBaseLen = baseLen;
+              }
+              let trueScale = this._ptImageBaseScale * (len1 / (this._ptImageBaseLen || 1));
+              if (trueScale < minScale) trueScale = minScale;
+              image.setScale(trueScale);
+            } else if (typeof image.setSize === 'function' && typeof image.getSize === 'function') {
+              const imgSize = image.getSize();
+              if (imgSize && imgSize.length === 2) {
+                // 鼠标按下时记录原始 size，避免叠加误差
+                if (!this._ptImageBaseSize) {
+                  this._ptImageBaseSize = imgSize.slice();
+                  this._ptImageBaseLen = baseLen;
+                }
+                let newW = this._ptImageBaseSize[0] * (len1 / (this._ptImageBaseLen || 1));
+                let newH = this._ptImageBaseSize[1] * (len1 / (this._ptImageBaseLen || 1));
+                if (newW < 5) newW = 5;
+                if (newH < 5) newH = 5;
+                image.setSize([newW, newH]);
+              }
+            }
+          } else if (style && typeof style.getSize === 'function' && typeof style.setSize === 'function') {
+            const styleSize = style.getSize();
+            if (styleSize && styleSize.length === 2) {
+              // 鼠标按下时记录原始 size，避免叠加误差
+              if (!this._ptStyleBaseSize) {
+                this._ptStyleBaseSize = styleSize.slice();
+                this._ptStyleBaseLen = baseLen;
+              }
+              let newW = this._ptStyleBaseSize[0] * (len1 / (this._ptStyleBaseLen || 1));
+              let newH = this._ptStyleBaseSize[1] * (len1 / (this._ptStyleBaseLen || 1));
+              if (newW < 5) newW = 5;
+              if (newH < 5) newH = 5;
+              style.setSize([newW, newH]);
+            }
+          }
+          feature.changed && feature.changed();
+          this.drawSketch_(); // bbox 跟随缩放
+          this.dispatchEvent({
+            type: 'scaling',
+            feature: feature,
+            features: this.selection_,
+            scale: [scx, scy],
+            pixel: evt.pixel,
+            coordinate: evt.coordinate
+          });
+          break;
+        }
+        // ...existing code for non-point...
+        let center = this.center_;
         if (this.get('modifyCenter')(evt)) {
-          var extentCoordinates = this.extent_;
+          let extentCoordinates = this.extent_;
           if (this.get('enableRotatedTransform') && viewRotation !== 0) {
             extentCoordinates = this.rotatedExtent_;
           }
           center = extentCoordinates[(Number(this.opt_) + 2) % 4];
         }
-        var keepRectangle = this.geoms_.length == 1 && this._isRectangle(this.geoms_[0]);
-        var stretch = this.constraint_;
-        var opt = this.opt_;
-
-        var downCoordinate = this.coordinate_;
-        var dragCoordinate = evt.coordinate;
-        // 修复：保证缩放时两个坐标都 wrap 到和 center 一致的区间
-        // eslint-disable-next-line no-inner-declarations
-        function wrapToCenter(x, centerX, extentWidth) {
-          if (Math.abs(x - centerX) > extentWidth / 2) {
-            return x + Math.round((centerX - x) / extentWidth) * extentWidth;
-          }
-          return x;
-        }
+        const keepRectangle = this.geoms_.length == 1 && this._isRectangle(this.geoms_[0]);
+        const stretch = this.constraint_;
+        const opt = this.opt_;
+        let downCoordinate = this.coordinate_;
+        let dragCoordinate = evt.coordinate;
         downCoordinate = [wrapToCenter(downCoordinate[0], center[0], extentWidth), downCoordinate[1]];
         dragCoordinate = [wrapToCenter(dragCoordinate[0], center[0], extentWidth), dragCoordinate[1]];
         if (this.get('enableRotatedTransform') && viewRotation !== 0) {
           var downPoint = new ol_geom_Point(downCoordinate);
           downPoint.rotate(viewRotation * -1, center);
           downCoordinate = downPoint.getCoordinates();
-
           var dragPoint = new ol_geom_Point(dragCoordinate);
           dragPoint.rotate(viewRotation * -1, center);
           dragCoordinate = dragPoint.getCoordinates();
         }
-
-        // 修复：避免分母为零导致 NaN 或 Infinity
         var dx0 = downCoordinate[0] - center[0];
         var dy0 = downCoordinate[1] - center[1];
         var dx1 = dragCoordinate[0] - center[0];
@@ -809,18 +995,15 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         var scx = dx0 === 0 ? 1 : dx1 / dx0;
         var scy = dy0 === 0 ? 1 : dy1 / dy0;
         var displacementVector = [dragCoordinate[0] - downCoordinate[0], dragCoordinate[1] - downCoordinate[1]];
-
         if (this.get('enableRotatedTransform') && viewRotation !== 0) {
           var centerPoint = new ol_geom_Point(center);
           centerPoint.rotate(viewRotation * -1, this.getMap().getView().getCenter());
           center = centerPoint.getCoordinates();
         }
-
         if (this.get('noFlip')) {
           if (scx < 0) scx = -scx;
           if (scy < 0) scy = -scy;
         }
-
         if (this.constraint_) {
           if (this.constraint_ == 'h') scx = 1;
           else scy = 1;
@@ -829,14 +1012,11 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
             scx = scy = Math.min(scx, scy);
           }
         }
-
-        // eslint-disable-next-line no-cond-assign
         for (i = 0, f; (f = this.selection_.item(i)); i++) {
           geometry = viewRotation === 0 || !this.get('enableRotatedTransform') ? this.geoms_[i].clone() : this.rotatedGeoms_[i].clone();
           geometry.applyTransform(
             function (g1, g2, dim) {
               if (dim < 2) return g2;
-
               if (!keepRectangle) {
                 for (j = 0; j < g1.length; j += dim) {
                   if (scx != 1) g2[j] = center[0] + (g1[j] - center[0]) * scx;
@@ -849,13 +1029,11 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
                 var pointC = [g1[4], g1[5]];
                 var pointD = [g1[6], g1[7]];
                 var pointA1 = [g1[8], g1[9]];
-
                 if (stretch) {
                   var base = opt % 2 === 0 ? this._countVector(pointA, pointB) : this._countVector(pointD, pointA);
                   var projectedVector = this._projectVectorOnVector(displacementVector, base);
                   var nextIndex = opt + 1 < pointArray.length ? opt + 1 : 0;
                   var coordsToChange = [...pointArray[opt], ...pointArray[nextIndex]];
-
                   for (j = 0; j < g1.length; j += dim) {
                     g2[j] = coordsToChange.includes(j) ? g1[j] + projectedVector[0] : g1[j];
                     g2[j + 1] = coordsToChange.includes(j) ? g1[j + 1] + projectedVector[1] : g1[j + 1];
@@ -901,14 +1079,11 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
                   }
                 }
               }
-
-              // bug: ol, bad calculation circle geom extent
               if (geometry.getType() == 'Circle') geometry.setCenterAndRadius(geometry.getCenter(), geometry.getRadius());
               return g2;
             }.bind(this)
           );
           if (this.get('enableRotatedTransform') && viewRotation !== 0) {
-            //geometry.rotate(viewRotation, rotationCenter);
             geometry.rotate(viewRotation, this.getMap().getView().getCenter());
           }
           f.setGeometry(geometry);
@@ -920,7 +1095,6 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           features: this.selection_,
           scale: [scx, scy],
           pixel: evt.pixel,
-          // eslint-disable-next-line no-undef
           coordinate: [evt.coordinate[0] + wrapOffset, evt.coordinate[1]]
         });
         break;
@@ -968,6 +1142,17 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    * @return {boolean} `false` to stop the drag sequence.
    */
   handleUpEvent_(evt) {
+  // 清理点缩放的临时基准
+  this._ptImageBaseScale = undefined;
+  this._ptImageBaseLen = undefined;
+  this._ptImageBaseSize = undefined;
+  this._ptStyleBaseSize = undefined;
+  this._ptStyleBaseLen = undefined;
+  this._ptDownCoordNorm = undefined;
+  this._ptBaseLen = undefined;
+  this._ptCircleBaseRadius = undefined;
+  this._ptCircleBaseLen = undefined;
+  this._ptBaseRotation = undefined;
     // 鼠标抬起时恢复为按下前的样式
     var element = evt.map.getTargetElement();
     if (this._prevCursorStyle !== undefined) {
@@ -1096,25 +1281,91 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         // 只对 Point 类型要素处理
         if (feature && feature.getGeometry && feature.getGeometry().getType() === 'Point') {
           // 1. 优先取 feature 的 style.image.width
-          let style = feature.getStyle ? feature.getStyle() : null;
+          const style = feature.getStyle ? feature.getStyle() : null;
           if (style && typeof style.getImage === 'function') {
-            let image = style.getImage();
-            if (image && typeof image.getWidth === 'function') {
-              let w = image.getWidth();
-              if (w && w > 0) return w / 2;
+            const image = style.getImage();
+            if (image) {
+              let s = 1;
+              if (typeof image.getScale === 'function') s = image.getScale() || 1;
+              // 优先尝试 imageSize（Icon 常用）
+              if (typeof image.getImageSize === 'function') {
+                const isz = image.getImageSize();
+                if (isz && isz.length === 2) {
+                  return [ (isz[0] * s) / 2, (isz[1] * s) / 2 ];
+                }
+              }
+              // Icon / Image: 使用 width / height
+              let w = null, h = null;
+              if (typeof image.getWidth === 'function') w = image.getWidth();
+              if (typeof image.getHeight === 'function') h = image.getHeight();
+              // getSize
+              if ((!w || !h) && typeof image.getSize === 'function') {
+                const sz = image.getSize();
+                if (sz && sz.length === 2) {
+                  if (!w) w = sz[0];
+                  if (!h) h = sz[1];
+                }
+              }
+              if (w && h) {
+                return [ (w * s) / 2, (h * s) / 2 ];
+              } else if (w) {
+                return (w * s) / 2; // 退回单值
+              }
+              // Circle / RegularShape: 使用 radius * scale
+              if (typeof image.getRadius === 'function') {
+                const r = image.getRadius();
+                if (r) return [ r * s, r * s ];
+              }
             }
           }
           // 2. 其次取 style.size
           if (style && typeof style.getSize === 'function') {
-            let size = style.getSize();
-            if (size && size[0] && size[1]) {
-              return Math.max(size[0], size[1]) / 2;
+            const styleSize = style.getSize();
+            if (styleSize && styleSize[0] && styleSize[1]) {
+              return [ styleSize[0] / 2, styleSize[1] / 2 ];
             }
           }
         }
         // 3. 否则用默认 pointRadius
         return pointRadius || 50;
       };
+    }
+  }
+  /** 获取点要素视觉半径（像素）内部使用，与 _pointRadius 保持一致但不会返回函数引用 */
+  _getPointVisualRadiusPixel_(feature) {
+    try {
+      if (!feature || !feature.getGeometry || feature.getGeometry().getType() !== 'Point') return 0;
+      const style = feature.getStyle ? feature.getStyle() : null;
+      if (style && typeof style.getImage === 'function') {
+        const image = style.getImage();
+        if (image) {
+          let scale = 1;
+          if (typeof image.getScale === 'function') scale = image.getScale() || 1;
+          if (typeof image.getImageSize === 'function') {
+            const isz = image.getImageSize();
+            if (isz && isz.length === 2) return Math.max(isz[0], isz[1]) * scale / 2;
+          }
+          if (typeof image.getWidth === 'function') {
+            const w = image.getWidth();
+            if (w) return (w * scale) / 2;
+          }
+          if (typeof image.getSize === 'function') {
+            const sz = image.getSize();
+            if (sz && sz.length === 2) return (Math.max(sz[0], sz[1]) * scale) / 2;
+          }
+          if (typeof image.getRadius === 'function') {
+            const r = image.getRadius();
+            if (r) return r * scale;
+          }
+        }
+      }
+      if (style && typeof style.getSize === 'function') {
+        const s = style.getSize();
+        if (s && s.length === 2) return Math.max(s[0], s[1]) / 2;
+      }
+      return 8; // 保守默认
+    } catch (e) {
+      return 8;
     }
   }
   /** Get the features that are selected for transform
@@ -1141,6 +1392,24 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    */
   _movePoint(point, displacementVector) {
     return [point[0] + displacementVector[0], point[1] + displacementVector[1]];
+  }
+  /** 判断 point 要素是否具有可旋转的图片（Icon / Image），排除 RegularShape / Circle
+   * @private
+   */
+  _pointHasIconImage_(feature) {
+    if (!feature || !feature.getGeometry || feature.getGeometry().getType() !== 'Point') return false;
+    const style = feature.getStyle && feature.getStyle();
+    if (!style || typeof style.getImage !== 'function') return false;
+    const img = style.getImage();
+    if (!img) return false;
+    // RegularShape / Circle 通常有 getRadius，排除
+    if (typeof img.getRadius === 'function') return false;
+    // Icon / Image 通常具备 getSrc 或 getImageSize
+    if (typeof img.getSrc === 'function') return true;
+    if (typeof img.getImageSize === 'function' && img.getImageSize()) return true;
+    // 兜底：存在宽高也认为是图片
+    if (typeof img.getSize === 'function' && img.getSize()) return true;
+    return false;
   }
 };
 

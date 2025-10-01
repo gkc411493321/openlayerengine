@@ -755,11 +755,11 @@ export interface ITransfromParams {
    */
   scale?: boolean;
   /**
-   * 是否可以拉伸，默认true, scale属性为false时该属性无效
+   * 是否可以拉伸，默认true, scale属性为false时该属性无效， 此参数在point元素无效
    */
   stretch?: boolean;
   /**
-   * 是否可以旋转，默认true
+   * 是否可以旋转，默认true,此参数在circle元素无效
    */
   rotate?: boolean;
   /**

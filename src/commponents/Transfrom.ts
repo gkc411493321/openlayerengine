@@ -42,7 +42,7 @@ export default class Transfrom {
    */
   private defaultParams: ITransfromParams = {
     hitTolerance: 2,
-    translateType: ETranslateType.Center,
+    translateType: ETranslateType.Feature,
     scale: true,
     stretch: true,
     rotate: true
