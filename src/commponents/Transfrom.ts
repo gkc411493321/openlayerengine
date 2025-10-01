@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import ExtTransform from './Transform/Transform';
+import TransformInteraction from './Transform/Transform';
 import { useEarth } from '../useEarth';
 import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
@@ -70,7 +70,7 @@ export default class Transfrom {
     // 初始化参数
     const { params, translate, translateFeature } = this.initParams();
     // 添加 Transform 交互
-    const transforms = new ExtTransform({
+    const transforms = new TransformInteraction({
       hitTolerance: params.hitTolerance,
       translate: translate,
       translateFeature: translateFeature,
