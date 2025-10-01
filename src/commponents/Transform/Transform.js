@@ -1091,8 +1091,29 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
     if (typeof pointRadius === 'function') {
       this._pointRadius = pointRadius;
     } else {
-      this._pointRadius = function () {
-        return pointRadius;
+      // 自动推断 pointRadius
+      this._pointRadius = function (feature) {
+        // 只对 Point 类型要素处理
+        if (feature && feature.getGeometry && feature.getGeometry().getType() === 'Point') {
+          // 1. 优先取 feature 的 style.image.width
+          let style = feature.getStyle ? feature.getStyle() : null;
+          if (style && typeof style.getImage === 'function') {
+            let image = style.getImage();
+            if (image && typeof image.getWidth === 'function') {
+              let w = image.getWidth();
+              if (w && w > 0) return w / 2;
+            }
+          }
+          // 2. 其次取 style.size
+          if (style && typeof style.getSize === 'function') {
+            let size = style.getSize();
+            if (size && size[0] && size[1]) {
+              return Math.max(size[0], size[1]);
+            }
+          }
+        }
+        // 3. 否则用默认 pointRadius
+        return pointRadius || 50;
       };
     }
   }

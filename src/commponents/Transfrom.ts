@@ -85,7 +85,7 @@ export default class Transfrom {
       rotate: params.rotate,
       filter: params.beforeTransform,
       layers: params.transformLayers,
-      features: params.transformFeatures
+      features: params.transformFeatures,
     });
     useEarth().map.addInteraction(transforms);
     return transforms;
