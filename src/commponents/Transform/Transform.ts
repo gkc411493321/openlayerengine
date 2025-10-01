@@ -48,7 +48,7 @@ import { Coordinate } from 'ol/coordinate';
 import Map from 'ol/Map';
 // 视图对象无需单独类型导入（直接通过 map.getView 访问）
 import { EventsKey } from 'ol/events';
-import ol_ext_element from './element';
+import {ol_ext_element} from './element';
 
 // ---- 类型定义区域 ----
 /**
