@@ -1,15 +1,19 @@
-import Earth from "../Earth";
-import { IFill, ILabel, IStroke } from "../interface";
-import { Feature } from "ol";
-import { Geometry } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Fill, Text, Icon } from "ol/style";
-import { Utils } from "../common";
+import Earth from '../Earth';
+import { IFill, ILabel, IStroke } from '../interface';
+import { Feature } from 'ol';
+import { Geometry } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { Style, Stroke, Fill, Text } from 'ol/style';
+import { Utils } from '../common';
 /**
  * 基类，提供图层常见的获取，删除及更新方法
  */
 export default class Base {
+  /**
+   * 注册key
+   */
+  public registryKey: string;
   /**
    * 销毁标记
    */
@@ -21,7 +25,7 @@ export default class Base {
   /**
    * 缓存featur的集合
    */
-  public hideFeatureMap: Map<string, Feature<Geometry>> = new Map;
+  public hideFeatureMap: Map<string, Feature<Geometry>> = new Map();
   /**
    * 图层构造类
    * @param earth 地图实例
@@ -29,25 +33,42 @@ export default class Base {
    */
   constructor(protected earth: Earth, layer: VectorLayer<VectorSource<Geometry>>, type: string) {
     const layerId = Utils.GetGUID();
-    layer.set("type", type);
-    layer.set("id", layerId);
+    this.registryKey = layerId;
+    layer.set('type', type);
+    layer.set('id', layerId);
     this.layer = layer;
     earth.map.addLayer(layer);
+    // 可选自动注册封装层实例
+    if (this.registryKey) {
+      // 定义一个临时接口描述内部注册方法（不对外暴露）
+      interface IRegisterableEarth {
+        _autoRegisterLayer?: (key: string, layer: Base) => void;
+      }
+      const e = earth as unknown as IRegisterableEarth;
+      if (typeof e._autoRegisterLayer === 'function') {
+        e._autoRegisterLayer(this.registryKey, this);
+      }
+    }
   }
   /**
    * 设置描边样式
-   * @param style style实例 
+   * @param style style实例
    * @param param 描边参数，`可选的`。详见{@link IStroke}
    * @param width 宽度，`可选的`
    * @returns 返回style实例
    */
   protected setStroke(style: Style, param?: IStroke, width?: number): Style {
-    const stroke = new Stroke(Object.assign({
-      color: param?.color || style.getStroke()?.getColor() || "#ffcc33",
-      width: width || style.getStroke()?.getWidth() || 2,
-      lineDash: param?.lineDash || style.getStroke()?.getLineDash()
-    }, param));
-    style.setStroke(stroke)
+    const stroke = new Stroke(
+      Object.assign(
+        {
+          color: param?.color || style.getStroke()?.getColor() || '#ffcc33',
+          width: width || style.getStroke()?.getWidth() || 2,
+          lineDash: param?.lineDash || style.getStroke()?.getLineDash()
+        },
+        param
+      )
+    );
+    style.setStroke(stroke);
     return style;
   }
   /**
@@ -57,15 +78,20 @@ export default class Base {
    * @returns 返回style实例
    */
   protected setFill(style: Style, param?: IFill): Style {
-    const fill = new Fill(Object.assign({
-      color: param?.color || style.getFill()?.getColor() || '#ffffff57',
-    }, param));
-    style.setFill(fill)
+    const fill = new Fill(
+      Object.assign(
+        {
+          color: param?.color || style.getFill()?.getColor() || '#ffffff57'
+        },
+        param
+      )
+    );
+    style.setFill(fill);
     return style;
   }
   /**
    * 设置文本样式
-   * @param style style实例 
+   * @param style style实例
    * @param param 文本参数，`可选的`。详见{@link ILabel}
    * @param offsetY 纵向偏移量，`可选的`。
    * @returns 返回style实例
@@ -84,19 +110,19 @@ export default class Base {
         color: param?.fill?.color || style.getText()?.getFill().getColor()
       }),
       stroke: new Stroke({
-        color: param?.stroke?.color || style.getText()?.getStroke().getColor() || "#0000",
+        color: param?.stroke?.color || style.getText()?.getStroke().getColor() || '#0000',
         width: param?.stroke?.width || style.getText()?.getStroke().getWidth() || 0
       }),
       backgroundFill: new Fill({
-        color: param?.backgroundFill?.color || style.getText()?.getBackgroundFill().getColor() || "#0000"
+        color: param?.backgroundFill?.color || style.getText()?.getBackgroundFill().getColor() || '#0000'
       }),
       backgroundStroke: new Stroke({
-        color: param?.backgroundStroke?.color || style.getText()?.getBackgroundStroke().getColor() || "#0000",
+        color: param?.backgroundStroke?.color || style.getText()?.getBackgroundStroke().getColor() || '#0000',
         width: param?.backgroundStroke?.width || style.getText()?.getBackgroundStroke().getWidth() || 0
       }),
-      padding: param?.padding || style.getText()?.getPadding() || undefined,
-    })
-    style.setText(text)
+      padding: param?.padding || style.getText()?.getPadding() || undefined
+    });
+    style.setText(text);
     return style;
   }
   /**
@@ -105,6 +131,7 @@ export default class Base {
    * @returns 返回矢量元素实例
    */
   protected save(feature: Feature<Geometry>): Feature<Geometry> {
+    feature.set('registryKey', this.registryKey);
     this.layer.getSource()?.addFeature(feature);
     return feature;
   }
@@ -129,7 +156,7 @@ export default class Base {
     if (id) {
       this.layer.getSource()?.removeFeature(this.get(id)[0]);
     } else {
-      this.layer.getSource()?.clear()
+      this.layer.getSource()?.clear();
     }
   }
   /**
@@ -155,7 +182,7 @@ export default class Base {
     let features: Feature<Geometry>[] = [];
     if (id) {
       const feature = this.layer.getSource()?.getFeatureById(id);
-      if (feature) features.push(feature)
+      if (feature) features.push(feature);
     } else {
       const feature = this.layer.getSource()?.getFeatures();
       if (feature) features = feature;
@@ -183,7 +210,7 @@ export default class Base {
     if (id) {
       const feature = this.get(id);
       if (feature[0] == undefined) {
-        console.warn("没有找到元素，请检查ID");
+        console.warn('没有找到元素，请检查ID');
         return;
       }
       this.hideFeatureMap.set(id, feature[0]);
@@ -246,14 +273,15 @@ export default class Base {
    */
   destroy(): boolean {
     if (this.allowDestroyed) {
-      let flag = this.earth.removeLayer(this.layer);
+      const flag = this.earth.removeLayer(this.layer);
       if (flag) {
+        this.earth.removeRegisteredLayer(this.registryKey);
         return true;
       } else {
         return false;
       }
     } else {
-      console.warn("该图层受到保护，无法被销毁");
+      console.warn('该图层受到保护，无法被销毁');
       return false;
     }
   }

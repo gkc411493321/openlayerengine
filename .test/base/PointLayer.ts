@@ -8,7 +8,7 @@ export const testPointLayer = () => {
     label: {
       text: "带标签点"
     },
-    isFlash: false,
+    isFlash: true,
     module: "point"
   })
   let a = layer.add({

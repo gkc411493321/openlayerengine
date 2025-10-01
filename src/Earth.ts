@@ -10,6 +10,7 @@ import XYZ from "ol/source/XYZ";
 import { TileCoord } from "ol/tilecoord";
 import { ViewOptions } from "ol/View";
 import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, WindLayer } from "./base";
+import Base from "./base/Base";
 import { DynamicDraw, GlobalEvent, Measure } from "./commponents";
 import { DoubleClickZoom } from 'ol/interaction'
 import { Geometry } from "ol/geom";
@@ -53,11 +54,66 @@ export default class Earth {
    */
   private globalEvent?: GlobalEvent;
   /**
+   * 自定义注册的图层（封装类实例，而不是 OpenLayers 原生图层）。
+   * key -> Base 子类实例（如 PointLayer、PolygonLayer 等）
+   */
+  private customLayers: { [key: string]: Base } = {};
+  /**
    * 关闭右键菜单监听方法
    * @param event 鼠标事件
    */
   private closeRightMenu(event: MouseEvent): void {
     event.preventDefault();
+  }
+  /**
+   * 内部方法：供 Base 构造器在提供 registryKey 时自动注册
+   * @param key 注册名称
+   * @param layer Base 子类实例
+   */
+  _autoRegisterLayer(key: string, layer: Base): void {
+    if (!this.customLayers[key]) {
+      this.customLayers[key] = layer;
+    } else {
+      console.warn(`自定义图层名称 ${key} 已存在，已忽略自动注册`);
+    }
+  }
+  /**
+   * 手动注册一个自定义封装图层实例
+   * @param key 名称（建议唯一）
+   * @param layer Base 子类实例
+   * @param override 已存在时是否覆盖
+   */
+  registerLayer(key: string, layer: Base, override: boolean = false): void {
+    if (this.customLayers[key] && !override) {
+      console.warn(`自定义图层名称 ${key} 已存在，若需覆盖请传 override=true`);
+      return;
+    }
+    this.customLayers[key] = layer;
+  }
+  /**
+   * 获取已注册的自定义封装图层
+   * @param key 名称
+   */
+  getLayer<T extends Base = Base>(key: string): T | undefined {
+    return this.customLayers[key] as T | undefined;
+  }
+  /**
+   * 移除注册引用（不会销毁图层，不会从地图中移除）
+   * @param key 名称
+   * @param destroy 是否同时销毁（调用 Base.destroy）
+   */
+  removeRegisteredLayer(key: string, destroy: boolean = false): boolean {
+    const layer = this.customLayers[key];
+    if (!layer) return false;
+    if (destroy) layer.destroy();
+    delete this.customLayers[key];
+    return true;
+  }
+  /**
+   * 列出所有已注册的自定义封装图层名称
+   */
+  listRegisteredLayers(): string[] {
+    return Object.keys(this.customLayers);
   }
   /**
    * 关闭默认事件
@@ -218,6 +274,8 @@ export default class Earth {
    * 根据元素获取元素所在的图层
    * @param feature 
    */
+  // NOTE: LayerRenderer 泛型此处无需精确约束，使用 any 更符合当前抽象层级
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getLayerAtFeature(feature: Feature<Geometry>): Layer<Source, LayerRenderer<any>> | undefined {
     const layers = this.map.getAllLayers();
     const layerId = <string>feature.get("layerId");

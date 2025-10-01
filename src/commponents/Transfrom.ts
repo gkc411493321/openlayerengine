@@ -8,7 +8,7 @@ import { Feature } from 'ol';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import { LineString, Point, Polygon } from 'ol/geom';
-import { OverlayLayer } from '../base';
+import { OverlayLayer, PointLayer } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 
@@ -192,6 +192,11 @@ export default class Transfrom {
       }
       // 开始平移
       case ETransfrom.TranslateStart: {
+        const layerId = e.feature.get('layerId');
+        if (layerId) {
+          const layer = useEarth().getLayer(layerId);
+          layer && layer instanceof PointLayer && layer.stopFlash(e.feature.getId());
+        }
         break;
       }
       // 平移中
