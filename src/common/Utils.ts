@@ -172,4 +172,26 @@ export default class Utils<T> {
       feature.set("listenerKey", listenerKey);
     }
   }
+
+  /**
+   * 角度转弧度
+   * @param deg 角度 (degree)
+   * @returns 弧度 (radian)
+   * @example
+   * const rad = Utils.deg2rad(90); // Math.PI / 2
+   */
+  static deg2rad(deg: number): number {
+    return (deg * Math.PI) / 180;
+  }
+
+  /**
+   * 弧度转角度
+   * @param rad 弧度 (radian)
+   * @returns 角度 (degree)
+   * @example
+   * const deg = Utils.rad2deg(Math.PI); // 180
+   */
+  static rad2deg(rad: number): number {
+    return (rad * 180) / Math.PI;
+  }
 }

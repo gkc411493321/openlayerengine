@@ -44,7 +44,7 @@ export default class BillboardLayer<T = unknown> extends Base {
       color: param.color,
       displacement: param.displacement,
       scale: param.scale,
-      rotation: param.rotation,
+      rotation: Utils.deg2rad(param.rotation || 0),
       anchor: param.anchor,
       anchorOrigin: param.anchorOrigin,
       anchorXUnits: param.anchorXUnits,
@@ -106,7 +106,7 @@ export default class BillboardLayer<T = unknown> extends Base {
       color: param.color || oldIcon.getColor(),
       displacement: param.displacement || oldIcon.getDisplacement(),
       scale: param.scale || oldIcon.getScale(),
-      rotation: param.rotation || oldIcon.getRotation(),
+      rotation: Utils.deg2rad(param.rotation || 0) || oldIcon.getRotation(),
       anchor: param.anchor || oldIcon.getAnchor()
     };
     for (const key in iconOptions) {

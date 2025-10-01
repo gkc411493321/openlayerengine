@@ -176,7 +176,7 @@ export interface IBillboardParam<T> extends IAddBaseParam<T> {
    */
   scale?: number;
   /**
-   * 旋转，默认0
+   * 旋转，默认0，单位度，范围0-360，正北为0，顺时针旋转
    */
   rotation?: number;
   /**
