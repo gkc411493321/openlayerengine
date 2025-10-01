@@ -8,6 +8,7 @@ import ol_Feature from 'ol/Feature.js';
 import ol_Collection from 'ol/Collection.js';
 import ol_interaction_Pointer from 'ol/interaction/Pointer.js';
 import ol_style_RegularShape from 'ol/style/RegularShape.js';
+import Icon from 'ol/style/Icon.js';
 import { fromExtent as ol_geom_Polygon_fromExtent } from 'ol/geom/Polygon.js';
 import {
   boundingExtent as ol_extent_boundingExtent,
@@ -235,11 +236,42 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
   setDefaultStyle(options) {
     options = options || {};
     // Style
-    var stroke = options.pointStroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1 });
-    var strokedash = options.stroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1, lineDash: [4, 4] });
+    var stroke = options.pointStroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 2 });
+    var strokedash = options.stroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1, lineDash: [8, 8] });
     var fill0 = options.fill || new ol_style_Fill({ color: [255, 0, 0, 0.01] });
     // var fillScale = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] }); // 未使用，移除
     var fill = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] });
+    const rotate = new Icon({
+      src: '/image/rotate.svg',
+      color: [255, 96, 0, 1],
+      displacement: [0, 30],
+      radius: this.isTouch ? 12 : 6
+    });
+    const stretchH = new Icon({
+      src: '/image/stretchH.png',
+      color: [255, 96, 0, 1],
+      radius: this.isTouch ? 12 : 6
+    });
+    const stretchV = new Icon({
+      src: '/image/stretchV.png',
+      color: [255, 96, 0, 1],
+      radius: this.isTouch ? 12 : 6
+    });
+    const scale = new Icon({
+      src: '/image/scale.png',
+      color: [255, 96, 0, 1],
+      radius: this.isTouch ? 12 : 6
+    });
+    const translate = new Icon({
+      src: '/image/translate.png',
+      color: [255, 96, 0, 1],
+      radius: this.isTouch ? 12 : 6
+    });
+    const center = new Icon({
+      src: '/image/center.png',
+      color: [255, 96, 0, 1],
+      radius: this.isTouch ? 12 : 6
+    });
     var circle = new ol_style_RegularShape({
       fill: fill,
       stroke: stroke,
@@ -257,7 +289,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       angle: Math.PI / 4
     });
     var smallpt = new ol_style_RegularShape({
-      stroke: new ol_style_Stroke({ color: '#f38200ff', width: 1 }),
+      stroke: new ol_style_Stroke({ color: '#001affff', width: 1 }),
       radius: this.isTouch ? 12 : 6,
       points: 14,
       angle: Math.PI / 4
@@ -268,17 +300,17 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
     /** Style for handles */
     this.style = {
       default: createStyle(bigpt, strokedash, fill0),
-      translate: createStyle(bigpt, stroke, fill),
-      rotate: createStyle(circle, stroke, fill),
-      rotate0: createStyle(bigpt, stroke, fill),
-      scale: createStyle(bigpt, stroke, fill),
-      scale1: createStyle(bigpt, stroke, fill),
-      scale2: createStyle(bigpt, stroke, fill),
-      scale3: createStyle(bigpt, stroke, fill),
-      scalev: createStyle(smallpt, stroke, fill),
-      scaleh1: createStyle(smallpt, stroke, fill),
-      scalev2: createStyle(smallpt, stroke, fill),
-      scaleh3: createStyle(smallpt, stroke, fill)
+      translate: createStyle(translate, stroke, fill),
+      rotate: createStyle(rotate, stroke, fill),
+      rotate0: createStyle(center, stroke, fill),
+      scale: createStyle(scale, stroke, fill),
+      scale1: createStyle(scale, stroke, fill),
+      scale2: createStyle(scale, stroke, fill),
+      scale3: createStyle(scale, stroke, fill),
+      scalev: createStyle(stretchH, stroke, fill),
+      scaleh1: createStyle(stretchV, stroke, fill),
+      scalev2: createStyle(stretchH, stroke, fill),
+      scaleh3: createStyle(stretchV, stroke, fill)
     };
     this.drawSketch_();
   }
@@ -1265,7 +1297,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       oldgeoms: this.geoms_,
       // handle changes
       transformed: this.hasChanged_,
-      cursor: element.style.cursor,
+      cursor: element.style.cursor
     });
 
     this.drawSketch_();
