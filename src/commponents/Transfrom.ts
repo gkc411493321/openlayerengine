@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import ExtTransform from './Transform/Transform';
 import { useEarth } from '../useEarth';
-import { ITransformCallback, ITransfromParams } from '../interface';
+import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { fromLonLat, toLonLat } from 'ol/proj';
@@ -32,7 +32,7 @@ export default class Transfrom {
   /**
    * 校验选中状态
    */
-  private checkSelect: boolean = false;
+  private checkSelect: Feature | null = null;
   /**
    * 校验鼠标进入状态
    */
@@ -58,7 +58,27 @@ export default class Transfrom {
    * 创建变换实例
    */
   private createTransform() {
+    // 初始化参数
+    const { params, translate, translateFeature } = this.initParams();
     // 添加 Transform 交互
+    const transforms = new ExtTransform({
+      hitTolerance: params.hitTolerance,
+      translate: translate,
+      translateFeature: translateFeature,
+      stretch: params.stretch,
+      scale: params.scale,
+      rotate: params.rotate,
+      filter: params.beforeTransform,
+      layers: params.transformLayers,
+      features: params.transformFeatures
+    });
+    useEarth().map.addInteraction(transforms);
+    return transforms;
+  }
+  /**
+   * 初始化参数
+   */
+  private initParams() {
     const params = {
       ...this.defaultParams,
       ...this.options
@@ -76,19 +96,7 @@ export default class Transfrom {
       translate = true;
       translateFeature = true;
     }
-    const transforms = new ExtTransform({
-      hitTolerance: params.hitTolerance,
-      translate: translate,
-      translateFeature: translateFeature,
-      stretch: params.stretch,
-      scale: params.scale,
-      rotate: params.rotate,
-      filter: params.beforeTransform,
-      layers: params.transformLayers,
-      features: params.transformFeatures,
-    });
-    useEarth().map.addInteraction(transforms);
-    return transforms;
+    return { params, translate, translateFeature };
   }
   /**
    * 初始化内部事件监听
@@ -96,11 +104,13 @@ export default class Transfrom {
   private initEvent() {
     this.transforms.on(ETransfrom.Select, (e: any) => {
       // 选中元素
+      this.checkSelect = e.feature;
       this.removeHelpTooltip();
       this.initHelpTooltip('选择控制点进行变换操作');
     });
     this.transforms.on(ETransfrom.SelectEnd, (e: any) => {
       // 退出选中元素
+      this.checkSelect = null;
       this.removeHelpTooltip();
     });
     this.transforms.on(ETransfrom.EnterHandle, (e: any) => {
@@ -124,7 +134,7 @@ export default class Transfrom {
     document.body.appendChild(div);
     this.overlay.add({
       id: 'help_tooltip',
-      position: fromLonLat([0, 0]),
+      position: useEarth().map.getCoordinateFromPixel([0, -100]),
       element: div,
       offset: [15, -11]
     });
@@ -135,15 +145,18 @@ export default class Transfrom {
   /**
    * 更新提示牌
    */
-  private updateHelpTooltip(str: string) {
+  private updateHelpTooltip(str: string, pixel?: number[]) {
     if (this.overlayKey) {
       const div = document.createElement('div');
       div.innerHTML = "<div class='ol-tooltip'>" + str + '</div>';
       document.body.appendChild(div);
-      const params = {
+      const params: ISetOverlayParam = {
         id: 'help_tooltip',
         element: div
       };
+      if (pixel) {
+        params['position'] = useEarth().map.getCoordinateFromPixel(pixel);
+      }
       this.overlay.set(params);
     }
   }
@@ -196,7 +209,7 @@ export default class Transfrom {
   private updateHelpTooltipByCursorType(e: ITransformCallback) {
     if (e.cursor == ECursor.Move) {
       // 平移
-      this.updateHelpTooltip('鼠标左键按下平移');
+      this.updateHelpTooltip('鼠标左键按下平移', e.eventPixel);
     } else if (e.cursor == ECursor.Pointer) {
       // 平移
       if (this.options.translateType == ETranslateType.Feature || this.defaultParams.translateType == ETranslateType.Feature) {
@@ -206,13 +219,18 @@ export default class Transfrom {
       }
     } else if (e.cursor == ECursor.Grab) {
       // 旋转
-      this.updateHelpTooltip('鼠标左键按下旋转');
+      this.updateHelpTooltip('鼠标左键按下旋转', e.eventPixel);
     } else if (e.cursor == ECursor.NsResize || e.cursor == ECursor.EwResize) {
       // 拉伸
-      this.updateHelpTooltip('鼠标左键按下拉伸，Ctrl键以基准点拉伸');
+      this.updateHelpTooltip('鼠标左键按下拉伸，Ctrl键以基准点拉伸', e.eventPixel);
     } else if (e.cursor == ECursor.NeswResize || e.cursor == ECursor.NwseResize) {
       // 缩放
-      this.updateHelpTooltip('鼠标左键按下缩放，Shift键保持比例缩放');
+      const type = this.checkSelect?.getGeometry()?.getType();
+      if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
+        this.updateHelpTooltip('鼠标左键按下缩放', e.eventPixel);
+      } else {
+        this.updateHelpTooltip('鼠标左键按下缩放，Shift键保持比例缩放', e.eventPixel);
+      }
     }
   }
   /**
@@ -233,7 +251,6 @@ export default class Transfrom {
             feature: e.feature
           };
           callback(params);
-          this.checkSelect = true;
         });
         break;
       case ETransfrom.SelectEnd:
@@ -246,7 +263,6 @@ export default class Transfrom {
               eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
               eventPixel: e.pixel
             });
-            this.checkSelect = false;
           }
         });
         break;
