@@ -57,7 +57,7 @@ export default class FlightLineSource {
      * 箭头相关
      */
     this.arrowImage = new Image()
-    this.arrowImage.src = '/image/arrow.png'
+    this.arrowImage.src = '/image/arrow.svg'
     this.arrowLoad = false
     this.arrowImage.onload = () => {
       this.arrowLoad = true

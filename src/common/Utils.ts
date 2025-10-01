@@ -105,7 +105,7 @@ export default class Utils<T> {
     const style = new Style({
       geometry: new Point(end),
       image: new Icon({
-        src: '/image/arrow.png',
+        src: '/image/arrow.svg',
         anchor: [0.75, 0.5],
         scale: 0.7,
         rotateWithView: true,

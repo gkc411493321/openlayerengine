@@ -8,7 +8,7 @@ import { Feature } from 'ol';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import { LineString, Point, Polygon } from 'ol/geom';
-import { OverlayLayer, PointLayer } from '../base';
+import { Base, OverlayLayer, PointLayer, PolygonLayer } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 
@@ -33,6 +33,10 @@ export default class Transfrom {
    * 校验选中状态
    */
   private checkSelect: Feature | null = null;
+  /**
+   * 选中的图层
+   */
+  private checkLayer: Base | null = null;
   /**
    * 校验鼠标进入状态
    */
@@ -131,6 +135,8 @@ export default class Transfrom {
       case ETransfrom.Select: {
         // 内部数据处理
         this.checkSelect = e.feature;
+        // 获取图层（抽取辅助方法，避免嵌套判断）
+        this.checkLayer = this.getLayerByFeature(e.feature);
         this.removeHelpTooltip();
         this.initHelpTooltip('选择控制点进行变换操作');
         // 外部参数
@@ -156,6 +162,7 @@ export default class Transfrom {
         }
         // 清理状态（放在派发之后）
         this.checkSelect = null;
+        this.checkLayer = null;
         this.removeHelpTooltip();
         break;
       }
@@ -192,21 +199,31 @@ export default class Transfrom {
       }
       // 开始平移
       case ETransfrom.TranslateStart: {
-        const layerId = e.feature.get('layerId');
-        if (layerId) {
-          const layer = useEarth().getLayer(layerId);
-          layer && layer instanceof PointLayer && layer.stopFlash(e.feature.getId());
-        }
+        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
+        this.handleTranslateStart(e);
+        // 外部参数
+        callbackParam = {
+          type: ETransfrom.TranslateStart,
+          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+          eventPixel: e.pixel,
+          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+          featurePosition: e.feature && this.transformCoordinates(e.feature),
+          feature: e.feature
+        };
         break;
       }
       // 平移中
       case ETransfrom.Translating: {
+        // 更新提示标牌
         this.updateHelpTooltip('平移中...');
+        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
+        this.handleTranslating(e);
         break;
       }
       // 结束平移
       case ETransfrom.TranslateEnd: {
-        console.log(e);
+        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
+        this.handleTranslateEnd(e);
         this.updateHelpTooltipByCursorType(e);
         break;
       }
@@ -227,6 +244,59 @@ export default class Transfrom {
         });
       }
     }
+  }
+  /**
+   * 处理平移前的逻辑
+   */
+  private handleTranslateStart(e: any) {
+    const type = e.feature?.getGeometry()?.getType();
+    const param = e.feature?.get('param');
+    if (type && param && this.checkLayer) {
+      let layer;
+      if (type == 'Point' || type == 'MultiPoint') {
+        layer = this.checkLayer as PointLayer;
+        if (param.isFlash) layer.stopFlash(e.feature.getId());
+      }
+    }
+  }
+  /**
+   * 处理平移中的逻辑
+   */
+  private handleTranslating(e: any) {
+    const type = e.feature?.getGeometry()?.getType();
+    // if (this.checkLayer) {}
+  }
+  /**
+   * 处理平移结束的逻辑
+   */
+  private handleTranslateEnd(e: any) {
+    const type = e.feature?.getGeometry()?.getType();
+    const param = e.feature?.get('param');
+    if (type && param && this.checkLayer) {
+      let layer;
+      if (type == 'Point' || type == 'MultiPoint') {
+        layer = this.checkLayer as PointLayer;
+        if (param.isFlash) {
+          layer.setPosition(e.feature.getId(), e.feature.getGeometry()?.getCoordinates() as Coordinate);
+          layer.continueFlash(e.feature.getId());
+        }
+      }
+    }
+  }
+  /**
+   * 根据要素安全获取所属图层
+   * 说明：
+   *  - 避免多层 if 嵌套
+   *  - 统一空值与类型保护
+   *  - 返回 null 表示未找到
+   */
+  private getLayerByFeature(feature?: Feature | null): Base | null {
+    if (!feature) return null;
+    // 兼容性：某些要素可能不存在 get 方法或未附加属性
+    const layerId = feature.get && feature.get('layerId');
+    if (!layerId) return null;
+    const layer = useEarth().getLayer(layerId);
+    return (layer as Base) || null;
   }
   /**
    * 提示牌初始化方法
