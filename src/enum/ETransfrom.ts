@@ -14,7 +14,19 @@ export enum ETransfrom {
   /**
    * 离开变换点
    */
-  LeaveHandle = 'leaveHandle'
+  LeaveHandle = 'leaveHandle',
+  /**
+   * 开始平移
+   */
+  TranslateStart = 'translatestart',
+  /**
+   * 平移中
+   */
+  Translating = 'translating',
+  /**
+   * 结束平移
+   */
+  TranslateEnd = 'translateend',
 }
 
 export enum ETranslateType {

@@ -47,12 +47,17 @@ export default class Transfrom {
     stretch: true,
     rotate: true
   };
+  /**
+   * 外部监听器缓存
+   */
+  private listenerMap: Map<ETransfrom, Set<(e: ITransformCallback) => void>> = new Map();
 
   constructor(options: ITransfromParams) {
     this.options = options;
     this.overlay = new OverlayLayer(useEarth());
     this.transforms = this.createTransform();
-    this.initEvent();
+    // 初始化统一事件管线（内部数据处理 + 外部监听分发）
+    this.setupEventPipeline();
   }
   /**
    * 创建变换实例
@@ -99,31 +104,124 @@ export default class Transfrom {
     return { params, translate, translateFeature };
   }
   /**
-   * 初始化内部事件监听
+   * 建立统一事件管线：一次性注册内部逻辑 -> 转换统一数据结构 -> 分发给外部
    */
-  private initEvent() {
-    this.transforms.on(ETransfrom.Select, (e: any) => {
-      // 选中元素
-      this.checkSelect = e.feature;
-      this.removeHelpTooltip();
-      this.initHelpTooltip('选择控制点进行变换操作');
+  private setupEventPipeline() {
+    const events: ETransfrom[] = [
+      ETransfrom.Select,
+      ETransfrom.SelectEnd,
+      ETransfrom.EnterHandle,
+      ETransfrom.LeaveHandle,
+      ETransfrom.TranslateStart,
+      ETransfrom.Translating,
+      ETransfrom.TranslateEnd
+    ];
+    events.forEach((ev) => {
+      this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
     });
-    this.transforms.on(ETransfrom.SelectEnd, (e: any) => {
-      // 退出选中元素
-      this.checkSelect = null;
-      this.removeHelpTooltip();
-    });
-    this.transforms.on(ETransfrom.EnterHandle, (e: any) => {
-      // 根据鼠标类型更新提示牌
-      this.updateHelpTooltipByCursorType(e);
-    });
-    this.transforms.on(ETransfrom.LeaveHandle, (e: any) => {
-      if (this.overlayKey) {
-        this.updateHelpTooltip('选择控制点进行变换操作');
-      } else {
+  }
+
+  /**
+   * 内部原子事件处理 + 组装回调参数 + 分发
+   */
+  private handleRawEvent(eventName: ETransfrom, e: any) {
+    let callbackParam: ITransformCallback | null = null;
+    switch (eventName) {
+      // 选中
+      case ETransfrom.Select: {
+        // 内部数据处理
+        this.checkSelect = e.feature;
         this.removeHelpTooltip();
+        this.initHelpTooltip('选择控制点进行变换操作');
+        // 外部参数
+        callbackParam = {
+          type: ETransfrom.Select,
+          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+          eventPixel: e.pixel,
+          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+          featurePosition: e.feature && this.transformCoordinates(e.feature),
+          feature: e.feature
+        };
+        break;
       }
-    });
+      // 退出选中
+      case ETransfrom.SelectEnd: {
+        // 只有存在选中时才派发（修复之前因内部优先清空导致外部收不到的问题）
+        if (this.checkSelect) {
+          callbackParam = {
+            type: ETransfrom.SelectEnd,
+            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+            eventPixel: e.pixel
+          };
+        }
+        // 清理状态（放在派发之后）
+        this.checkSelect = null;
+        this.removeHelpTooltip();
+        break;
+      }
+      // 进入变换点
+      case ETransfrom.EnterHandle: {
+        if (!this.checkEnterHandle) {
+          // 内部：更新提示
+          this.updateHelpTooltipByCursorType(e);
+          callbackParam = {
+            type: ETransfrom.EnterHandle,
+            cursor: e.cursor,
+            eventPixel: e.eventPixel
+          };
+          this.checkEnterHandle = true;
+        }
+        break;
+      }
+      // 离开变换点
+      case ETransfrom.LeaveHandle: {
+        if (this.checkEnterHandle) {
+          if (this.overlayKey) {
+            this.updateHelpTooltip('选择控制点进行变换操作');
+          } else {
+            this.removeHelpTooltip();
+          }
+          callbackParam = {
+            type: ETransfrom.LeaveHandle,
+            cursor: e.cursor,
+            eventPixel: e.eventPixel
+          };
+          this.checkEnterHandle = false;
+        }
+        break;
+      }
+      // 开始平移
+      case ETransfrom.TranslateStart: {
+        break;
+      }
+      // 平移中
+      case ETransfrom.Translating: {
+        this.updateHelpTooltip('平移中...');
+        break;
+      }
+      // 结束平移
+      case ETransfrom.TranslateEnd: {
+        console.log(e);
+        this.updateHelpTooltipByCursorType(e);
+        break;
+      }
+      default:
+        break;
+    }
+    if (callbackParam) {
+      const listeners = this.listenerMap.get(eventName);
+      if (listeners && listeners.size) {
+        listeners.forEach((fn) => {
+          try {
+            fn(callbackParam as ITransformCallback);
+          } catch (err) {
+            // 单个监听异常不影响其它
+            // eslint-disable-next-line no-console
+            console.error('[Transfrom:on] listener error:', err);
+          }
+        });
+      }
+    }
   }
   /**
    * 提示牌初始化方法
@@ -234,67 +332,31 @@ export default class Transfrom {
     }
   }
   /**
-   * 封装事件监听器
+   * 注册外部事件监听（内部逻辑已统一处理）
    */
-  public on(eventName: ETransfrom, callback: (e: ITransformCallback) => void): void {
-    switch (eventName) {
-      case ETransfrom.Select:
-        // 选中元素
-        this.transforms.on(eventName, (e: any) => {
-          // 回调函数
-          const params: ITransformCallback = {
-            type: ETransfrom.Select,
-            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-            eventPixel: e.pixel,
-            featureId: e.feature && e.feature.getId() ? e.feature.getId() : '',
-            featurePosition: e.feature && this.transformCoordinates(e.feature),
-            feature: e.feature
-          };
-          callback(params);
-        });
-        break;
-      case ETransfrom.SelectEnd:
-        // 退出选中
-        this.transforms.on(eventName, (e: any) => {
-          // 回调函数
-          if (this.checkSelect) {
-            callback({
-              type: ETransfrom.SelectEnd,
-              eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-              eventPixel: e.pixel
-            });
-          }
-        });
-        break;
-      case ETransfrom.EnterHandle:
-        // 进入变换点
-        this.transforms.on(eventName, (e: any) => {
-          if (!this.checkEnterHandle) {
-            callback({
-              type: ETransfrom.EnterHandle,
-              cursor: e.cursor,
-              eventPixel: e.eventPixel
-            });
-            this.checkEnterHandle = true;
-          }
-        });
-        break;
-      case ETransfrom.LeaveHandle:
-        // 离开变换点
-        this.transforms.on(eventName, (e: any) => {
-          if (this.checkEnterHandle) {
-            callback({
-              type: ETransfrom.LeaveHandle,
-              cursor: e.cursor,
-              eventPixel: e.eventPixel
-            });
-            this.checkEnterHandle = false;
-          }
-        });
-        break;
-      default:
-        throw new Error('事件类型错误');
+  public on(eventName: ETransfrom, callback: (e: ITransformCallback) => void): this {
+    if (!Object.values(ETransfrom).includes(eventName)) {
+      throw new Error('事件类型错误');
     }
+    if (!this.listenerMap.has(eventName)) {
+      this.listenerMap.set(eventName, new Set());
+    }
+    this.listenerMap.get(eventName)?.add(callback);
+    return this;
+  }
+
+  /**
+   * 取消监听
+   */
+  public off(eventName: ETransfrom, callback?: (e: ITransformCallback) => void): this {
+    const set = this.listenerMap.get(eventName);
+    if (!set) return this;
+    if (callback) {
+      set.delete(callback);
+    } else {
+      set.clear();
+    }
+    return this;
   }
   /**
    * 移除变换实例

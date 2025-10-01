@@ -238,7 +238,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
     var stroke = options.pointStroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1 });
     var strokedash = options.stroke || new ol_style_Stroke({ color: [255, 0, 0, 1], width: 1, lineDash: [4, 4] });
     var fill0 = options.fill || new ol_style_Fill({ color: [255, 0, 0, 0.01] });
-  // var fillScale = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] }); // 未使用，移除
+    // var fillScale = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] }); // 未使用，移除
     var fill = options.pointFill || new ol_style_Fill({ color: [255, 255, 255, 0.8] });
     var circle = new ol_style_RegularShape({
       fill: fill,
@@ -321,63 +321,63 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         function (feature, layer) {
           var found = false;
           // Overlay ?
-            if (!layer) {
-              if (feature === self.bbox_) {
-                // 对点要素：允许点击 bbox 内部也能触发操作，避免只能点像素中心
-                if (self.ispt_) {
-                  // 如果开启平移功能，返回 translate 句柄，否则当作普通选中
-                  if (self.get('translate')) {
-                    return { feature: self.selection_.item(0) || feature, handle: 'translate', constraint: '', option: '' };
-                  }
-                  return { feature: self.selection_.item(0) || feature };
+          if (!layer) {
+            if (feature === self.bbox_) {
+              // 对点要素：允许点击 bbox 内部也能触发操作，避免只能点像素中心
+              if (self.ispt_) {
+                // 如果开启平移功能，返回 translate 句柄，否则当作普通选中
+                if (self.get('translate')) {
+                  return { feature: self.selection_.item(0) || feature, handle: 'translate', constraint: '', option: '' };
                 }
-                if (self.get('translateBBox')) {
-                  return { feature: feature, handle: 'translate', constraint: '', option: '' };
-                }
-                return false;
+                return { feature: self.selection_.item(0) || feature };
               }
-              self.handles_.forEach(function (f) {
-                if (f === feature) found = true;
-              });
-              if (found) return { feature: feature, handle: feature.get('handle'), constraint: feature.get('constraint'), option: feature.get('option') };
-            }
-            // No seletion
-            if (!self.get('selection')) {
-              // Return the currently selected feature the user is interacting with.
-              if (
-                self.selection_.getArray().some(function (f) {
-                  return feature === f;
-                })
-              ) {
-                return { feature: feature };
+              if (self.get('translateBBox')) {
+                return { feature: feature, handle: 'translate', constraint: '', option: '' };
               }
-              return null;
+              return false;
             }
-            // filter condition
-            if (self._filter) {
-              if (self._filter(feature, layer)) return { feature: feature };
-              else return null;
+            self.handles_.forEach(function (f) {
+              if (f === feature) found = true;
+            });
+            if (found) return { feature: feature, handle: feature.get('handle'), constraint: feature.get('constraint'), option: feature.get('option') };
+          }
+          // No seletion
+          if (!self.get('selection')) {
+            // Return the currently selected feature the user is interacting with.
+            if (
+              self.selection_.getArray().some(function (f) {
+                return feature === f;
+              })
+            ) {
+              return { feature: feature };
             }
+            return null;
+          }
+          // filter condition
+          if (self._filter) {
+            if (self._filter(feature, layer)) return { feature: feature };
+            else return null;
+          }
 
-            // feature belong to a layer
-            else if (self.layers_) {
-              for (var i = 0; i < self.layers_.length; i++) {
-                if (self.layers_[i] === layer) return { feature: feature };
-              }
-              return null;
+          // feature belong to a layer
+          else if (self.layers_) {
+            for (var i = 0; i < self.layers_.length; i++) {
+              if (self.layers_[i] === layer) return { feature: feature };
             }
+            return null;
+          }
 
-            // feature in the collection
-            else if (self.features_) {
-              self.features_.forEach(function (f) {
-                if (f === feature) found = true;
-              });
-              if (found) return { feature: feature };
-              else return null;
-            }
+          // feature in the collection
+          else if (self.features_) {
+            self.features_.forEach(function (f) {
+              if (f === feature) found = true;
+            });
+            if (found) return { feature: feature };
+            else return null;
+          }
 
-            // Others
-            else return { feature: feature };
+          // Others
+          else return { feature: feature };
         },
         { hitTolerance: this.get('hitTolerance') }
       ) || {};
@@ -391,20 +391,21 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       if (this.features_) {
         candidates = this.features_.getArray();
       } else if (this.layers_) {
-        this.layers_.forEach(l => {
+        this.layers_.forEach((l) => {
           const src = l && l.getSource && l.getSource();
-            if (src && src.getFeatures) candidates = candidates.concat(src.getFeatures());
+          if (src && src.getFeatures) candidates = candidates.concat(src.getFeatures());
         });
       } else {
         // 遍历地图所有 vector 图层（可能稍慢，但只在第一次命中失败时走）
-        map.getLayers().forEach(l => {
+        map.getLayers().forEach((l) => {
           const src = l && l.getSource && l.getSource();
           if (src && src.getFeatures) candidates = candidates.concat(src.getFeatures());
         });
       }
       const px = pixel[0];
       const py = pixel[1];
-      let best, bestDist = Infinity;
+      let best,
+        bestDist = Infinity;
       for (let i = 0; i < candidates.length; i++) {
         const f = candidates[i];
         if (!f.getGeometry || f.getGeometry().getType() !== 'Point') continue;
@@ -415,7 +416,8 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
         const dx = fpixel[0] - px;
         const dy = fpixel[1] - py;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist <= visualR + 2 && dist < bestDist) { // +2 做轻微松弛
+        if (dist <= visualR + 2 && dist < bestDist) {
+          // +2 做轻微松弛
           best = f;
           bestDist = dist;
         }
@@ -827,7 +829,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
               if (style && typeof style.getImage === 'function') {
                 const img = style.getImage();
                 if (img && typeof img.setRotation === 'function') {
-                  const baseRot = this._ptBaseRotation != null ? this._ptBaseRotation : (typeof img.getRotation === 'function' ? img.getRotation() || 0 : 0);
+                  const baseRot = this._ptBaseRotation != null ? this._ptBaseRotation : typeof img.getRotation === 'function' ? img.getRotation() || 0 : 0;
                   if (this._ptBaseRotation == null) this._ptBaseRotation = baseRot; // 记录初始角度
                   // 修复：Point 图标旋转方向与鼠标拖动方向相反 => 取反增量
                   // geometry.rotate 使用 (a - this.angle_) 获得正确方向；Icon 在 OL 中正角度同为逆时针
@@ -895,10 +897,11 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
           const baseLen = this._ptBaseLen || Math.sqrt(v0[0] * v0[0] + v0[1] * v0[1]) || 1;
           const minScale = 0.2;
-            let scale = len1 / baseLen;
+          let scale = len1 / baseLen;
           if (scale < minScale) scale = minScale;
           // 始终等比缩放
-          const scx = scale, scy = scale;
+          const scx = scale,
+            scy = scale;
           // 修改 image size 或 style size
           if (style && typeof style.getImage === 'function' && style.getImage()) {
             const image = style.getImage();
@@ -1142,17 +1145,17 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
    * @return {boolean} `false` to stop the drag sequence.
    */
   handleUpEvent_(evt) {
-  // 清理点缩放的临时基准
-  this._ptImageBaseScale = undefined;
-  this._ptImageBaseLen = undefined;
-  this._ptImageBaseSize = undefined;
-  this._ptStyleBaseSize = undefined;
-  this._ptStyleBaseLen = undefined;
-  this._ptDownCoordNorm = undefined;
-  this._ptBaseLen = undefined;
-  this._ptCircleBaseRadius = undefined;
-  this._ptCircleBaseLen = undefined;
-  this._ptBaseRotation = undefined;
+    // 清理点缩放的临时基准
+    this._ptImageBaseScale = undefined;
+    this._ptImageBaseLen = undefined;
+    this._ptImageBaseSize = undefined;
+    this._ptStyleBaseSize = undefined;
+    this._ptStyleBaseLen = undefined;
+    this._ptDownCoordNorm = undefined;
+    this._ptBaseLen = undefined;
+    this._ptCircleBaseRadius = undefined;
+    this._ptCircleBaseLen = undefined;
+    this._ptBaseRotation = undefined;
     // 鼠标抬起时恢复为按下前的样式
     var element = evt.map.getTargetElement();
     if (this._prevCursorStyle !== undefined) {
@@ -1261,7 +1264,8 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
       oldgeom: this.geoms_[0],
       oldgeoms: this.geoms_,
       // handle changes
-      transformed: this.hasChanged_
+      transformed: this.hasChanged_,
+      cursor: element.style.cursor,
     });
 
     this.drawSketch_();
@@ -1291,11 +1295,12 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
               if (typeof image.getImageSize === 'function') {
                 const isz = image.getImageSize();
                 if (isz && isz.length === 2) {
-                  return [ (isz[0] * s) / 2, (isz[1] * s) / 2 ];
+                  return [(isz[0] * s) / 2, (isz[1] * s) / 2];
                 }
               }
               // Icon / Image: 使用 width / height
-              let w = null, h = null;
+              let w = null,
+                h = null;
               if (typeof image.getWidth === 'function') w = image.getWidth();
               if (typeof image.getHeight === 'function') h = image.getHeight();
               // getSize
@@ -1307,14 +1312,14 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
                 }
               }
               if (w && h) {
-                return [ (w * s) / 2, (h * s) / 2 ];
+                return [(w * s) / 2, (h * s) / 2];
               } else if (w) {
                 return (w * s) / 2; // 退回单值
               }
               // Circle / RegularShape: 使用 radius * scale
               if (typeof image.getRadius === 'function') {
                 const r = image.getRadius();
-                if (r) return [ r * s, r * s ];
+                if (r) return [r * s, r * s];
               }
             }
           }
@@ -1322,7 +1327,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           if (style && typeof style.getSize === 'function') {
             const styleSize = style.getSize();
             if (styleSize && styleSize[0] && styleSize[1]) {
-              return [ styleSize[0] / 2, styleSize[1] / 2 ];
+              return [styleSize[0] / 2, styleSize[1] / 2];
             }
           }
         }
@@ -1343,7 +1348,7 @@ var ol_interaction_Transform = class olinteractionTransform extends ol_interacti
           if (typeof image.getScale === 'function') scale = image.getScale() || 1;
           if (typeof image.getImageSize === 'function') {
             const isz = image.getImageSize();
-            if (isz && isz.length === 2) return Math.max(isz[0], isz[1]) * scale / 2;
+            if (isz && isz.length === 2) return (Math.max(isz[0], isz[1]) * scale) / 2;
           }
           if (typeof image.getWidth === 'function') {
             const w = image.getWidth();
