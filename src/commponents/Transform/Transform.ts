@@ -666,7 +666,7 @@ class TransformInteraction extends PointerInteraction {
    * 绘制/刷新当前选中要素的控制手柄与外包框。
    * centerOnly=true 时只更新中心与 bbox 不生成所有手柄（用于旋转实时刷新性能优化）。
    */
-  private drawSketch_(centerOnly?: boolean): void {
+  public drawSketch_(centerOnly?: boolean): void {
     this.overlayLayer_.getSource()?.clear();
     if (!this.selection_.getLength()) return;
     const map = this.getMap();
@@ -1087,7 +1087,6 @@ class TransformInteraction extends PointerInteraction {
           if (Math.abs(scy) < minScale) scy = scy < 0 ? -minScale : minScale;
           if (style?.getImage) {
             const image = style.getImage();
-            console.log(image?.getSize(), image?.getScale());
             if (image?.getRadius && image?.setRadius) {
               if (!this._ptCircleBaseRadius) {
                 this._ptCircleBaseRadius = image.getRadius();

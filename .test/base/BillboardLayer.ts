@@ -33,7 +33,7 @@ export const testBillboardLayer = () => {
   /**
    * 修改位置
    */
-  // layer.setPosition("billboard_1", fromLonLat([160, 60]));
+  // layer.set({ id: 'billboard_1', center: fromLonLat([160, 60]) });
   /**
    * 修改信息
    */

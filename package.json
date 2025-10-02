@@ -19,6 +19,8 @@
   "dependencies": {
     "@turf/turf": "^6.5.0",
     "heatmap.js": "^2.0.5",
+    "lodash": "^4.17.21",
+    "lodash.clonedeep": "^4.5.0",
     "mitt": "^3.0.0",
     "ol": "^7.2.2",
     "ol-ext": "^4.0.35",
@@ -33,6 +35,7 @@
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.0.0",
     "@types/heatmap.js": "^2.0.37",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^18.13.0",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "copyfiles": "^2.4.1",

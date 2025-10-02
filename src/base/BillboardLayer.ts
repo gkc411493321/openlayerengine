@@ -1,5 +1,6 @@
 import Earth from 'Earth';
 import { IBillboardParam, ISetBillboardParam } from '../interface';
+import { IconOrigin, IconAnchorUnits } from 'ol/style/Icon';
 import { Point } from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -101,20 +102,46 @@ export default class BillboardLayer<T = unknown> extends Base {
     }
     const style = <Style>features[0].getStyle();
     const oldIcon = <Icon>style.getImage();
-    const iconOptions: { [key: string]: any } = {
+    // rotation: 允许 0；只有 undefined / null 才回退旧值
+    const nextRotationDeg = param.rotation !== undefined && param.rotation !== null ? param.rotation : undefined;
+    const resolvedRotation = nextRotationDeg !== undefined ? Utils.deg2rad(nextRotationDeg) : oldIcon.getRotation();
+    // size 必须是数组（宽高），否则使用旧值
+    const nextSize: [number, number] | undefined = Array.isArray(param.size) ? (param.size as [number, number]) : (oldIcon.getSize() as [number, number] | undefined);
+    interface IIconOptions {
+      src?: string;
+      size?: [number, number];
+      color?: string | import('ol/color').Color;
+      displacement?: number[];
+      scale?: number | number[];
+      rotation?: number;
+      anchor?: number[];
+      anchorOrigin?: IconOrigin;
+      anchorXUnits?: IconAnchorUnits;
+      anchorYUnits?: IconAnchorUnits;
+    }
+    // anchor 规则：如果调用者未显式传入 anchor（undefined / null），强制回退 [0.5,0.5]（fraction 默认）
+    // 这样在撤销回到初始快照时不会意外复用内部像素锚点（出现 [128,128] 等错误值）
+    const anchorProvided = param.anchor !== undefined && param.anchor !== null;
+    const iconOptions: IIconOptions = {
       src: param.src || oldIcon.getSrc(),
-      size: param.size || oldIcon.getSize(),
+      size: nextSize,
       color: param.color || oldIcon.getColor(),
       displacement: param.displacement || oldIcon.getDisplacement(),
       scale: param.scale || oldIcon.getScale(),
-      rotation: Utils.deg2rad(param.rotation || 0) || oldIcon.getRotation(),
-      anchor: param.anchor || oldIcon.getAnchor()
+      rotation: resolvedRotation,
+      anchor: anchorProvided ? param.anchor : [0.5, 0.5],
     };
-    for (const key in iconOptions) {
-      if (iconOptions[key] == null) {
-        delete iconOptions[key];
-      }
-    }
+    // 清理 undefined 字段（手动列出避免索引签名）
+    if (iconOptions.src == null) delete iconOptions.src;
+    if (iconOptions.size == null) delete iconOptions.size;
+    if (iconOptions.color == null) delete iconOptions.color;
+    if (iconOptions.displacement == null) delete iconOptions.displacement;
+    if (iconOptions.scale == null) delete iconOptions.scale;
+    if (iconOptions.rotation == null) delete iconOptions.rotation;
+    if (iconOptions.anchor == null) delete iconOptions.anchor;
+    if (iconOptions.anchorOrigin == null) delete iconOptions.anchorOrigin;
+    if (iconOptions.anchorXUnits == null) delete iconOptions.anchorXUnits;
+    if (iconOptions.anchorYUnits == null) delete iconOptions.anchorYUnits;
     const newIcon = new Icon(iconOptions);
     const newStyle = super.setText(style, param.label);
     style.setImage(newIcon);
@@ -154,8 +181,13 @@ export default class BillboardLayer<T = unknown> extends Base {
     if (!icon || !icon.getSize()) return null;
 
     const center = (feature.getGeometry() as Point).getCoordinates();
-    const size = icon.getSize()!;
-    const scale: any = Array.isArray(icon.getScale()) ? icon.getScale() : [icon.getScale() || 1, icon.getScale() || 1];
+    const sizeRaw = icon.getSize();
+    if (!sizeRaw) return null;
+    const size: [number, number] = [sizeRaw[0], sizeRaw[1]];
+    const iconScale = icon.getScale();
+    const scale: [number, number] = Array.isArray(iconScale)
+      ? [iconScale[0] || 1, iconScale[1] || 1]
+      : [ (iconScale as number) || 1, (iconScale as number) || 1 ];
     const anchor = icon.getAnchor() || [0, 0];
     const displacement = icon.getDisplacement() || [0, 0];
 

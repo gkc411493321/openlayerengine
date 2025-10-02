@@ -70,9 +70,9 @@ export default class Polyline<T = unknown> extends Base {
     } else {
       // 动态 style function：随视图缩放或线坐标变动实时匹配一轮 pattern
       // pattern 视为比例数组，按其和做归一化
-  const patternSrc = Array.isArray(strokeCfg?.lineDash) ? strokeCfg.lineDash : [];
-  const pattern = patternSrc.slice();
-  const patternSum = pattern.length ? pattern.reduce((a, b) => a + b, 0) : 1;
+      const patternSrc = Array.isArray(strokeCfg?.lineDash) ? strokeCfg.lineDash : [];
+      const pattern = patternSrc.slice();
+      const patternSum = pattern.length ? pattern.reduce((a, b) => a + b, 0) : 1;
       const strokeWidth = strokeCfg?.width ?? param.width ?? 2;
       let lastSig = '';
       let cachedStyle: Style | null = null;
@@ -249,7 +249,7 @@ export default class Polyline<T = unknown> extends Base {
         // === 动态 pattern 计算（支持 fitPatternOnce） ===
         const strokeCfg = param.stroke;
         const hasPattern = strokeCfg && Array.isArray(strokeCfg.lineDash) && strokeCfg.lineDash.length > 0;
-  const basePattern = hasPattern && strokeCfg?.lineDash ? (strokeCfg.lineDash as number[]) : [10, 25];
+        const basePattern = hasPattern && strokeCfg?.lineDash ? (strokeCfg.lineDash as number[]) : [10, 25];
         let dashToUse = basePattern.slice();
         const map = this.earth.map;
         // 计算像素长度
@@ -266,14 +266,15 @@ export default class Polyline<T = unknown> extends Base {
           }
           if (totalPx <= 0) totalPx = basePattern.reduce((a, b) => a + b, 0) || 1;
           const sumPattern = basePattern.reduce((a, b) => a + b, 0) || 1;
-            // 让 pattern 总和 ≈ totalPx
+          // 让 pattern 总和 ≈ totalPx
           const scaleFactor = totalPx / sumPattern;
           dashToUse = basePattern.map((v) => Math.max(1, Math.round(v * scaleFactor)));
         }
         // 动画 offset：基于 dash 总长循环
         const dashTotal = dashToUse.reduce((a, b) => a + b, 0) || 1;
         let lineDashOffset = <number>this.lineDash.get(param.id);
-        if (lineDashOffset <= 0) lineDashOffset = dashTotal; else lineDashOffset -= 2; // 步进速度 2，可参数化
+        if (lineDashOffset <= 0) lineDashOffset = dashTotal;
+        else lineDashOffset -= 2; // 步进速度 2，可参数化
         this.lineDash.set(param.id, lineDashOffset);
         const newDottedLineStyle = new Style({
           stroke: new Stroke({
@@ -371,13 +372,15 @@ export default class Polyline<T = unknown> extends Base {
     const isArrows = features[0].get('isArrows');
     const param = <IPolylineParam<T>>features[0].get('param');
     param.positions = position;
-    if (isArrows) {
-      super.remove(id);
-      this.addLineArrows(param);
-    } else {
-      features[0].set('param', param);
-      features[0].getGeometry()?.setCoordinates(position);
-    }
+    // if (isArrows) {
+    //   super.remove(id);
+    //   this.addLineArrows(param);
+    // } else {
+    //   features[0].set('param', param);
+    //   features[0].getGeometry()?.setCoordinates(position);
+    // }
+    features[0].set('param', param);
+    features[0].getGeometry()?.setCoordinates(position);
     return features;
   }
   /**

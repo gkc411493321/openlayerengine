@@ -779,4 +779,9 @@ export interface ITransfromParams {
    * 传入一个可参与变换的元素数组，默认全部地图元素都可参与变换
    */
   transformFeatures?: Array<Feature>;
+  /**
+   * 历史记录最大缓存次数（一次选中周期内），默认 10。
+   * 仅在一次 Select -> SelectEnd 生命周期内生效，SelectEnd 时会清空。
+   */
+  historyLimit?: number;
 }

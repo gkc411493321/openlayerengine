@@ -672,6 +672,217 @@ export default class Base {
     feature.set('param', param);
   }
   /**
+   * 根据 feature 计算出最新的 param（不会回写 feature.set('param', param)）
+   * 使用场景：需要临时获取最新状态用于显示 / 比较 / 自定义撤销等，而不改变要素本身。
+   * @param feature 目标要素
+   * @returns 复制并更新后的 param；若不存在 param 返回 undefined
+   */
+  public getUpdatedParam(feature: Feature<Geometry>): any | undefined {
+    if (!feature) return undefined;
+    const layerType = feature.get('layerType');
+    const originParam = feature.get('param');
+    if (!originParam) return undefined;
+    // 深拷贝，避免修改绑定在 feature 上的原对象
+    let param: any;
+    try {
+      param = JSON.parse(JSON.stringify(originParam));
+    } catch (_) {
+      // 兜底浅拷贝
+      param = { ...originParam };
+    }
+    const geometry = feature.getGeometry();
+    const styleLike = feature.getStyle();
+    let style: Style | undefined;
+    if (styleLike instanceof Style) style = styleLike;
+    else if (Array.isArray(styleLike) && styleLike.length && styleLike[0] instanceof Style) style = styleLike[0];
+
+    const syncLabelCommon = (text: Text | undefined) => {
+      if (!text) return;
+      const plainText = (() => {
+        const t = text.getText?.();
+        if (Array.isArray(t)) return t.join('');
+        return t || '';
+      })();
+      param.label = {
+        text: plainText || param.label?.text || '',
+        font: text.getFont?.() || param.label?.font,
+        offsetX: text.getOffsetX?.() || param.label?.offsetX,
+        offsetY: text.getOffsetY?.() || param.label?.offsetY,
+        scale:
+          (typeof text.getScale === 'function'
+            ? Array.isArray(text.getScale())
+              ? (text.getScale() as number[])[0]
+              : (text.getScale() as number)
+            : undefined) || param.label?.scale,
+        textAlign: text.getTextAlign?.() || param.label?.textAlign,
+        textBaseline: text.getTextBaseline?.() || param.label?.textBaseline,
+        rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
+        fill: (() => {
+          const f = text.getFill && text.getFill();
+            if (f && typeof f.getColor === 'function') {
+              const c = f.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.fill;
+        })(),
+        stroke: (() => {
+          const s = text.getStroke && text.getStroke();
+          if (s && typeof s.getColor === 'function') {
+            const c = s.getColor();
+            const w = typeof s.getWidth === 'function' ? s.getWidth() : undefined;
+            return { color: c as string, width: w || param.label?.stroke?.width };
+          }
+          return param.label?.stroke;
+        })(),
+        backgroundFill: (() => {
+          const bf = text.getBackgroundFill && text.getBackgroundFill();
+          if (bf && typeof bf.getColor === 'function') {
+            const c = bf.getColor();
+            if (c) return { color: c as string };
+          }
+          return param.label?.backgroundFill;
+        })(),
+        backgroundStroke: (() => {
+          const bs = text.getBackgroundStroke && text.getBackgroundStroke();
+          if (bs && typeof bs.getColor === 'function') {
+            const c = bs.getColor();
+            const w = typeof bs.getWidth === 'function' ? bs.getWidth() : undefined;
+            return { color: c as string, width: w || param.label?.backgroundStroke?.width };
+          }
+          return param.label?.backgroundStroke;
+        })(),
+        padding: text.getPadding?.() || param.label?.padding
+      };
+    };
+
+    // 分类型同步
+    if (layerType === 'Billboard') {
+      if (geometry && geometry.getType && geometry.getType() === 'Point') {
+        try {
+          const pointGeom = geometry as import('ol/geom').Point;
+          param.center = pointGeom.getCoordinates();
+        } catch (_) { /* ignore */ }
+      }
+      if (style) {
+        const icon = style.getImage?.() as Icon | undefined;
+        if (icon) {
+          const src = icon.getSrc(); if (src) param.src = src;
+          const size = icon.getSize(); if (size) param.size = size;
+          const color = icon.getColor(); if (typeof color === 'string') param.color = color;
+          const displacement = icon.getDisplacement(); if (Array.isArray(displacement)) param.displacement = displacement as number[];
+          const scaleVal = icon.getScale?.(); if (scaleVal) param.scale = scaleVal;
+          const rotation = icon.getRotation?.(); if (rotation != null) param.rotation = Utils.rad2deg(rotation);
+          const anchor = (icon as any).anchor_; if (anchor && Array.isArray(anchor)) param.anchor = anchor as number[];
+        }
+        syncLabelCommon(style.getText?.());
+      }
+    } else if (layerType === 'Polyline') {
+      if (geometry && geometry.getType && geometry.getType() === 'LineString') {
+        try {
+          const line = geometry as import('ol/geom').LineString;
+          const coords = line.getCoordinates();
+          // 兼容普通与飞行线
+          if ('positions' in param) param.positions = coords;
+          if ('position' in param && !('positions' in param)) param.position = coords as number[][];
+        } catch (_) { /* ignore */ }
+      }
+      if (style && 'positions' in param) { // 仅普通折线做样式同步
+        const stroke = style.getStroke && style.getStroke();
+        if (stroke && typeof stroke.getColor === 'function') {
+          param.stroke = Object.assign({}, param.stroke, {
+            color: stroke.getColor?.() || param.stroke?.color,
+            width: stroke.getWidth?.() || param.stroke?.width,
+            lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+            lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+          });
+          if (param.stroke?.width && !param.width) param.width = param.stroke.width;
+        }
+        const fill = style.getFill && style.getFill();
+        if (fill && typeof fill.getColor === 'function') {
+          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+        }
+        syncLabelCommon(style.getText?.());
+      }
+    } else if (layerType === 'Point') {
+      if (geometry && geometry.getType && geometry.getType() === 'Point') {
+        try {
+          const point = geometry as import('ol/geom').Point;
+          param.center = point.getCoordinates();
+        } catch (_) { /* ignore */ }
+      }
+      if (style) {
+        const image: any = style.getImage && style.getImage();
+        if (image) {
+          if (typeof image.getRadius === 'function') {
+            const r = image.getRadius(); if (r != null) param.size = r;
+          }
+          const stroke = image.getStroke && image.getStroke();
+          if (stroke && typeof stroke.getColor === 'function') {
+            param.stroke = Object.assign({}, param.stroke, {
+              color: stroke.getColor?.() || param.stroke?.color,
+              width: stroke.getWidth?.() || param.stroke?.width,
+              lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+              lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+            });
+          }
+          const fill = image.getFill && image.getFill();
+          if (fill && typeof fill.getColor === 'function') {
+            const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+          }
+        }
+        syncLabelCommon(style.getText?.());
+      }
+    } else if (layerType === 'Circle') {
+      if (geometry && geometry.getType && geometry.getType() === 'Circle') {
+        try {
+          const circle = geometry as import('ol/geom').Circle;
+            param.center = circle.getCenter();
+            param.radius = circle.getRadius();
+        } catch (_) { /* ignore */ }
+      }
+      if (style) {
+        const stroke = style.getStroke && style.getStroke();
+        if (stroke && typeof stroke.getColor === 'function') {
+          param.stroke = Object.assign({}, param.stroke, {
+            color: stroke.getColor?.() || param.stroke?.color,
+            width: stroke.getWidth?.() || param.stroke?.width,
+            lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+            lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+          });
+        }
+        const fill = style.getFill && style.getFill();
+        if (fill && typeof fill.getColor === 'function') {
+          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+        }
+        syncLabelCommon(style.getText?.());
+      }
+    } else if (layerType === 'Polygon') {
+      if (geometry && geometry.getType && geometry.getType() === 'Polygon') {
+        try {
+          const polygon = geometry as import('ol/geom').Polygon;
+          param.positions = polygon.getCoordinates();
+        } catch (_) { /* ignore */ }
+      }
+      if (style) {
+        const stroke = style.getStroke && style.getStroke();
+        if (stroke && typeof stroke.getColor === 'function') {
+          param.stroke = Object.assign({}, param.stroke, {
+            color: stroke.getColor?.() || param.stroke?.color,
+            width: stroke.getWidth?.() || param.stroke?.width,
+            lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+            lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+          });
+        }
+        const fill = style.getFill && style.getFill();
+        if (fill && typeof fill.getColor === 'function') {
+          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+        }
+        syncLabelCommon(style.getText?.());
+      }
+    }
+    return param;
+  }
+  /**
    * 删除图层所有矢量元素
    * @example
    * ```
