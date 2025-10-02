@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Earth from '../Earth';
-import { IFill, ILabel, IStroke, IBillboardParam } from '../interface';
+import { IFill, ILabel, IStroke, IBillboardParam, IPolylineParam, IPolylineFlyParam } from '../interface';
 import { Feature } from 'ol';
 import { Geometry } from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
@@ -151,9 +151,12 @@ export default class Base {
    */
   protected addFeaturelistener(feature: Feature<Geometry>): void {
     const featureChangeListener = feature.on('change', () => {
-      // 如果是BillboardLayer，则根据{@link IBillboardParam}同步param参数
       if (feature.get('layerType') === 'Billboard') {
+        // 如果是BillboardLayer，则根据{@link IBillboardParam}同步param参数
         this.updateBillboardParam(feature);
+      } else if (feature.get('layerType') === 'Polyline') {
+        // 如果是PolylineLayer，则根据{@link IPolylineParam}同步param参数
+        this.updatePolylineParam(feature);
       }
     });
     this.featureListenerMap.set(feature.getId() as string, featureChangeListener);
@@ -248,6 +251,112 @@ export default class Base {
       // 回写最新 param
       feature.set('param', param);
     }
+  }
+  /**
+   * 更新Polyline参数(仅同步可推导的几何/样式字段)
+   * @param feature Polyline要素
+   */
+  protected updatePolylineParam(feature: Feature<Geometry>): void {
+    // 兼容普通 Polyline 与 飞行线 Polyline（IPolylineFlyParam 不继承 IPolylineParam，字段名称也不同: position vs positions）
+    let param = feature.get('param') as (IPolylineParam<unknown> | IPolylineFlyParam<unknown>) | undefined;
+    if (!param) return;
+    const isNormalPolyline = (p: any): p is IPolylineParam<unknown> => 'positions' in p;
+    const isFlyPolyline = (p: any): p is IPolylineFlyParam<unknown> => 'position' in p && !('positions' in p);
+    const geometry = feature.getGeometry();
+    if (geometry && geometry.getType && geometry.getType() === 'LineString') {
+      try {
+        const line = geometry as import('ol/geom').LineString;
+        const coords = line.getCoordinates();
+        if (isNormalPolyline(param)) param.positions = coords;
+        if (isFlyPolyline(param)) param.position = coords as number[][];
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    // 同步样式: 仅在静态 Style 情况下（当 style 是函数时跳过，因为箭头/动态样式内部已同步 positions）
+    const styleLike = feature.getStyle();
+    let style: Style | undefined;
+    if (styleLike instanceof Style) style = styleLike;
+    else if (Array.isArray(styleLike) && styleLike.length && styleLike[0] instanceof Style) style = styleLike[0];
+    // style 为函数 (StyleFunction) 时不处理，避免调用导致副作用或无法提供 resolution
+    if (style && isNormalPolyline(param)) {
+      const stroke = style.getStroke && style.getStroke();
+      if (stroke && typeof stroke.getColor === 'function') {
+        param.stroke = Object.assign({}, param.stroke, {
+          color: stroke.getColor?.() || param.stroke?.color,
+          width: stroke.getWidth?.() || param.stroke?.width,
+          lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+          lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+        });
+        if (param.stroke?.width && !param.width) {
+          param.width = param.stroke.width;
+        }
+      }
+      const fill = style.getFill && style.getFill();
+      if (fill && typeof fill.getColor === 'function') {
+        const fillColor = fill.getColor();
+        if (fillColor) param.fill = { color: fillColor as string };
+      }
+      const text = style.getText && style.getText();
+      if (text) {
+        const plainText = (() => {
+          const t = text.getText?.();
+          if (Array.isArray(t)) return t.join('');
+          return t || '';
+        })();
+        param.label = {
+          text: plainText || param.label?.text || '',
+          font: text.getFont?.() || param.label?.font,
+          offsetX: text.getOffsetX?.() || param.label?.offsetX,
+          offsetY: text.getOffsetY?.() || param.label?.offsetY,
+          scale:
+            (typeof text.getScale === 'function'
+              ? Array.isArray(text.getScale())
+                ? (text.getScale() as number[])[0]
+                : (text.getScale() as number)
+              : undefined) || param.label?.scale,
+          textAlign: text.getTextAlign?.() || param.label?.textAlign,
+          textBaseline: text.getTextBaseline?.() || param.label?.textBaseline,
+          rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
+          fill: (() => {
+            const f = text.getFill && text.getFill();
+            if (f && typeof f.getColor === 'function') {
+              const c = f.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.fill;
+          })(),
+          stroke: (() => {
+            const s = text.getStroke && text.getStroke();
+            if (s && typeof s.getColor === 'function') {
+              const c = s.getColor();
+              const w = typeof s.getWidth === 'function' ? s.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.stroke?.width };
+            }
+            return param.label?.stroke;
+          })(),
+          backgroundFill: (() => {
+            const bf = text.getBackgroundFill && text.getBackgroundFill();
+            if (bf && typeof bf.getColor === 'function') {
+              const c = bf.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.backgroundFill;
+          })(),
+          backgroundStroke: (() => {
+            const bs = text.getBackgroundStroke && text.getBackgroundStroke();
+            if (bs && typeof bs.getColor === 'function') {
+              const c = bs.getColor();
+              const w = typeof bs.getWidth === 'function' ? bs.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.backgroundStroke?.width };
+            }
+            return param.label?.backgroundStroke;
+          })(),
+          padding: text.getPadding?.() || param.label?.padding
+        };
+      }
+    }
+    feature.set('param', param);
   }
   /**
    * 删除图层所有矢量元素

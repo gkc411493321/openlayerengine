@@ -63,10 +63,11 @@ export default class Polyline<T = unknown> extends Base {
     style = super.setText(style, param.label);
     feature.setStyle(style);
     feature.setId(param.id);
-    feature.set('param', param);
     feature.set('data', param.data);
     feature.set('module', param.module);
     feature.set('layerId', this.layer.get('id'));
+    feature.set('layerType', 'Polyline');
+    feature.set('param', param);
     return feature;
   }
   /**
