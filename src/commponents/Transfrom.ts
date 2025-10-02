@@ -13,6 +13,7 @@ import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Icon, Style } from 'ol/style';
 import { feature } from '@turf/turf';
+import { Utils } from '../common';
 
 export default class Transfrom {
   /**
@@ -120,7 +121,13 @@ export default class Transfrom {
       ETransfrom.LeaveHandle,
       ETransfrom.TranslateStart,
       ETransfrom.Translating,
-      ETransfrom.TranslateEnd
+      ETransfrom.TranslateEnd,
+      ETransfrom.RotateStart,
+      ETransfrom.Rotating,
+      ETransfrom.RotateEnd,
+      ETransfrom.ScaleStart,
+      ETransfrom.Scaling,
+      ETransfrom.ScaleEnd
     ];
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
@@ -132,176 +139,152 @@ export default class Transfrom {
    */
   private handleRawEvent(eventName: ETransfrom, e: any) {
     let callbackParam: ITransformCallback | null = null;
-    switch (eventName) {
-      // 选中
-      case ETransfrom.Select: {
-        // 内部数据处理
-        this.checkSelect = e.feature;
-        // 获取图层（抽取辅助方法，避免嵌套判断）
-        this.checkLayer = this.getLayerByFeature(e.feature);
-        this.removeHelpTooltip();
-        this.initHelpTooltip('选择控制点进行变换操作');
-        // 外部参数
+
+    // 事件集合分类，避免多处重复判断
+    const startEvents = new Set([
+      ETransfrom.TranslateStart,
+      ETransfrom.RotateStart,
+      ETransfrom.ScaleStart
+    ]);
+    const progressingEvents = new Set([
+      ETransfrom.Translating,
+      ETransfrom.Rotating,
+      ETransfrom.Scaling
+    ]);
+    const endEvents = new Set([
+      ETransfrom.TranslateEnd,
+      ETransfrom.RotateEnd,
+      ETransfrom.ScaleEnd
+    ]);
+
+    // 统一的 feature 参数构建（包含 feature / featurePosition / featureId 等）
+    const buildFeatureParam = (): ITransformCallback => ({
+      type: eventName,
+      eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+      eventPixel: e.pixel,
+      featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+      featurePosition: e.feature && this.transformCoordinates(e.feature),
+      feature: e.feature
+    });
+
+    if (eventName === ETransfrom.Select) {
+      this.checkSelect = e.feature;
+      this.checkLayer = this.getLayerByFeature(e.feature);
+      this.removeHelpTooltip();
+      this.initHelpTooltip('选择控制点进行变换操作');
+      callbackParam = buildFeatureParam();
+    } else if (eventName === ETransfrom.SelectEnd) {
+      if (this.checkSelect) {
         callbackParam = {
           type: eventName,
           eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-          eventPixel: e.pixel,
-          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
-          featurePosition: e.feature && this.transformCoordinates(e.feature),
-          feature: e.feature
+          eventPixel: e.pixel
         };
-        break;
       }
-      // 退出选中
-      case ETransfrom.SelectEnd: {
-        // 只有存在选中时才派发（修复之前因内部优先清空导致外部收不到的问题）
-        if (this.checkSelect) {
-          callbackParam = {
-            type: eventName,
-            eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-            eventPixel: e.pixel
-          };
-        }
-        // 清理状态（放在派发之后）
-        this.checkSelect = null;
-        this.checkLayer = null;
-        this.removeHelpTooltip();
-        break;
-      }
-      // 进入变换点
-      case ETransfrom.EnterHandle: {
-        if (!this.checkEnterHandle) {
-          // 内部：更新提示
-          this.updateHelpTooltipByCursorType(e);
-          callbackParam = {
-            type: eventName,
-            cursor: e.cursor,
-            eventPixel: e.eventPixel
-          };
-          this.checkEnterHandle = true;
-        }
-        break;
-      }
-      // 离开变换点
-      case ETransfrom.LeaveHandle: {
-        if (this.checkEnterHandle) {
-          if (this.overlayKey) {
-            this.updateHelpTooltip('选择控制点进行变换操作');
-          } else {
-            this.removeHelpTooltip();
-          }
-          callbackParam = {
-            type: eventName,
-            cursor: e.cursor,
-            eventPixel: e.eventPixel
-          };
-          this.checkEnterHandle = false;
-        }
-        break;
-      }
-      // 开始平移
-      case ETransfrom.TranslateStart: {
-        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        this.handleTranslateStart(e);
-        // 外部参数
-        callbackParam = {
-          type: eventName,
-          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-          eventPixel: e.pixel,
-          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
-          featurePosition: e.feature && this.transformCoordinates(e.feature),
-          feature: e.feature
-        };
-        break;
-      }
-      // 平移中
-      case ETransfrom.Translating: {
-        // 更新提示标牌
-        this.updateHelpTooltip('平移中...');
-        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        this.handleTranslating(e);
-        // 外部参数
-        callbackParam = {
-          type: eventName,
-          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-          eventPixel: e.pixel,
-          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
-          featurePosition: e.feature && this.transformCoordinates(e.feature),
-          feature: e.feature
-        };
-        break;
-      }
-      // 结束平移
-      case ETransfrom.TranslateEnd: {
+      this.checkSelect = null;
+      this.checkLayer = null;
+      this.removeHelpTooltip();
+    } else if (eventName === ETransfrom.EnterHandle) {
+      if (!this.checkEnterHandle) {
         this.updateHelpTooltipByCursorType(e);
-        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        this.handleTranslateEnd(e);
-        // 外部参数
         callbackParam = {
           type: eventName,
-          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-          eventPixel: e.pixel,
-          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
-          featurePosition: e.feature && this.transformCoordinates(e.feature),
-          feature: e.feature
+          cursor: e.cursor,
+          eventPixel: e.eventPixel
         };
-        break;
+        this.checkEnterHandle = true;
       }
-      default:
-        break;
-    }
-    if (callbackParam) {
-      const listeners = this.listenerMap.get(eventName);
-      if (listeners && listeners.size) {
-        listeners.forEach((fn) => {
-          try {
-            fn(callbackParam as ITransformCallback);
-          } catch (err) {
-            // 单个监听异常不影响其它
-            // eslint-disable-next-line no-console
-            console.error('[Transfrom:on] listener error:', err);
-          }
-        });
+    } else if (eventName === ETransfrom.LeaveHandle) {
+      if (this.checkEnterHandle) {
+        if (this.overlayKey) this.updateHelpTooltip('选择控制点进行变换操作');
+        else this.removeHelpTooltip();
+        callbackParam = {
+          type: eventName,
+            cursor: e.cursor,
+            eventPixel: e.eventPixel
+        };
+        this.checkEnterHandle = false;
       }
+    } else if (startEvents.has(eventName)) {
+      // Start 类事件
+      this.handleEventStart(eventName, e);
+      callbackParam = buildFeatureParam();
+    } else if (progressingEvents.has(eventName)) {
+      // 中间进行中事件
+      if (eventName === ETransfrom.Translating) {
+        this.updateHelpTooltip('平移中...');
+      } else if (eventName === ETransfrom.Rotating) {
+        this.updateHelpTooltip(`旋转中...当前：${Utils.rad2deg(-e.angle).toFixed(0)}°`);
+      } else if (eventName === ETransfrom.Scaling) {
+        this.updateHelpTooltip('缩放中...');
+      }
+      this.handleEventing(eventName, e);
+      callbackParam = buildFeatureParam();
+    } else if (endEvents.has(eventName)) {
+      // 结束事件
+      this.updateHelpTooltipByCursorType(e);
+      this.handleEventEnd(eventName, e);
+      callbackParam = buildFeatureParam();
     }
+
+    // 分发事件
+    if (callbackParam) this.dispatchTransformEvent(eventName, callbackParam);
   }
   /**
-   * 处理平移前的逻辑
+   * 分发转换事件（包装错误处理，精简主流程）
    */
-  private handleTranslateStart(e: any) {
+  private dispatchTransformEvent(eventName: ETransfrom, param: ITransformCallback) {
+    const listeners = this.listenerMap.get(eventName);
+    if (!listeners || !listeners.size) return;
+    listeners.forEach((fn) => {
+      try {
+        fn(param);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[Transfrom:on] listener error:', err);
+      }
+    });
+  }
+  /**
+   * 处理变换事件开始前的逻辑
+   */
+  private handleEventStart(eventName: ETransfrom, e: any) {
     const type = e.feature?.getGeometry()?.getType();
     const param = e.feature?.get('param');
-    if (type && param && this.checkLayer) {
-      let layer;
-      if (type == 'Point' || type == 'MultiPoint') {
-        layer = this.checkLayer as PointLayer;
-        if (param.isFlash) layer.stopFlash(e.feature.getId());
+    if (eventName === ETransfrom.TranslateStart || eventName === ETransfrom.ScaleStart) {
+      if (type && param && this.checkLayer) {
+        let layer;
+        if (type == 'Point' || type == 'MultiPoint') {
+          layer = this.checkLayer as PointLayer;
+          if (param.isFlash) layer.stopFlash(e.feature.getId());
+        }
       }
     }
   }
   /**
-   * 处理平移中的逻辑
+   * 处理变换事件进行中的逻辑
    */
-  private handleTranslating(e: any) {
+  private handleEventing(eventName: ETransfrom, e: any) {
     // const type = e.feature?.getGeometry()?.getType();
     // const param = e.feature?.get('param');
   }
   /**
-   * 处理平移结束的逻辑
+   * 处理变换事件结束的逻辑
    */
-  private handleTranslateEnd(e: any) {
+  private handleEventEnd(eventName: ETransfrom, e: any) {
     const type = e.feature?.getGeometry()?.getType();
     const param = e.feature?.get('param');
-    if (type && param && this.checkLayer) {
-      let layer;
-      if (type == 'Point' || type == 'MultiPoint') {
-        layer = this.checkLayer as PointLayer;
-        if (param.isFlash) {
-          layer.continueFlash(e.feature.getId());
+    if (eventName === ETransfrom.TranslateEnd || eventName === ETransfrom.ScaleEnd) {
+      if (type && param && this.checkLayer) {
+        let layer;
+        if (type == 'Point' || type == 'MultiPoint') {
+          layer = this.checkLayer as PointLayer;
+          if (param.isFlash) {
+            layer.continueFlash(e.feature.getId());
+          }
         }
       }
     }
-    return e;
   }
   /**
    * 根据要素安全获取所属图层
@@ -400,40 +383,44 @@ export default class Transfrom {
    * 根据鼠标事件类型，更新标牌文本
    */
   private updateHelpTooltipByCursorType(e: ITransformCallback) {
-    if (e.cursor == ECursor.Move) {
-      // 平移
-      this.updateHelpTooltip('鼠标左键按下平移', e.eventPixel);
-    } else if (e.cursor == ECursor.Pointer) {
-      // 平移
-      if (this.options.translateType == ETranslateType.Feature || this.defaultParams.translateType == ETranslateType.Feature) {
-        this.updateHelpTooltip('鼠标左键按下平移');
-      } else {
-        this.updateHelpTooltip('选择控制点进行变换操作');
-      }
-    } else if (e.cursor == ECursor.Grab) {
-      // 旋转
-      this.updateHelpTooltip('鼠标左键按下旋转', e.eventPixel);
-    } else if (e.cursor == ECursor.NsResize || e.cursor == ECursor.EwResize) {
-      // 拉伸
-      const type = this.checkSelect?.getGeometry()?.getType();
-      let str = '鼠标左键按下拉伸，Ctrl键以基准点拉伸';
-      if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
-        str = '鼠标左键按下拉伸';
-      }
-      this.updateHelpTooltip(str, e.eventPixel);
-    } else if (e.cursor == ECursor.NeswResize || e.cursor == ECursor.NwseResize) {
-      // 缩放
-      const type = this.checkSelect?.getGeometry()?.getType();
-      let str = '鼠标左键按下缩放，Shift键保持比例缩放';
-      if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
-        const style = <Style>this.checkSelect?.getStyle();
-        const image = style.getImage?.();
-        if (!(image instanceof Icon)) {
-          str = '鼠标左键按下缩放';
+    setTimeout(() => {
+      const mapElement = useEarth().map.getTargetElement();
+      const cursor = window.getComputedStyle(mapElement).cursor;
+      if (cursor == ECursor.Move) {
+        // 平移
+        this.updateHelpTooltip('鼠标左键按下平移', e.eventPixel);
+      } else if (cursor == ECursor.Pointer) {
+        // 平移
+        if (this.options.translateType == ETranslateType.Feature || this.defaultParams.translateType == ETranslateType.Feature) {
+          this.updateHelpTooltip('鼠标左键按下平移');
+        } else {
+          this.updateHelpTooltip('选择控制点进行变换操作');
         }
+      } else if (cursor == ECursor.Grab) {
+        // 旋转
+        this.updateHelpTooltip('鼠标左键按下旋转', e.eventPixel);
+      } else if (cursor == ECursor.NsResize || cursor == ECursor.EwResize) {
+        // 拉伸
+        const type = this.checkSelect?.getGeometry()?.getType();
+        let str = '鼠标左键按下拉伸，Ctrl键以基准点拉伸';
+        if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
+          str = '鼠标左键按下拉伸';
+        }
+        this.updateHelpTooltip(str, e.eventPixel);
+      } else if (cursor == ECursor.NeswResize || cursor == ECursor.NwseResize) {
+        // 缩放
+        const type = this.checkSelect?.getGeometry()?.getType();
+        let str = '鼠标左键按下缩放，Shift键保持比例缩放';
+        if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
+          const style = <Style>this.checkSelect?.getStyle();
+          const image = style.getImage?.();
+          if (!(image instanceof Icon)) {
+            str = '鼠标左键按下缩放';
+          }
+        }
+        this.updateHelpTooltip(str, e.eventPixel);
       }
-      this.updateHelpTooltip(str, e.eventPixel);
-    }
+    }, 50);
   }
   /**
    * 注册外部事件监听（内部逻辑已统一处理）

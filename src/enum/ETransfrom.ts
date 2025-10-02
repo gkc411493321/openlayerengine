@@ -27,6 +27,30 @@ export enum ETransfrom {
    * 结束平移
    */
   TranslateEnd = 'translateend',
+  /**
+   * 开始旋转
+   */
+  RotateStart = 'rotatestart',
+  /**
+   * 旋转中
+   */
+  Rotating = 'rotating',
+  /**
+   * 结束旋转
+   */
+  RotateEnd = 'rotateend',
+  /**
+   * 开始缩放
+   */
+  ScaleStart = 'scalestart',
+  /**
+   * 缩放中
+   */
+  Scaling = 'scaling',
+  /**
+   * 结束缩放
+   */
+  ScaleEnd = 'scaleend',
 }
 
 export enum ETranslateType {

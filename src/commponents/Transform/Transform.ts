@@ -48,7 +48,7 @@ import { Coordinate } from 'ol/coordinate';
 import Map from 'ol/Map';
 // 视图对象无需单独类型导入（直接通过 map.getView 访问）
 import { EventsKey } from 'ol/events';
-import {ol_ext_element} from './element';
+import { ol_ext_element } from './element';
 
 // ---- 类型定义区域 ----
 /**
@@ -509,8 +509,13 @@ class TransformInteraction extends PointerInteraction {
           const wrappedPixel = map.getPixelFromCoordinate(wrapped);
           if (!this._isPixelInsidePointBBox_(f, pixel, wrapped)) continue;
           if (!wrappedPixel) continue;
-          const dx = wrappedPixel[0] - px; const dy = wrappedPixel[1] - py; const d = dx * dx + dy * dy;
-          if (d < bestDist) { best = f; bestDist = d; }
+          const dx = wrappedPixel[0] - px;
+          const dy = wrappedPixel[1] - py;
+          const d = dx * dx + dy * dy;
+          if (d < bestDist) {
+            best = f;
+            bestDist = d;
+          }
         } else {
           // 旧行为：圆形半径距离
           const p0 = (g as PointGeom).getCoordinates();
@@ -518,8 +523,13 @@ class TransformInteraction extends PointerInteraction {
           const fpixel = map.getPixelFromCoordinate(p);
           if (!fpixel) continue;
           const visualR = this._getPointVisualRadiusPixel_(f) || 0;
-          const dx = fpixel[0] - px; const dy = fpixel[1] - py; const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist <= visualR + 2 && dist < bestDist) { best = f; bestDist = dist; }
+          const dx = fpixel[0] - px;
+          const dy = fpixel[1] - py;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist <= visualR + 2 && dist < bestDist) {
+            best = f;
+            bestDist = dist;
+          }
         }
       }
       if (best) result = { feature: best };
@@ -560,16 +570,54 @@ class TransformInteraction extends PointerInteraction {
       if (!style?.getImage) return undefined;
       const img = style.getImage();
       if (!img) return undefined;
-      let w: number | undefined; let h: number | undefined;
-      if (img.getImageSize) { const sz = img.getImageSize(); if (sz && sz.length === 2) { w = sz[0]; h = sz[1]; } }
-      if ((w == null || h == null) && img.getSize) { const sz2 = img.getSize(); if (sz2 && sz2.length === 2) { w = sz2[0]; h = sz2[1]; } }
-      if ((w == null || h == null) && img.getWidth && img.getHeight) { const ww = img.getWidth?.(); const hh = img.getHeight?.(); if (ww && hh) { w = ww; h = hh; } }
-      if (w == null && img.getRadius) { const r = img.getRadius(); if (r) { w = r * 2; h = r * 2; } }
+      let w: number | undefined;
+      let h: number | undefined;
+      if (img.getImageSize) {
+        const sz = img.getImageSize();
+        if (sz && sz.length === 2) {
+          w = sz[0];
+          h = sz[1];
+        }
+      }
+      if ((w == null || h == null) && img.getSize) {
+        const sz2 = img.getSize();
+        if (sz2 && sz2.length === 2) {
+          w = sz2[0];
+          h = sz2[1];
+        }
+      }
+      if ((w == null || h == null) && img.getWidth && img.getHeight) {
+        const ww = img.getWidth?.();
+        const hh = img.getHeight?.();
+        if (ww && hh) {
+          w = ww;
+          h = hh;
+        }
+      }
+      if (w == null && img.getRadius) {
+        const r = img.getRadius();
+        if (r) {
+          w = r * 2;
+          h = r * 2;
+        }
+      }
       if (w == null || h == null) return undefined;
-      let sx = 1, sy = 1;
-      if (img.getScale) { const sc: any = img.getScale(); if (Array.isArray(sc)) { sx = sc[0] || 1; sy = sc[1] || 1; } else if (typeof sc === 'number') { sx = sc; sy = sc; } }
+      let sx = 1,
+        sy = 1;
+      if (img.getScale) {
+        const sc: any = img.getScale();
+        if (Array.isArray(sc)) {
+          sx = sc[0] || 1;
+          sy = sc[1] || 1;
+        } else if (typeof sc === 'number') {
+          sx = sc;
+          sy = sc;
+        }
+      }
       return [w * sx, h * sy];
-    } catch { return undefined; }
+    } catch {
+      return undefined;
+    }
   }
 
   /** 判断像素是否在点图标视觉 bbox 内 */
@@ -596,7 +644,8 @@ class TransformInteraction extends PointerInteraction {
     for (const c of candidates) {
       const px = map.getPixelFromCoordinate(c);
       if (!px) continue;
-      const hw = size[0] / 2; const hh = size[1] / 2;
+      const hw = size[0] / 2;
+      const hh = size[1] / 2;
       if (pixel[0] >= px[0] - hw && pixel[0] <= px[0] + hw && pixel[1] >= px[1] - hh && pixel[1] <= px[1] + hh) return true;
     }
     return false;
@@ -1029,16 +1078,16 @@ class TransformInteraction extends PointerInteraction {
           }
 
           // noFlip：取绝对值
-            if (this.get('noFlip')) {
-              if (scx < 0) scx = -scx;
-              if (scy < 0) scy = -scy;
-            }
+          if (this.get('noFlip')) {
+            if (scx < 0) scx = -scx;
+            if (scy < 0) scy = -scy;
+          }
           // 下限限制
           if (Math.abs(scx) < minScale) scx = scx < 0 ? -minScale : minScale;
           if (Math.abs(scy) < minScale) scy = scy < 0 ? -minScale : minScale;
-
           if (style?.getImage) {
             const image = style.getImage();
+            console.log(image?.getSize(), image?.getScale());
             if (image?.getRadius && image?.setRadius) {
               if (!this._ptCircleBaseRadius) {
                 this._ptCircleBaseRadius = image.getRadius();
@@ -1059,69 +1108,33 @@ class TransformInteraction extends PointerInteraction {
               let newSX = baseSX;
               let newSY = baseSY;
               if (stretch) {
-                if (stretch === 'v') newSX = baseSX * scx; else newSY = baseSY * scy;
+                if (stretch === 'v') newSX = baseSX * scx;
+                else newSY = baseSY * scy;
               } else {
-                newSX = baseSX * scx; newSY = baseSY * scy;
+                newSX = baseSX * scx;
+                newSY = baseSY * scy;
               }
               const keepAR2 = this.get('keepAspectRatio') as (e: MapBrowserEvent<any>) => boolean;
               if (!stretch && keepAR2 && keepAR2(evt)) {
                 const s = Math.min(Math.abs(newSX / baseSX), Math.abs(newSY / baseSY));
-                const signX = newSX < 0 ? -1 : 1; const signY = newSY < 0 ? -1 : 1;
-                newSX = baseSX * s * signX; newSY = baseSY * s * signY;
+                const signX = newSX < 0 ? -1 : 1;
+                const signY = newSY < 0 ? -1 : 1;
+                newSX = baseSX * s * signX;
+                newSY = baseSY * s * signY;
               }
-              if (this.get('noFlip')) { if (newSX < 0) newSX = -newSX; if (newSY < 0) newSY = -newSY; }
+              if (this.get('noFlip')) {
+                if (newSX < 0) newSX = -newSX;
+                if (newSY < 0) newSY = -newSY;
+              }
               const minScale = 0.2;
               if (Math.abs(newSX) < minScale * baseSX) newSX = baseSX * minScale * (newSX < 0 ? -1 : 1);
               if (Math.abs(newSY) < minScale * baseSY) newSY = baseSY * minScale * (newSY < 0 ? -1 : 1);
-              try { image.setScale([newSX, newSY]); } catch { const uni = (Math.abs(newSX)+Math.abs(newSY))/2; image.setScale(uni); }
-            } else if (image?.setSize && image?.getSize) {
-              const imgSize = image.getSize();
-              if (imgSize && imgSize.length === 2) {
-                if (!this._ptImageBaseSize) {
-                  this._ptImageBaseSize = imgSize.slice();
-                  this._ptImageBaseLen = baseLen;
-                }
-                const baseW = this._ptImageBaseSize ? this._ptImageBaseSize[0] : 0;
-                const baseH = this._ptImageBaseSize ? this._ptImageBaseSize[1] : 0;
-                let newW: number;
-                let newH: number;
-                if (stretch) {
-                  // 拉伸：只修改宽度；根据 constraint 选择轴（与非点逻辑一致：v -> 允许横向变化，h -> 允许纵向变化）
-                  const factor = stretch === 'v' ? scx : scy;
-                  newW = baseW * factor;
-                  newH = baseH; // 高度保持不变
-                } else {
-                  // 角点缩放：同时修改宽高（已处理 keepAspectRatio 等比）
-                  newW = baseW * scx;
-                  newH = baseH * scy;
-                }
-                if (newW < 5) newW = 5;
-                if (newH < 5) newH = 5;
-                image.setSize([newW, newH]);
+              try {
+                image.setScale([newSX, newSY]);
+              } catch {
+                const uni = (Math.abs(newSX) + Math.abs(newSY)) / 2;
+                image.setScale(uni);
               }
-            }
-          } else if (style?.getSize && style?.setSize) {
-            const styleSize = style.getSize();
-            if (styleSize && styleSize.length === 2) {
-              if (!this._ptStyleBaseSize) {
-                this._ptStyleBaseSize = styleSize.slice();
-                this._ptStyleBaseLen = baseLen;
-              }
-              const baseW = this._ptStyleBaseSize ? this._ptStyleBaseSize[0] : 0;
-              const baseH = this._ptStyleBaseSize ? this._ptStyleBaseSize[1] : 0;
-              let newW: number;
-              let newH: number;
-              if (stretch) {
-                const factor = stretch === 'v' ? scx : scy;
-                newW = baseW * factor;
-                newH = baseH;
-              } else {
-                newW = baseW * scx;
-                newH = baseH * scy;
-              }
-              if (newW < 5) newW = 5;
-              if (newH < 5) newH = 5;
-              style.setSize([newW, newH]);
             }
           }
           feature.changed?.();
@@ -1317,7 +1330,7 @@ class TransformInteraction extends PointerInteraction {
    * Pointer 抬起：清理临时缓存、执行 wrapX 归位（translate 模式）、派发 <mode>end 事件并重绘。
    */
   private handleUpEvent_(evt: MapBrowserEvent<any>): boolean {
-  // this._ptImageBaseScale = undefined; // 已弃用
+    // this._ptImageBaseScale = undefined; // 已弃用
     this._ptImageBaseScalePair = undefined;
     this._ptImageBaseLen = undefined;
     this._ptImageBaseSize = undefined;
@@ -1383,7 +1396,7 @@ class TransformInteraction extends PointerInteraction {
       oldgeoms: this.geoms_,
       transformed: this.hasChanged_,
       cursor: (element as HTMLElement).style.cursor,
-      pixel: evt.pixel,
+      pixel: evt.pixel
     } as TransformEvent);
     this.drawSketch_();
     this.hasChanged_ = false;
@@ -1470,30 +1483,30 @@ class TransformInteraction extends PointerInteraction {
             }
             return [1, 1];
           };
-            const [sx, sy] = getScalePair();
-            const sizes: [number, number][] = [];
-            if (image.getImageSize) {
-              const isz = image.getImageSize();
-              if (isz && isz.length === 2) sizes.push([isz[0] * sx, isz[1] * sy]);
-            }
-            if (image.getSize) {
-              const sz = image.getSize();
-              if (sz && sz.length === 2) sizes.push([sz[0] * sx, sz[1] * sy]);
-            }
-            if (image.getWidth && image.getHeight) {
-              const w = image.getWidth?.();
-              const h = image.getHeight?.();
-              if (w && h) sizes.push([w * sx, h * sy]);
-            }
-            if (sizes.length) {
-              const mx = Math.max(...sizes.map((s) => s[0]));
-              const my = Math.max(...sizes.map((s) => s[1]));
-              return Math.max(mx, my) / 2;
-            }
-            if (image.getRadius) {
-              const r = image.getRadius();
-              if (r) return r * Math.max(sx, sy);
-            }
+          const [sx, sy] = getScalePair();
+          const sizes: [number, number][] = [];
+          if (image.getImageSize) {
+            const isz = image.getImageSize();
+            if (isz && isz.length === 2) sizes.push([isz[0] * sx, isz[1] * sy]);
+          }
+          if (image.getSize) {
+            const sz = image.getSize();
+            if (sz && sz.length === 2) sizes.push([sz[0] * sx, sz[1] * sy]);
+          }
+          if (image.getWidth && image.getHeight) {
+            const w = image.getWidth?.();
+            const h = image.getHeight?.();
+            if (w && h) sizes.push([w * sx, h * sy]);
+          }
+          if (sizes.length) {
+            const mx = Math.max(...sizes.map((s) => s[0]));
+            const my = Math.max(...sizes.map((s) => s[1]));
+            return Math.max(mx, my) / 2;
+          }
+          if (image.getRadius) {
+            const r = image.getRadius();
+            if (r) return r * Math.max(sx, sy);
+          }
         }
       }
       if (style?.getSize) {

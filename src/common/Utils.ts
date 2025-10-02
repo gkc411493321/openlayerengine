@@ -192,6 +192,7 @@ export default class Utils<T> {
    * const deg = Utils.rad2deg(Math.PI); // 180
    */
   static rad2deg(rad: number): number {
-    return (rad * 180) / Math.PI;
+    const deg = (rad * 180) / Math.PI;
+    return (deg % 360 + 360) % 360;
   }
 }
