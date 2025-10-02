@@ -57,11 +57,71 @@ export default class Polyline<T = unknown> extends Base {
     const feature = new Feature({
       geometry: new LineString(param.positions)
     });
-    let style = new Style();
-    style = super.setStroke(style, param.stroke, param.width);
-    style = super.setFill(style, param.fill);
-    style = super.setText(style, param.label);
-    feature.setStyle(style);
+    // 初始 style（当不需要动态适配时使用）
+    const baseStyle = new Style();
+    super.setFill(baseStyle, param.fill);
+    super.setText(baseStyle, param.label);
+    // 如果未设置 stroke 或未提供 lineDash 或未启用 fitPatternOnce，直接常规处理
+    const strokeCfg = param.stroke;
+    const needFit = !!(strokeCfg && strokeCfg.lineDash && strokeCfg.lineDash.length > 0 && strokeCfg.fitPatternOnce);
+    if (!needFit) {
+      super.setStroke(baseStyle, strokeCfg, param.width);
+      feature.setStyle(baseStyle);
+    } else {
+      // 动态 style function：随视图缩放或线坐标变动实时匹配一轮 pattern
+      // pattern 视为比例数组，按其和做归一化
+  const patternSrc = Array.isArray(strokeCfg?.lineDash) ? strokeCfg.lineDash : [];
+  const pattern = patternSrc.slice();
+  const patternSum = pattern.length ? pattern.reduce((a, b) => a + b, 0) : 1;
+      const strokeWidth = strokeCfg?.width ?? param.width ?? 2;
+      let lastSig = '';
+      let cachedStyle: Style | null = null;
+      // 生成坐标签名 + 分辨率签名：防止重复计算
+      const buildSig = (coords: number[][], mapRes: number) => {
+        if (!coords.length) return '0';
+        const first = coords[0];
+        const last = coords[coords.length - 1];
+        return `${coords.length}|${first[0].toFixed(4)},${first[1].toFixed(4)}|${last[0].toFixed(4)},${last[1].toFixed(4)}|${mapRes}`;
+      };
+      feature.setStyle((feat: import('ol/Feature').FeatureLike, res: number) => {
+        const geom = (feat as Feature<LineString>).getGeometry && (feat as Feature<LineString>).getGeometry();
+        if (!geom || !(geom instanceof LineString)) return baseStyle;
+        const map = this.earth?.map;
+        if (!map) return baseStyle;
+        const coords: number[][] = geom.getCoordinates();
+        const sig = buildSig(coords, res);
+        if (sig === lastSig && cachedStyle) return cachedStyle;
+        lastSig = sig;
+        // 计算屏幕像素总长度
+        let totalPx = 0;
+        for (let i = 1; i < coords.length; i++) {
+          const p1 = map.getPixelFromCoordinate(coords[i - 1]);
+          const p2 = map.getPixelFromCoordinate(coords[i]);
+          if (p1 && p2) {
+            const dx = p2[0] - p1[0];
+            const dy = p2[1] - p1[1];
+            totalPx += Math.sqrt(dx * dx + dy * dy);
+          }
+        }
+        if (totalPx <= 0) totalPx = 1;
+        // 为保证线条可见，限制最小参考长度
+        const scaleFactor = totalPx / patternSum;
+        const dashArray = pattern.map((v) => Math.max(1, Math.round(v * scaleFactor)));
+        const stroke = new Stroke({
+          color: strokeCfg?.color || '#ff0000',
+          width: strokeWidth,
+          lineDash: dashArray,
+          lineDashOffset: strokeCfg?.lineDashOffset || 0
+        });
+        cachedStyle = new Style({
+          stroke,
+          text: baseStyle.getText(),
+          fill: baseStyle.getFill()
+        });
+        return cachedStyle;
+      });
+    }
+    // 其余属性挂载
     feature.setId(param.id);
     feature.set('data', param.data);
     feature.set('module', param.module);
@@ -78,7 +138,10 @@ export default class Polyline<T = unknown> extends Base {
   private addLineArrows(param: IPolylineParam<T>): Feature<LineString> {
     param.id = param.id || Utils.GetGUID();
     const feature = this.createFeature(param);
-    const baseLineStyle = feature.getStyle() as Style; // 基础线样式（包含 stroke/label 之前的）
+    // 可能是 Style 或 styleFunction（当启用 fitPatternOnce 时）
+    const originalStyle = feature.getStyle();
+    const styleFn = typeof originalStyle === 'function' ? originalStyle : undefined;
+    const staticBase = typeof originalStyle === 'function' ? undefined : (originalStyle as Style | Style[] | undefined);
     // 文本样式单独重建，避免引用被覆盖
     const textStyle = super.setText(new Style(), param.label);
     const color = param.stroke?.color;
@@ -107,9 +170,19 @@ export default class Polyline<T = unknown> extends Base {
       return `${len}|${head[0].toFixed(4)},${head[1].toFixed(4)}|${tail[0].toFixed(4)},${tail[1].toFixed(4)}`;
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    feature.setStyle((feat: any) => {
+    feature.setStyle((feat: any, res: number) => {
       const geom: LineString | null = feat.getGeometry ? feat.getGeometry() : null;
-      if (!geom) return [baseLineStyle];
+      // 运行原始基础样式（如果是函数）以获取当前分辨率下的动态样式
+      let baseStyles: Style[] = [];
+      if (styleFn) {
+        const r = styleFn(feat, res);
+        if (Array.isArray(r)) baseStyles = r as Style[];
+        else if (r) baseStyles = [r as Style];
+      } else if (staticBase) {
+        if (Array.isArray(staticBase)) baseStyles = staticBase as Style[];
+        else baseStyles = [staticBase as Style];
+      }
+      if (!geom || !baseStyles.length) return baseStyles;
       const coords = geom.getCoordinates();
       interface RevGeom {
         getRevision?: () => number;
@@ -126,8 +199,8 @@ export default class Polyline<T = unknown> extends Base {
         param.positions = coords;
       }
       // 组合最终样式数组（避免每帧创建新 Style 实例）
-      if (param.label) return [baseLineStyle, ...cachedStyles, textStyle];
-      return [baseLineStyle, ...cachedStyles];
+      if (param.label) return [...baseStyles, ...cachedStyles, textStyle];
+      return [...baseStyles, ...cachedStyles];
     });
     feature.setId(param.id);
     feature.set('data', param.data);
@@ -167,22 +240,49 @@ export default class Polyline<T = unknown> extends Base {
     const key = this.layer.on('postrender', (evt: RenderEvent) => {
       const vectorContext = getVectorContext(evt);
       if (param.id) {
-        let lineDashOffset = <number>this.lineDash.get(param.id);
-        lineDashOffset = lineDashOffset == 0 ? 100 : lineDashOffset - 2;
-        this.lineDash.set(param.id, lineDashOffset);
-        const newDottedLineStyle = new Style({
-          stroke: new Stroke({
-            color: param.dottedLineColor || 'rgba(255, 250, 250, 1)',
-            width: param.width || 2,
-            lineDash: [10, 25],
-            lineDashOffset: lineDashOffset
-          })
-        });
+        // 基础几何（支持更新后的坐标）
         const line = new LineString(param.positions);
         const worldWidth = getWidth(this.earth.map.getView().getProjection().getExtent());
         const center = <Coordinate>this.earth.view.getCenter();
         const offset = Math.floor(center[0] / worldWidth);
         line.translate(offset * worldWidth, 0);
+        // === 动态 pattern 计算（支持 fitPatternOnce） ===
+        const strokeCfg = param.stroke;
+        const hasPattern = strokeCfg && Array.isArray(strokeCfg.lineDash) && strokeCfg.lineDash.length > 0;
+  const basePattern = hasPattern && strokeCfg?.lineDash ? (strokeCfg.lineDash as number[]) : [10, 25];
+        let dashToUse = basePattern.slice();
+        const map = this.earth.map;
+        // 计算像素长度
+        let totalPx = 0;
+        if (strokeCfg?.fitPatternOnce) {
+          for (let i = 1; i < param.positions.length; i++) {
+            const p1 = map.getPixelFromCoordinate(param.positions[i - 1]);
+            const p2 = map.getPixelFromCoordinate(param.positions[i]);
+            if (p1 && p2) {
+              const dx = p2[0] - p1[0];
+              const dy = p2[1] - p1[1];
+              totalPx += Math.sqrt(dx * dx + dy * dy);
+            }
+          }
+          if (totalPx <= 0) totalPx = basePattern.reduce((a, b) => a + b, 0) || 1;
+          const sumPattern = basePattern.reduce((a, b) => a + b, 0) || 1;
+            // 让 pattern 总和 ≈ totalPx
+          const scaleFactor = totalPx / sumPattern;
+          dashToUse = basePattern.map((v) => Math.max(1, Math.round(v * scaleFactor)));
+        }
+        // 动画 offset：基于 dash 总长循环
+        const dashTotal = dashToUse.reduce((a, b) => a + b, 0) || 1;
+        let lineDashOffset = <number>this.lineDash.get(param.id);
+        if (lineDashOffset <= 0) lineDashOffset = dashTotal; else lineDashOffset -= 2; // 步进速度 2，可参数化
+        this.lineDash.set(param.id, lineDashOffset);
+        const newDottedLineStyle = new Style({
+          stroke: new Stroke({
+            color: param.dottedLineColor || 'rgba(255, 250, 250, 1)',
+            width: param.width || 2,
+            lineDash: dashToUse,
+            lineDashOffset: lineDashOffset
+          })
+        });
         vectorContext.setStyle(fullLineStyle);
         vectorContext.drawGeometry(line);
         vectorContext.setStyle(newDottedLineStyle);

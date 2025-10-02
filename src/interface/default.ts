@@ -517,6 +517,11 @@ export interface IStroke {
    * 偏移量
    */
   lineDashOffset?: number;
+  /**
+   * 是否将 lineDash 视为“比例 pattern”并自动按当前屏幕像素总长度放大，使整条线恰好显示一轮 pattern；
+   * true 时 lineDash 不循环；随视图缩放 / 线坐标变化自动重新计算。
+   */
+  fitPatternOnce?: boolean;
 }
 export interface IFill {
   /**
