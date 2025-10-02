@@ -1382,7 +1382,8 @@ class TransformInteraction extends PointerInteraction {
       oldgeom: this.geoms_[0],
       oldgeoms: this.geoms_,
       transformed: this.hasChanged_,
-      cursor: (element as HTMLElement).style.cursor
+      cursor: (element as HTMLElement).style.cursor,
+      pixel: evt.pixel,
     } as TransformEvent);
     this.drawSketch_();
     this.hasChanged_ = false;

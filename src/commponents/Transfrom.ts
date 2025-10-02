@@ -12,6 +12,7 @@ import { Base, OverlayLayer, PointLayer, PolygonLayer } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Icon, Style } from 'ol/style';
+import { feature } from '@turf/turf';
 
 export default class Transfrom {
   /**
@@ -142,7 +143,7 @@ export default class Transfrom {
         this.initHelpTooltip('选择控制点进行变换操作');
         // 外部参数
         callbackParam = {
-          type: ETransfrom.Select,
+          type: eventName,
           eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
           eventPixel: e.pixel,
           featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
@@ -156,7 +157,7 @@ export default class Transfrom {
         // 只有存在选中时才派发（修复之前因内部优先清空导致外部收不到的问题）
         if (this.checkSelect) {
           callbackParam = {
-            type: ETransfrom.SelectEnd,
+            type: eventName,
             eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
             eventPixel: e.pixel
           };
@@ -173,7 +174,7 @@ export default class Transfrom {
           // 内部：更新提示
           this.updateHelpTooltipByCursorType(e);
           callbackParam = {
-            type: ETransfrom.EnterHandle,
+            type: eventName,
             cursor: e.cursor,
             eventPixel: e.eventPixel
           };
@@ -190,7 +191,7 @@ export default class Transfrom {
             this.removeHelpTooltip();
           }
           callbackParam = {
-            type: ETransfrom.LeaveHandle,
+            type: eventName,
             cursor: e.cursor,
             eventPixel: e.eventPixel
           };
@@ -204,7 +205,7 @@ export default class Transfrom {
         this.handleTranslateStart(e);
         // 外部参数
         callbackParam = {
-          type: ETransfrom.TranslateStart,
+          type: eventName,
           eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
           eventPixel: e.pixel,
           featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
@@ -218,14 +219,32 @@ export default class Transfrom {
         // 更新提示标牌
         this.updateHelpTooltip('平移中...');
         // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        this.handleTranslating(e);
+        e = this.handleTranslating(e);
+        // 外部参数
+        callbackParam = {
+          type: eventName,
+          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+          eventPixel: e.pixel,
+          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+          featurePosition: e.feature && this.transformCoordinates(e.feature),
+          feature: e.feature
+        };
         break;
       }
       // 结束平移
       case ETransfrom.TranslateEnd: {
-        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        this.handleTranslateEnd(e);
         this.updateHelpTooltipByCursorType(e);
+        // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
+        e = this.handleTranslateEnd(e);
+        // 外部参数
+        callbackParam = {
+          type: eventName,
+          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+          eventPixel: e.pixel,
+          featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+          featurePosition: e.feature && this.transformCoordinates(e.feature),
+          feature: e.feature
+        };
         break;
       }
       default:
@@ -265,7 +284,16 @@ export default class Transfrom {
    */
   private handleTranslating(e: any) {
     const type = e.feature?.getGeometry()?.getType();
-    // if (this.checkLayer) {}
+    const param = e.feature?.get('param');
+    if (type && param && this.checkLayer) {
+      let layer;
+      if (type == 'Point' || type == 'MultiPoint') {
+        const center = e.feature.getGeometry()?.getCoordinates();
+        param.center = center;
+        e.feature.set('param', param);
+      }
+    }
+    return e;
   }
   /**
    * 处理平移结束的逻辑
@@ -277,12 +305,16 @@ export default class Transfrom {
       let layer;
       if (type == 'Point' || type == 'MultiPoint') {
         layer = this.checkLayer as PointLayer;
+        const center = e.feature.getGeometry()?.getCoordinates();
+        param.center = center;
+        e.feature.set('param', param);
         if (param.isFlash) {
           layer.setPosition(e.feature.getId(), e.feature.getGeometry()?.getCoordinates() as Coordinate);
           layer.continueFlash(e.feature.getId());
         }
       }
     }
+    return e;
   }
   /**
    * 根据要素安全获取所属图层
@@ -419,14 +451,17 @@ export default class Transfrom {
   /**
    * 注册外部事件监听（内部逻辑已统一处理）
    */
-  public on(eventName: ETransfrom, callback: (e: ITransformCallback) => void): this {
-    if (!Object.values(ETransfrom).includes(eventName)) {
-      throw new Error('事件类型错误');
-    }
-    if (!this.listenerMap.has(eventName)) {
-      this.listenerMap.set(eventName, new Set());
-    }
-    this.listenerMap.get(eventName)?.add(callback);
+  public on(eventName: ETransfrom | ETransfrom[], callback: (e: ITransformCallback) => void): this {
+    const events = Array.isArray(eventName) ? eventName : [eventName];
+    events.forEach((ev) => {
+      if (!Object.values(ETransfrom).includes(ev)) {
+        throw new Error('事件类型错误');
+      }
+      if (!this.listenerMap.has(ev)) {
+        this.listenerMap.set(ev, new Set());
+      }
+      this.listenerMap.get(ev)?.add(callback);
+    });
     return this;
   }
 
