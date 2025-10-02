@@ -163,6 +163,9 @@ export default class Base {
       } else if (feature.get('layerType') === 'Circle') {
         // 如果是CircleLayer，则根据{@link ICircleParam}同步param参数
         this.updateCircleParam(feature);
+      } else if (feature.get('layerType') === 'Polygon') {
+        // 如果是PolygonLayer，则根据{@link IPolygonParam}同步param参数
+        this.updatePolygonParam(feature);
       }
     });
     this.featureListenerMap.set(feature.getId() as string, featureChangeListener);
@@ -491,6 +494,103 @@ export default class Base {
       }
     }
     // 样式同步（静态样式）
+    const styleLike = feature.getStyle();
+    let style: Style | undefined;
+    if (styleLike instanceof Style) style = styleLike;
+    else if (Array.isArray(styleLike) && styleLike.length && styleLike[0] instanceof Style) style = styleLike[0];
+    if (style) {
+      const stroke = style.getStroke && style.getStroke();
+      if (stroke && typeof stroke.getColor === 'function') {
+        param.stroke = Object.assign({}, param.stroke, {
+          color: stroke.getColor?.() || param.stroke?.color,
+          width: stroke.getWidth?.() || param.stroke?.width,
+          lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+          lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+        });
+      }
+      const fill = style.getFill && style.getFill();
+      if (fill && typeof fill.getColor === 'function') {
+        const fillColor = fill.getColor();
+        if (fillColor) param.fill = { color: fillColor as string };
+      }
+      const text = style.getText && style.getText();
+      if (text) {
+        const plainText = (() => {
+          const t = text.getText?.();
+          if (Array.isArray(t)) return t.join('');
+          return t || '';
+        })();
+        param.label = {
+          text: plainText || param.label?.text || '',
+          font: text.getFont?.() || param.label?.font,
+          offsetX: text.getOffsetX?.() || param.label?.offsetX,
+          offsetY: text.getOffsetY?.() || param.label?.offsetY,
+          scale:
+            (typeof text.getScale === 'function'
+              ? Array.isArray(text.getScale())
+                ? (text.getScale() as number[])[0]
+                : (text.getScale() as number)
+              : undefined) || param.label?.scale,
+          textAlign: text.getTextAlign?.() || param.label?.textAlign,
+          textBaseline: text.getTextBaseline?.() || param.label?.textBaseline,
+          rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
+          fill: (() => {
+            const f = text.getFill && text.getFill();
+            if (f && typeof f.getColor === 'function') {
+              const c = f.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.fill;
+          })(),
+          stroke: (() => {
+            const s = text.getStroke && text.getStroke();
+            if (s && typeof s.getColor === 'function') {
+              const c = s.getColor();
+              const w = typeof s.getWidth === 'function' ? s.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.stroke?.width };
+            }
+            return param.label?.stroke;
+          })(),
+          backgroundFill: (() => {
+            const bf = text.getBackgroundFill && text.getBackgroundFill();
+            if (bf && typeof bf.getColor === 'function') {
+              const c = bf.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.backgroundFill;
+          })(),
+          backgroundStroke: (() => {
+            const bs = text.getBackgroundStroke && text.getBackgroundStroke();
+            if (bs && typeof bs.getColor === 'function') {
+              const c = bs.getColor();
+              const w = typeof bs.getWidth === 'function' ? bs.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.backgroundStroke?.width };
+            }
+            return param.label?.backgroundStroke;
+          })(),
+          padding: text.getPadding?.() || param.label?.padding
+        };
+      }
+    }
+    feature.set('param', param);
+  }
+  /**
+   * 更新Polygon参数(仅同步可推导的几何/样式字段)
+   * @param feature Polygon要素
+   */
+  protected updatePolygonParam(feature: Feature<Geometry>): void {
+    const param = feature.get('param') as any; // IPolygonParam<unknown> | undefined
+    if (!param) return;
+    const geometry = feature.getGeometry();
+    if (geometry && geometry.getType && geometry.getType() === 'Polygon') {
+      try {
+        const polygon = geometry as import('ol/geom').Polygon;
+        param.positions = polygon.getCoordinates();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    // 样式同步
     const styleLike = feature.getStyle();
     let style: Style | undefined;
     if (styleLike instanceof Style) style = styleLike;

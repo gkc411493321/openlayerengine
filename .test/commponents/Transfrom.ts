@@ -1,4 +1,4 @@
-import { BillboardLayer, CircleLayer, ETransfrom, PointLayer, PolylineLayer, Transfrom } from '../../src';
+import { BillboardLayer, CircleLayer, ETransfrom, PointLayer, PolygonLayer, PolylineLayer, Transfrom } from '../../src';
 
 export const testTransfrom = () => {
   const transfrom = new Transfrom({});
@@ -7,9 +7,9 @@ export const testTransfrom = () => {
     console.log(e.type, e);
     if (e.type === ETransfrom.TranslateEnd) {
       const param = e.feature?.get('param');
-      (transfrom.checkLayer as CircleLayer).remove(param.id);
+      (transfrom.checkLayer as PolygonLayer).remove(param.id);
       setTimeout(() => {
-        (transfrom.checkLayer as CircleLayer).add(param);
+        (transfrom.checkLayer as PolygonLayer).add(param);
       }, 1000);
     }
   });
