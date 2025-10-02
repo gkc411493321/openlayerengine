@@ -233,8 +233,7 @@ export default class Flightline<T = unknown> {
       ctx.setImageStyle(new Icon({
         img: arrowImage,
         anchor: [0.75, 0.5],
-        imgSize: [30, 30],
-        scale: 0.7,
+        imgSize: [16,16],
         rotateWithView: true,
         rotation: -rotation,
         color: this.params.arrowColor

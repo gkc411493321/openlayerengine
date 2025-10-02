@@ -15,7 +15,6 @@ export const testPolylineLayer = () => {
     },
     width: 5
   })
-  console.log(e)
   layer.add({
     id: "polyline_3",
     positions: [fromLonLat([80, 30]), fromLonLat([80, 50])],

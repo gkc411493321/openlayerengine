@@ -107,7 +107,7 @@ export default class Utils<T> {
       image: new Icon({
         src: '/image/arrow.svg',
         anchor: [0.75, 0.5],
-        scale: 0.7,
+        imgSize: [16, 16],
         rotateWithView: true,
         rotation: -rotation,
         color: color || "#ffcc33"
