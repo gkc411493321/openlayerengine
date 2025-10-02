@@ -65,6 +65,8 @@ export default class PointLayer<T = unknown> extends Base {
     feature.set('data', param.data);
     feature.set('module', param.module);
     feature.set('layerId', this.layer.get('id'));
+    feature.set('layerType', 'Point');
+    feature.set('param', param);
     return feature;
   }
   /**
@@ -235,5 +237,19 @@ export default class PointLayer<T = unknown> extends Base {
       new Utils().flash(features[0], param, this.layer);
     }
     return features;
+  }
+  /**
+   * 移除方法
+   */
+  remove(): void;
+  remove(id: string): void;
+  remove(id?: string): void {
+    if (id) {
+      this.stopFlash(id);
+      super.remove(id);
+    } else {
+      this.stopFlash();
+      super.remove();
+    }
   }
 }

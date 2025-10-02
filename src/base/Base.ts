@@ -157,6 +157,9 @@ export default class Base {
       } else if (feature.get('layerType') === 'Polyline') {
         // 如果是PolylineLayer，则根据{@link IPolylineParam}同步param参数
         this.updatePolylineParam(feature);
+      } else if (feature.get('layerType') === 'Point') {
+        // 如果是PointLayer，则根据{@link IPointParam}同步param参数
+        this.updatePointParam(feature);
       }
     });
     this.featureListenerMap.set(feature.getId() as string, featureChangeListener);
@@ -258,7 +261,7 @@ export default class Base {
    */
   protected updatePolylineParam(feature: Feature<Geometry>): void {
     // 兼容普通 Polyline 与 飞行线 Polyline（IPolylineFlyParam 不继承 IPolylineParam，字段名称也不同: position vs positions）
-    let param = feature.get('param') as (IPolylineParam<unknown> | IPolylineFlyParam<unknown>) | undefined;
+  const param = feature.get('param') as (IPolylineParam<unknown> | IPolylineFlyParam<unknown>) | undefined;
     if (!param) return;
     const isNormalPolyline = (p: any): p is IPolylineParam<unknown> => 'positions' in p;
     const isFlyPolyline = (p: any): p is IPolylineFlyParam<unknown> => 'position' in p && !('positions' in p);
@@ -297,6 +300,115 @@ export default class Base {
         const fillColor = fill.getColor();
         if (fillColor) param.fill = { color: fillColor as string };
       }
+      const text = style.getText && style.getText();
+      if (text) {
+        const plainText = (() => {
+          const t = text.getText?.();
+          if (Array.isArray(t)) return t.join('');
+          return t || '';
+        })();
+        param.label = {
+          text: plainText || param.label?.text || '',
+          font: text.getFont?.() || param.label?.font,
+          offsetX: text.getOffsetX?.() || param.label?.offsetX,
+          offsetY: text.getOffsetY?.() || param.label?.offsetY,
+          scale:
+            (typeof text.getScale === 'function'
+              ? Array.isArray(text.getScale())
+                ? (text.getScale() as number[])[0]
+                : (text.getScale() as number)
+              : undefined) || param.label?.scale,
+          textAlign: text.getTextAlign?.() || param.label?.textAlign,
+          textBaseline: text.getTextBaseline?.() || param.label?.textBaseline,
+          rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
+          fill: (() => {
+            const f = text.getFill && text.getFill();
+            if (f && typeof f.getColor === 'function') {
+              const c = f.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.fill;
+          })(),
+          stroke: (() => {
+            const s = text.getStroke && text.getStroke();
+            if (s && typeof s.getColor === 'function') {
+              const c = s.getColor();
+              const w = typeof s.getWidth === 'function' ? s.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.stroke?.width };
+            }
+            return param.label?.stroke;
+          })(),
+          backgroundFill: (() => {
+            const bf = text.getBackgroundFill && text.getBackgroundFill();
+            if (bf && typeof bf.getColor === 'function') {
+              const c = bf.getColor();
+              if (c) return { color: c as string };
+            }
+            return param.label?.backgroundFill;
+          })(),
+          backgroundStroke: (() => {
+            const bs = text.getBackgroundStroke && text.getBackgroundStroke();
+            if (bs && typeof bs.getColor === 'function') {
+              const c = bs.getColor();
+              const w = typeof bs.getWidth === 'function' ? bs.getWidth() : undefined;
+              return { color: c as string, width: w || param.label?.backgroundStroke?.width };
+            }
+            return param.label?.backgroundStroke;
+          })(),
+          padding: text.getPadding?.() || param.label?.padding
+        };
+      }
+    }
+    feature.set('param', param);
+  }
+  /**
+   * 更新Point参数(仅同步可推导的几何/样式字段)
+   * @param feature Point要素
+   */
+  protected updatePointParam(feature: Feature<Geometry>): void {
+    const param = feature.get('param') as any; // IPointParam<unknown> | undefined
+    if (!param) return;
+    // 同步几何中心
+    const geometry = feature.getGeometry();
+    if (geometry && geometry.getType && geometry.getType() === 'Point') {
+      try {
+        const point = geometry as import('ol/geom').Point;
+        param.center = point.getCoordinates();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    // 样式同步（仅静态 style）
+    const styleLike = feature.getStyle();
+    let style: Style | undefined;
+    if (styleLike instanceof Style) style = styleLike;
+    else if (Array.isArray(styleLike) && styleLike.length && styleLike[0] instanceof Style) style = styleLike[0];
+    if (style) {
+      const image: any = style.getImage && style.getImage();
+      if (image) {
+        // 半径 -> size
+        if (typeof image.getRadius === 'function') {
+          const r = image.getRadius();
+            if (r != null) param.size = r;
+        }
+        // stroke
+        const stroke = image.getStroke && image.getStroke();
+        if (stroke && typeof stroke.getColor === 'function') {
+          param.stroke = Object.assign({}, param.stroke, {
+            color: stroke.getColor?.() || param.stroke?.color,
+            width: stroke.getWidth?.() || param.stroke?.width,
+            lineDash: stroke.getLineDash?.() || param.stroke?.lineDash,
+            lineDashOffset: stroke.getLineDashOffset?.() || param.stroke?.lineDashOffset
+          });
+        }
+        // fill
+        const fill = image.getFill && image.getFill();
+        if (fill && typeof fill.getColor === 'function') {
+          const fillColor = fill.getColor();
+          if (fillColor) param.fill = { color: fillColor as string };
+        }
+      }
+      // label 同步
       const text = style.getText && style.getText();
       if (text) {
         const plainText = (() => {
