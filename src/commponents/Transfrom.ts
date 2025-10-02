@@ -219,7 +219,7 @@ export default class Transfrom {
         // 更新提示标牌
         this.updateHelpTooltip('平移中...');
         // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        e = this.handleTranslating(e);
+        this.handleTranslating(e);
         // 外部参数
         callbackParam = {
           type: eventName,
@@ -235,7 +235,7 @@ export default class Transfrom {
       case ETransfrom.TranslateEnd: {
         this.updateHelpTooltipByCursorType(e);
         // 根据feature类型更新要素参数，并针对特殊要素（动态点、箭头线等）做特殊处理
-        e = this.handleTranslateEnd(e);
+        this.handleTranslateEnd(e);
         // 外部参数
         callbackParam = {
           type: eventName,
@@ -283,17 +283,8 @@ export default class Transfrom {
    * 处理平移中的逻辑
    */
   private handleTranslating(e: any) {
-    const type = e.feature?.getGeometry()?.getType();
-    const param = e.feature?.get('param');
-    if (type && param && this.checkLayer) {
-      let layer;
-      if (type == 'Point' || type == 'MultiPoint') {
-        const center = e.feature.getGeometry()?.getCoordinates();
-        param.center = center;
-        e.feature.set('param', param);
-      }
-    }
-    return e;
+    // const type = e.feature?.getGeometry()?.getType();
+    // const param = e.feature?.get('param');
   }
   /**
    * 处理平移结束的逻辑
@@ -305,11 +296,7 @@ export default class Transfrom {
       let layer;
       if (type == 'Point' || type == 'MultiPoint') {
         layer = this.checkLayer as PointLayer;
-        const center = e.feature.getGeometry()?.getCoordinates();
-        param.center = center;
-        e.feature.set('param', param);
         if (param.isFlash) {
-          layer.setPosition(e.feature.getId(), e.feature.getGeometry()?.getCoordinates() as Coordinate);
           layer.continueFlash(e.feature.getId());
         }
       }
