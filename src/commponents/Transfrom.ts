@@ -11,6 +11,7 @@ import { LineString, Point, Polygon } from 'ol/geom';
 import { Base, OverlayLayer, PointLayer, PolygonLayer } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
+import { Icon, Style } from 'ol/style';
 
 export default class Transfrom {
   /**
@@ -395,15 +396,24 @@ export default class Transfrom {
       this.updateHelpTooltip('鼠标左键按下旋转', e.eventPixel);
     } else if (e.cursor == ECursor.NsResize || e.cursor == ECursor.EwResize) {
       // 拉伸
-      this.updateHelpTooltip('鼠标左键按下拉伸，Ctrl键以基准点拉伸', e.eventPixel);
+      const type = this.checkSelect?.getGeometry()?.getType();
+      let str = '鼠标左键按下拉伸，Ctrl键以基准点拉伸';
+      if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
+        str = '鼠标左键按下拉伸';
+      }
+      this.updateHelpTooltip(str, e.eventPixel);
     } else if (e.cursor == ECursor.NeswResize || e.cursor == ECursor.NwseResize) {
       // 缩放
       const type = this.checkSelect?.getGeometry()?.getType();
+      let str = '鼠标左键按下缩放，Shift键保持比例缩放';
       if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') {
-        this.updateHelpTooltip('鼠标左键按下缩放', e.eventPixel);
-      } else {
-        this.updateHelpTooltip('鼠标左键按下缩放，Shift键保持比例缩放', e.eventPixel);
+        const style = <Style>this.checkSelect?.getStyle();
+        const image = style.getImage?.();
+        if (!(image instanceof Icon)) {
+          str = '鼠标左键按下缩放';
+        }
       }
+      this.updateHelpTooltip(str, e.eventPixel);
     }
   }
   /**
