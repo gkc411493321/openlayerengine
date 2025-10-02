@@ -10,7 +10,6 @@ import { Coordinate } from 'ol/coordinate';
 import { useEarth } from '../useEarth';
 import { Feature } from 'ol';
 
-
 /**
  * 创建广告牌`Billboard`
  */
@@ -58,6 +57,8 @@ export default class BillboardLayer<T = unknown> extends Base {
     feature.set('data', param.data);
     feature.set('module', param.module);
     feature.set('layerId', this.layer.get('id'));
+    feature.set('layerType', 'Billboard');
+    feature.set('param', param);
     return feature;
   }
   /**

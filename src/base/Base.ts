@@ -1,11 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Earth from '../Earth';
-import { IFill, ILabel, IStroke } from '../interface';
+import { IFill, ILabel, IStroke, IBillboardParam } from '../interface';
 import { Feature } from 'ol';
 import { Geometry } from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Style, Stroke, Fill, Text } from 'ol/style';
+import Icon from 'ol/style/Icon';
 import { Utils } from '../common';
+import { EventsKey } from 'ol/events';
+import { unByKey } from 'ol/Observable';
+// import BaseEvent from 'ol/events/Event';
 /**
  * 基类，提供图层常见的获取，删除及更新方法
  */
@@ -26,6 +31,10 @@ export default class Base {
    * 缓存featur的集合
    */
   public hideFeatureMap: Map<string, Feature<Geometry>> = new Map();
+  /**
+   * 元素监听器
+   */
+  private featureListenerMap: Map<string, EventsKey> = new Map();
   /**
    * 图层构造类
    * @param earth 地图实例
@@ -132,8 +141,113 @@ export default class Base {
    */
   protected save(feature: Feature<Geometry>): Feature<Geometry> {
     feature.set('registryKey', this.registryKey);
+    this.addFeaturelistener(feature);
     this.layer.getSource()?.addFeature(feature);
     return feature;
+  }
+  /**
+   * 添加元素事件监听
+   * @param feature 矢量元素实例
+   */
+  protected addFeaturelistener(feature: Feature<Geometry>): void {
+    const featureChangeListener = feature.on('change', () => {
+      // 如果是BillboardLayer，则根据{@link IBillboardParam}同步param参数
+      if (feature.get('layerType') === 'Billboard') {
+        this.updateBillboardParam(feature);
+      }
+    });
+    this.featureListenerMap.set(feature.getId() as string, featureChangeListener);
+  }
+  /**
+   * 更新Billboard图标参数
+   */
+  protected updateBillboardParam(feature: Feature<Geometry>): void {
+    const param = feature.get('param') as IBillboardParam<unknown> | undefined;
+    // 同步最新的几何与样式信息到 param
+    if (param) {
+      // 更新中心点
+      const geometry = feature.getGeometry();
+      // 仅在 Point 几何时同步中心
+      if (geometry && geometry.getType && geometry.getType() === 'Point') {
+        try {
+          // 使用 (geometry as any) 以避免类型不兼容，但不直接访问未声明方法
+          const pointGeom = geometry as import('ol/geom').Point;
+          param.center = pointGeom.getCoordinates();
+        } catch (_) {
+          /* ignore */
+        }
+      }
+      // 更新样式与图标属性
+      const style = feature.getStyle() as Style | undefined;
+      const icon = style?.getImage() as Icon | undefined;
+      if (icon) {
+        // 仅当有值时才覆盖，避免把 undefined 写回
+        const src = icon.getSrc();
+        if (src) param.src = src;
+        const size = icon.getSize();
+        if (size) param.size = size;
+        const color = icon.getColor();
+        if (typeof color === 'string') param.color = color;
+        const displacement = icon.getDisplacement();
+        if (Array.isArray(displacement)) param.displacement = displacement as number[];
+        const scaleVal = icon.getScale();
+        if (scaleVal) {
+          param.scale = scaleVal;
+        }
+        const rotation = icon.getRotation();
+        if (rotation != null) param.rotation = Utils.rad2deg(rotation);
+        const anchor = (icon as any).anchor_; // 原始 anchor 数组;
+        if (anchor && Array.isArray(anchor)) param.anchor = anchor as number[];
+      }
+      // 同步文本标签
+      const text = style?.getText();
+      if (text) {
+        const plainText = (() => {
+          const t = text.getText();
+          if (Array.isArray(t)) return t.join('');
+          return t || '';
+        })();
+        param.label = {
+          text: plainText || param.label?.text || '',
+          font: text.getFont() || param.label?.font,
+          offsetX: text.getOffsetX() || param.label?.offsetX,
+          offsetY: text.getOffsetY() || param.label?.offsetY,
+          scale:
+            (typeof text.getScale === 'function'
+              ? Array.isArray(text.getScale())
+                ? (text.getScale() as number[])[0]
+                : (text.getScale() as number)
+              : undefined) || param.label?.scale,
+          textAlign: text.getTextAlign() || param.label?.textAlign,
+          textBaseline: text.getTextBaseline() || param.label?.textBaseline,
+          rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
+          fill: text.getFill() && typeof text.getFill().getColor === 'function' ? { color: text.getFill().getColor() as string } : param.label?.fill,
+          stroke:
+            text.getStroke() && typeof text.getStroke().getColor === 'function'
+              ? {
+                  color: text.getStroke().getColor() as string,
+                  width: (typeof text.getStroke().getWidth === 'function' ? text.getStroke().getWidth() : undefined) || param.label?.stroke?.width
+                }
+              : param.label?.stroke,
+          backgroundFill:
+            text.getBackgroundFill() && typeof text.getBackgroundFill().getColor === 'function'
+              ? { color: text.getBackgroundFill().getColor() as string }
+              : param.label?.backgroundFill,
+          backgroundStroke:
+            text.getBackgroundStroke() && typeof text.getBackgroundStroke().getColor === 'function'
+              ? {
+                  color: text.getBackgroundStroke().getColor() as string,
+                  width:
+                    (typeof text.getBackgroundStroke().getWidth === 'function' ? text.getBackgroundStroke().getWidth() : undefined) ||
+                    param.label?.backgroundStroke?.width
+                }
+              : param.label?.backgroundStroke,
+          padding: text.getPadding() || param.label?.padding
+        };
+      }
+      // 回写最新 param
+      feature.set('param', param);
+    }
   }
   /**
    * 删除图层所有矢量元素
@@ -155,8 +269,17 @@ export default class Base {
   remove(id?: string): void {
     if (id) {
       this.layer.getSource()?.removeFeature(this.get(id)[0]);
+      const listener = this.featureListenerMap.get(id);
+      if (listener) {
+        unByKey(listener);
+        this.featureListenerMap.delete(id);
+      }
     } else {
       this.layer.getSource()?.clear();
+      this.featureListenerMap.forEach((listener) => {
+        unByKey(listener);
+      });
+      this.featureListenerMap.clear();
     }
   }
   /**

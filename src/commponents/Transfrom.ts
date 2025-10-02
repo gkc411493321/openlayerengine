@@ -38,7 +38,7 @@ export default class Transfrom {
   /**
    * 选中的图层
    */
-  private checkLayer: Base | null = null;
+  public checkLayer: Base | null = null;
   /**
    * 校验鼠标进入状态
    */

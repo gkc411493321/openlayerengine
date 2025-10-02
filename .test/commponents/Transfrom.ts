@@ -1,4 +1,5 @@
-import { ETransfrom, Transfrom } from '../../src';
+import { fromLonLat, transform } from 'ol/proj';
+import { BillboardLayer, ETransfrom, Transfrom } from '../../src';
 
 export const testTransfrom = () => {
   const transfrom = new Transfrom({});

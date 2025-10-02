@@ -174,7 +174,7 @@ export interface IBillboardParam<T> extends IAddBaseParam<T> {
   /**
    * 图标缩放，默认为1
    */
-  scale?: number;
+  scale?: number | Size;
   /**
    * 旋转，默认0，单位度，范围0-360，正北为0，顺时针旋转
    */
