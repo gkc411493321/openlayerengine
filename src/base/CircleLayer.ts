@@ -45,6 +45,8 @@ export default class CircleLayer<T = unknown> extends Base {
     feature.set("data", param.data);
     feature.set("module", param.module);
     feature.set("layerId", this.layer.get("id"));
+    feature.set('layerType', 'Circle');
+    feature.set('param', param);
     return feature;
   }
   /**
