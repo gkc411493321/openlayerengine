@@ -1,8 +1,13 @@
 import { useEarth } from '../../../useEarth';
 import { OverlayLayer } from '../../../base';
-// 以 raw 文本方式导入 svg（Vite 支持 ?raw）
+import saveSvg from '../../../assets/image/toolbar-save.svg?raw';
 import undoSvg from '../../../assets/image/toolbar-undo.svg?raw';
 import redoSvg from '../../../assets/image/toolbar-redo.svg?raw';
+import copySvg from '../../../assets/image/toolbar-copy.svg?raw';
+import editSvg from '../../../assets/image/toolbar-edit.svg?raw';
+import removeSvg from '../../../assets/image/toolbar-remove.svg?raw';
+
+
 
 interface IToolbarOptions {
   point: number[];
@@ -70,8 +75,12 @@ class Toolbar {
   private initItems() {
     // 基础按钮集合
     const base: IToolbarItem[] = [
+      { key: 'exit', title: '确认', iconClass: 'ol-toolbar-exit', icon: saveSvg, visible: true, disabled: false },
       { key: 'undo', title: '撤销 Ctrl+Z', iconClass: 'ol-toolbar-undo', icon: undoSvg, visible: true, disabled: true },
-      { key: 'redo', title: '重做 Ctrl+Y', iconClass: 'ol-toolbar-redo', icon: redoSvg, visible: true, disabled: true }
+      { key: 'redo', title: '重做 Ctrl+Y', iconClass: 'ol-toolbar-redo', icon: redoSvg, visible: true, disabled: true },
+      { key: 'copy', title: '复制 Ctrl+C', iconClass: 'ol-toolbar-edit', icon: copySvg, visible: true, disabled: false },
+      { key: 'edit', title: '编辑', iconClass: 'ol-toolbar-edit', icon: editSvg, visible: true, disabled: false },
+      { key: 'remove', title: '删除', iconClass: 'ol-toolbar-remove', icon: removeSvg, visible: true, disabled: false }
     ];
     this.items = base;
   }
@@ -113,9 +122,8 @@ class Toolbar {
       if (!type) return;
       const item = this.items.find((i) => i.key === type);
       if (!item || item.disabled) return;
-      this.setActive(type);
       // 可在此派发一个通用点击事件
-      this.dispatchCustomEvent('toolbar:itemclick', { key: type, item });
+      this.dispatchCustomEvent('toolbar:itemclick', { key: type, item, pixel: [e.screenX, e.screenY] });
     });
 
     // mouseenter（使用 mouseover + relatedTarget 组合实现委托）

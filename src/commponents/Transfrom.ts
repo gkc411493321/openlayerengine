@@ -181,8 +181,16 @@ export default class Transfrom {
       featurePosition: e.feature && this.transformCoordinates(e.feature),
       feature: e.feature
     });
-
     if (eventName === ETransfrom.Select) {
+      if (this.checkSelect) {
+        // 已选中状态再次触发 select 则触发一次selectend
+        callbackParam = {
+          type: ETransfrom.SelectEnd,
+          eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+          eventPixel: e.pixel
+        };
+        this.dispatchTransformEvent(eventName, callbackParam);
+      }
       this.checkSelect = e.feature;
       this.checkLayer = this.getLayerByFeature(e.feature);
       this.removeHelpTooltip();
@@ -326,6 +334,9 @@ export default class Transfrom {
    * 创建工具栏
    */
   private createToolbar(e: any) {
+    if (this.toolbar) {
+      this.toolbar.destroy();
+    }
     const params = {
       point: e.bboxExtent[0][2],
       type: e.feature?.getGeometry()?.getType()
@@ -339,18 +350,20 @@ export default class Transfrom {
       this.updateHelpTooltip('选择控制点进行变换操作');
     });
     toolbarRoot?.addEventListener('toolbar:itemclick', (e: any) => {
-      this.handleToolbarClick(e.detail.key);
+      this.handleToolbarClick(e.detail.key, e.detail.pixel);
     });
   }
   /**
    * 处理工具栏按钮点击事件
    */
-  private handleToolbarClick(key: string) {
+  private handleToolbarClick(key: string, pixel: number[]) {
     this.updateHelpTooltip('选择控制点进行变换操作');
     if (key === 'undo') {
       this.undo();
     } else if (key === 'redo') {
       this.redo();
+    } else if (key === 'exit') {
+      this.transforms.exitEdit(pixel);
     }
   }
   /**

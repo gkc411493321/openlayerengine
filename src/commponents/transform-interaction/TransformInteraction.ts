@@ -897,6 +897,18 @@ class TransformInteraction extends PointerInteraction {
   }
 
   /**
+   * 主动退出编辑：清空当前选中并派发自定义事件 'exitedit'。
+   * 使用场景：例如右键地图退出、外部按钮取消编辑。
+   */
+  public exitEdit(pixel: number[]): void {
+    if (!this.selection_.getLength()) return;
+    this.selection_.clear();
+    this.drawSketch_();
+    // 兼容旧逻辑：同时派发 selectend（无 feature 表示结束）
+    this.dispatchEvent({ type: 'selectend', pixel } as TransformEvent);
+  }
+
+  /**
    * 监听被选要素的几何变化；当外部修改时自动重绘手柄。
    */
   private watchFeatures_(): void {
@@ -915,6 +927,13 @@ class TransformInteraction extends PointerInteraction {
    * Pointer 按下：命中手柄决定模式，缓存初始几何、外包框、中心、角度等。
    */
   private handleDownEvent_(evt: MapBrowserEvent<any>): boolean | void {
+    // 右键（button === 2）退出编辑：不区分是否点在要素或手柄上
+    const oe: any = (evt as any).originalEvent;
+    if (oe && oe.button === 2) {
+      if (this.selection_.getLength()) this.exitEdit(evt.pixel);
+      oe.preventDefault?.();
+      return false; // 阻止继续走后续左键选择逻辑
+    }
     if (!this._handleEvent(evt, this.selection_)) return;
     const sel = this.getFeatureAtPixel_(evt.pixel);
     const feature = sel.feature;
@@ -1017,14 +1036,20 @@ class TransformInteraction extends PointerInteraction {
         const index = this.selection_.getArray().indexOf(feature);
         if (index < 0) this.selection_.push(feature);
         else this.selection_.removeAt(index);
-      } else this.selection_.clear();
-      this.ispt_ = this.selection_.getLength() === 1 && isPointGeometry((this.selection_.item(0) as Feature<any>).getGeometry());
-      this.iscircle_ = this.selection_.getLength() === 1 && (this.selection_.item(0) as Feature<any>).getGeometry().getType() === 'Circle';
-      this.drawSketch_();
-      this.watchFeatures_();
-      const type = feature ? 'select' : 'selectend';
-      const bboxExtent = this.bbox_?.getGeometry().getCoordinates();
-      this.dispatchEvent({ type, feature, features: this.selection_, pixel: evt.pixel, coordinate: evt.coordinate, bboxExtent: bboxExtent } as TransformEvent);
+        this.ispt_ = this.selection_.getLength() === 1 && isPointGeometry((this.selection_.item(0) as Feature<any>).getGeometry());
+        this.iscircle_ = this.selection_.getLength() === 1 && (this.selection_.item(0) as Feature<any>).getGeometry().getType() === 'Circle';
+        this.drawSketch_();
+        this.watchFeatures_();
+        const bboxExtent = this.bbox_?.getGeometry().getCoordinates();
+        this.dispatchEvent({
+          type: 'select',
+          feature,
+          features: this.selection_,
+          pixel: evt.pixel,
+          coordinate: evt.coordinate,
+          bboxExtent: bboxExtent
+        } as TransformEvent);
+      }
     }
   }
 

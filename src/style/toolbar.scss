@@ -2,23 +2,38 @@
   .ol-toolbar-item {
     width: 25px;
     height: 25px;
-    background: white;
+    background: #ebebeb;
     border: 1px solid #000;
     border-radius: 5px;
     margin-bottom: 5px;
     svg {
+      scale: 0.8;
       width: 25px;
       height: 25px;
       display: flex;
       justify-content: center;
       align-items: center;
-      path{
-        fill: #000;
+      path {
+        fill: #3b3b3b;
       }
     }
     &:hover {
       cursor: pointer;
-      background: #a8e3ff;
+      background: #f9a629;
+    }
+  }
+  .ol-toolbar-exit {
+    svg {
+      path {
+        fill: green;
+      }
+    }
+  }
+  .ol-toolbar-remove {
+    svg {
+      path {
+        fill: #fd3535;
+      }
     }
   }
   .is-disabled {
