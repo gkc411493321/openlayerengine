@@ -924,9 +924,25 @@ class TransformInteraction extends PointerInteraction {
   }
 
   /**
+   * 校验地图实例是否存在动态绘制
+   */
+  private checkDynmicDraw_(): boolean {
+    let flag = false;
+    useEarth()
+      .map.getInteractions()
+      .forEach((i) => {
+        if (i.get('dynamicDraw')) {
+          flag = true;
+        }
+      });
+    return flag;
+  }
+
+  /**
    * Pointer 按下：命中手柄决定模式，缓存初始几何、外包框、中心、角度等。
    */
   private handleDownEvent_(evt: MapBrowserEvent<any>): boolean | void {
+    if (this.checkDynmicDraw_()) return;
     // 右键（button === 2）退出编辑：不区分是否点在要素或手柄上
     const oe: any = (evt as any).originalEvent;
     if (oe && oe.button === 2) {
