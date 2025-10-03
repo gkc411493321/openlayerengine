@@ -5,7 +5,7 @@ import { useEarth } from '../useEarth';
 import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
-import { toLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 import { LineString, Point, Polygon, Circle as CircleGeom, MultiPoint, MultiLineString, MultiPolygon } from 'ol/geom';
 import { Base, BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from '../base';
@@ -86,6 +86,10 @@ export default class Transfrom {
    * 变换工具条
    */
   private toolbar: Toolbar | null | undefined;
+  /**
+   * 键盘事件处理函数（用于销毁时解绑）
+   */
+  private keyDownFun: (() => void) | undefined;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -93,6 +97,8 @@ export default class Transfrom {
     this.transforms = this.createTransform();
     // 初始化统一事件管线（内部数据处理 + 外部监听分发）
     this.setupEventPipeline();
+    // 初始化键盘事件
+    this.setupKeyDownEvent();
   }
   /**
    * 创建变换实例
@@ -162,6 +168,35 @@ export default class Transfrom {
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
     });
+  }
+  /**
+   * 初始化键盘事件
+   */
+  private setupKeyDownEvent() {
+    useEarth().useGlobalEvent().enableGlobalKeyDownEvent();
+    this.keyDownFun = useEarth()
+      .useGlobalEvent()
+      .addKeyDownEventByGlobal((event) => {
+        if (event.key === 'Escape' && this.checkSelect) {
+          // 退出编辑
+          let extent: any = this.checkSelect.getGeometry()?.getExtent();
+          extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
+          this.transforms.exitEdit(extent);
+        }
+        if (event.key === 'z' && event.ctrlKey && this.checkSelect) {
+          // 回退
+          this.undo();
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+          console.log('undo');
+        }
+        if (event.key === 'y' && event.ctrlKey && this.checkSelect) {
+          // 重做
+          this.redo();
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+        }
+      });
   }
 
   /**
@@ -890,23 +925,19 @@ export default class Transfrom {
    */
   public destroy(): void {
     if (this.disposed) return;
-    try {
-      this.remove();
-    } catch (_) {
-      /* ignore */
-    }
-    try {
-      this.removeHelpTooltip();
-    } catch (_) {
-      /* ignore */
-    }
-    // 清空监听器
+    useEarth().setMouseStyleToDefault();
+    this.remove();
+    this.removeHelpTooltip();
     this.listenerMap.forEach((set) => set.clear());
     this.listenerMap.clear();
-    this.historyStack = [];
-    this.redoStack = [];
+    this.keyDownFun && this.keyDownFun();
+    this.toolbar && this.toolbar.destroy();
+    this.keyDownFun = undefined;
+    this.toolbar = null;
     this.checkSelect = null;
     this.checkLayer = null;
     this.disposed = true;
+    this.historyStack = [];
+    this.redoStack = [];
   }
 }
