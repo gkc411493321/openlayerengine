@@ -84,7 +84,7 @@ export default class Transfrom {
   /**
    * 变换工具条
    */
-  private toolbar: Toolbar | undefined;
+  private toolbar: Toolbar | null | undefined;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -201,7 +201,11 @@ export default class Transfrom {
           eventPixel: e.pixel
         };
       }
+      if (this.toolbar) {
+        this.toolbar.destroy();
+      }
       this.checkSelect = null;
+      this.toolbar = null;
       this.checkLayer = null;
       this.removeHelpTooltip();
       this.clearHistory(); // 清空历史
@@ -240,15 +244,23 @@ export default class Transfrom {
         this.updateHelpTooltip('缩放中...');
       }
       this.handleEventing(eventName, e);
+      // 更新工具栏位置
+      if (this.toolbar) {
+        this.toolbar.updateOptions({ point: e.bboxExtent[0][2] });
+      }
       callbackParam = buildFeatureParam();
     } else if (endEvents.has(eventName)) {
       // 结束事件
       this.updateHelpTooltipByCursorType(e);
       this.handleEventEnd(eventName, e);
       callbackParam = buildFeatureParam();
-      console.log(e);
       // 每次结束一次原子操作时，记录一次快照（避免在进行中大量记录）
       if (e.feature) this.recordSnapshot(e.feature, eventName);
+      // 更新工具栏undo/redo状态
+      if (this.toolbar) {
+        this.toolbar.updateItem('undo', { disabled: this.historyStack.length <= 1 });
+        this.toolbar.updateItem('redo', { disabled: !this.redoStack.length });
+      }
     }
 
     // 分发事件
@@ -319,6 +331,27 @@ export default class Transfrom {
       type: e.feature?.getGeometry()?.getType()
     };
     this.toolbar = new Toolbar(params);
+    const toolbarRoot = document.querySelector('.ol-toolbar');
+    toolbarRoot?.addEventListener('toolbar:itementer', (e: any) => {
+      this.updateHelpTooltip(e.detail.item.title);
+    });
+    toolbarRoot?.addEventListener('toolbar:itemleave', (e: any) => {
+      this.updateHelpTooltip('选择控制点进行变换操作');
+    });
+    toolbarRoot?.addEventListener('toolbar:itemclick', (e: any) => {
+      this.handleToolbarClick(e.detail.key);
+    });
+  }
+  /**
+   * 处理工具栏按钮点击事件
+   */
+  private handleToolbarClick(key: string) {
+    this.updateHelpTooltip('选择控制点进行变换操作');
+    if (key === 'undo') {
+      this.undo();
+    } else if (key === 'redo') {
+      this.redo();
+    }
   }
   /**
    * 记录当前要素几何快照
@@ -429,6 +462,7 @@ export default class Transfrom {
       currentClone.setId(snapshot.id);
       this.historyStack.push({ id: snapshot.id, feature: currentClone });
     }
+
     return this.applySnapshot(snapshot);
   }
   /**
@@ -560,6 +594,16 @@ export default class Transfrom {
           }
         }
         layer?.set(param);
+      }
+      if (this.toolbar) {
+        // 更新工具栏undo/redo状态
+        this.toolbar.updateItem('undo', { disabled: this.historyStack.length <= 1 });
+        this.toolbar.updateItem('redo', { disabled: !this.redoStack.length });
+        // 更新工具栏位置
+        if (this.transforms && this.transforms.bbox_) {
+          const bboxExtent = this.transforms.bbox_?.getGeometry().getCoordinates();
+          this.toolbar.updateOptions({ point: bboxExtent[0][2] });
+        }
       }
       flag = true;
       return flag;

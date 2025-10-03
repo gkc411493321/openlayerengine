@@ -1,0 +1,31 @@
+.ol-toolbar {
+  .ol-toolbar-item {
+    width: 25px;
+    height: 25px;
+    background: white;
+    border: 1px solid #000;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    svg {
+      width: 25px;
+      height: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      path{
+        fill: #000;
+      }
+    }
+    &:hover {
+      cursor: pointer;
+      background: #a8e3ff;
+    }
+  }
+  .is-disabled {
+    cursor: not-allowed;
+    background: #ccc !important;
+    &:hover {
+      cursor: not-allowed;
+    }
+  }
+}

@@ -149,7 +149,7 @@ class TransformInteraction extends PointerInteraction {
   // 注意：相对路径以本文件为基准；构建后被复制/内联
   // 使用 import 声明让 TS 识别为 string (需在 global.d.ts 添加声明)
   importRotateIcon?: string;
-  
+
   private selection_: Collection<Feature<any>>;
   private handles_: Collection<Feature<any>>;
   private overlayLayer_: VectorLayer<VectorSource>;
@@ -160,7 +160,6 @@ class TransformInteraction extends PointerInteraction {
   private addFn_: (e: MapBrowserEvent<any>) => boolean;
   private isTouch = false;
   private style: Record<string, Style[]> = {};
-  private bbox_: Feature<any> | null = null;
   private ispt_ = false;
   private iscircle_ = false;
   private mode_: string | null = null;
@@ -202,7 +201,7 @@ class TransformInteraction extends PointerInteraction {
   private _pointRadius: (f: Feature<any>) => number | number[] = () => 0;
   // 旋转开始时记录点图标未旋转 bbox 尺寸（地图单位宽高），旋转过程中保持固定
   private _ptRotateBBoxSize?: [number, number];
-
+  public bbox_: Feature<any> | null = null;
   // 光标样式映射（可按需覆写）
   public Cursors: Record<string, string> = {
     default: 'auto',
@@ -386,12 +385,12 @@ class TransformInteraction extends PointerInteraction {
     const dashStroke = new Stroke({ color: [80, 80, 80], width: 1, lineDash: [6, 4] });
     const dashStrokeOff = new Stroke({ color: [80, 80, 80, 0.2], width: 1, lineDash: [6, 4] }); // 闪烁隐藏态降低透明度
 
-  const rotate = new Icon({ src: '/image/rotate.svg', color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
-  const stretchH = new Icon({ src: '/image/stretchH.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const stretchV = new Icon({ src: '/image/stretchV.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const scaleI = new Icon({ src: '/image/scale.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const translate = new Icon({ src: '/image/translate.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const center = new Icon({ src: '/image/center.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const rotate = new Icon({ src: '/image/rotate.svg', color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
+    const stretchH = new Icon({ src: '/image/stretchH.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const stretchV = new Icon({ src: '/image/stretchV.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const scaleI = new Icon({ src: '/image/scale.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const translate = new Icon({ src: '/image/translate.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const center = new Icon({ src: '/image/center.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
     const bigpt = new RegularShape({ stroke: new Stroke({ color: '#f38200ff', width: 1 }), radius: this.isTouch ? 12 : 6, points: 14, angle: Math.PI / 4 });
 
     const createStyle = (img: any, s: Stroke, f: Fill) => [new Style({ image: img, stroke: s, fill: f })];
@@ -858,12 +857,6 @@ class TransformInteraction extends PointerInteraction {
       }
     }
     this.overlayLayer_.getSource()?.addFeatures(features);
-    const a = this.bbox_.getGeometry().getCoordinates();
-    if (useEarth().useDefaultLayer().point.get('bbox').length === 0) {
-      useEarth().useDefaultLayer().point.add({ id: 'bbox', center: a[0][2], size: 20 });
-    } else {
-      useEarth().useDefaultLayer().point.set({ id: 'bbox', center: a[0][2] });
-    }
   }
 
   /**
@@ -971,7 +964,7 @@ class TransformInteraction extends PointerInteraction {
       let extent = extentCreateEmpty();
       let rotExtent = extentCreateEmpty();
       this.hasChanged_ = false;
-  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
+      for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
         const fg = f.getGeometry();
         if (fg) {
           this.geoms_.push(fg.clone());
@@ -1060,6 +1053,7 @@ class TransformInteraction extends PointerInteraction {
     const pt: Coordinate = [evt.coordinate[0], evt.coordinate[1]];
     this.isUpdating_ = true;
     this.hasChanged_ = true;
+    const bboxExtent = this.bbox_?.getGeometry().getCoordinates();
     switch (this.mode_) {
       case 'rotate': {
         let mouseX = pt[0];
@@ -1067,7 +1061,7 @@ class TransformInteraction extends PointerInteraction {
           mouseX = mouseX + Math.round((this.center_[0] - mouseX) / extentWidth) * extentWidth;
         }
         const a = Math.atan2(this.center_[1] - pt[1], this.center_[0] - mouseX);
-  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
+        for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geometry = this.geoms_[i].clone();
           if (geometry.getType() !== 'Point') {
             geometry.rotate(a - this.angle_, this.center_);
@@ -1092,6 +1086,7 @@ class TransformInteraction extends PointerInteraction {
           feature: this.selection_.item(0) as Feature<any>,
           features: this.selection_,
           angle: a - this.angle_,
+          bboxExtent: bboxExtent,
           pixel: evt.pixel,
           coordinate: [mouseX, pt[1]]
         } as TransformEvent);
@@ -1108,6 +1103,7 @@ class TransformInteraction extends PointerInteraction {
           feature: this.selection_.item(0) as Feature<any>,
           features: this.selection_,
           delta: [deltaX, deltaY],
+          bboxExtent: bboxExtent,
           pixel: evt.pixel,
           coordinate: evt.coordinate
         } as TransformEvent);
@@ -1238,6 +1234,7 @@ class TransformInteraction extends PointerInteraction {
             features: this.selection_,
             scale: [scx, scy],
             pixel: evt.pixel,
+            bboxExtent: bboxExtent,
             coordinate: evt.coordinate
           } as TransformEvent);
           break;
@@ -1297,7 +1294,7 @@ class TransformInteraction extends PointerInteraction {
           const keepAR = this.get('keepAspectRatio') as (e: MapBrowserEvent<any>) => boolean;
           if (keepAR && keepAR(evt)) scx = scy = Math.min(scx, scy);
         }
-  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
+        for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geometry = viewRotation === 0 || !this.get('enableRotatedTransform') ? this.geoms_[i].clone() : this.rotatedGeoms_[i].clone();
           geometry.applyTransform(((g1: number[], g2: number[], dim: number) => {
             if (dim < 2) return g2;
@@ -1388,6 +1385,7 @@ class TransformInteraction extends PointerInteraction {
           features: this.selection_,
           scale: [scx, scy],
           pixel: evt.pixel,
+          bboxExtent: bboxExtent,
           coordinate: evt.coordinate
         } as TransformEvent);
         break;
@@ -1396,12 +1394,6 @@ class TransformInteraction extends PointerInteraction {
         break;
     }
     this.isUpdating_ = false;
-    const a = this.bbox_?.getGeometry().getCoordinates();
-    if (useEarth().useDefaultLayer().point.get('bbox').length === 0) {
-      useEarth().useDefaultLayer().point.add({ id: 'bbox', center: a[0][2], size: 20 });
-    } else {
-      useEarth().useDefaultLayer().point.set({ id: 'bbox', center: a[0][2] });
-    }
   }
 
   /**
@@ -1458,7 +1450,7 @@ class TransformInteraction extends PointerInteraction {
         const proj: any = view.getProjection();
         const extentWidth: number = proj?.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849; // EPSG:3857
         const centerX = (view.getCenter() || [0, 0])[0];
-  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
+        for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geom = f.getGeometry();
           if (!geom) continue;
           // 取几何中心（Point 直接坐标）
