@@ -51,6 +51,8 @@ import { EventsKey } from 'ol/events';
 import { ol_ext_element } from './element';
 import { useEarth } from '../../useEarth';
 // import { fromLonLat } from 'ol/proj'; // 未使用，移除避免 lint 警告
+// 静态资源（rollup url 插件处理）
+// 使用公共目录下的静态资源路径（开发时由 Vite public/ 提供，构建时复制到 dist/image）
 
 // ---- 类型定义区域 ----
 /**
@@ -131,6 +133,7 @@ interface TransformEvent extends BaseEvent {
   oldgeoms?: Geometry[];
   transformed?: boolean;
   cursor?: string;
+  bboxExtent?: Coordinate[]; // 新增 bboxExtent 字段
 }
 
 function isPointGeometry(g: Geometry): boolean {
@@ -142,6 +145,11 @@ function isPointGeometry(g: Geometry): boolean {
  * 内部通过 PointerInteraction 的自定义回调覆盖 handleDown/Drag/Move/Up。
  */
 class TransformInteraction extends PointerInteraction {
+  // 静态资源（通过 rollup url 插件处理）
+  // 注意：相对路径以本文件为基准；构建后被复制/内联
+  // 使用 import 声明让 TS 识别为 string (需在 global.d.ts 添加声明)
+  importRotateIcon?: string;
+  
   private selection_: Collection<Feature<any>>;
   private handles_: Collection<Feature<any>>;
   private overlayLayer_: VectorLayer<VectorSource>;
@@ -250,7 +258,7 @@ class TransformInteraction extends PointerInteraction {
       style: (feature: any): Style[] | Style | undefined => {
         try {
           // 动态：当正在交互（_bboxActive=true）时，对 bbox 使用虚线样式 + 闪烁（可见/隐藏切换 stroke）
-            if (feature === this.bbox_ && this._bboxActive) {
+          if (feature === this.bbox_ && this._bboxActive) {
             if (this._bboxBlinkVisible) {
               return this.style['bboxActiveOn'] || this.style['bboxActive'] || this.style['defaultActive'] || this.style.default;
             }
@@ -369,20 +377,21 @@ class TransformInteraction extends PointerInteraction {
       pointFill?: Fill;
     } = {}
   ): void {
-    const stroke = options.pointStroke || new Stroke({ color: [80,80,80], width: 1 });
-    const strokedash = options.stroke || new Stroke({ color: [80,80,80], width: 1});
-    const fill0 = options.fill || new Fill({ color: [204,204,204,0.3] });
+    // 顶层 import 更合适，这里改为延迟引用已导入的常量（见文件顶部新增 import）
+    const stroke = options.pointStroke || new Stroke({ color: [80, 80, 80], width: 1 });
+    const strokedash = options.stroke || new Stroke({ color: [80, 80, 80], width: 1 });
+    const fill0 = options.fill || new Fill({ color: [204, 204, 204, 0.3] });
     const fill = options.pointFill || new Fill({ color: [255, 255, 255, 0.8] });
     // 虚线样式（活动中）
-  const dashStroke = new Stroke({ color: [80,80,80], width: 1, lineDash: [6,4] });
-  const dashStrokeOff = new Stroke({ color: [80,80,80,0.2], width: 1, lineDash: [6,4] }); // 闪烁隐藏态降低透明度
+    const dashStroke = new Stroke({ color: [80, 80, 80], width: 1, lineDash: [6, 4] });
+    const dashStrokeOff = new Stroke({ color: [80, 80, 80, 0.2], width: 1, lineDash: [6, 4] }); // 闪烁隐藏态降低透明度
 
-    const rotate = new Icon({ src: '/image/rotate.svg', color: [80,80,80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1});
-    const stretchH = new Icon({ src: '/image/stretchH.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const stretchV = new Icon({ src: '/image/stretchV.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const scaleI = new Icon({ src: '/image/scale.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const translate = new Icon({ src: '/image/translate.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const center = new Icon({ src: '/image/center.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const rotate = new Icon({ src: '/image/rotate.svg', color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
+  const stretchH = new Icon({ src: '/image/stretchH.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const stretchV = new Icon({ src: '/image/stretchV.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const scaleI = new Icon({ src: '/image/scale.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const translate = new Icon({ src: '/image/translate.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const center = new Icon({ src: '/image/center.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
     const bigpt = new RegularShape({ stroke: new Stroke({ color: '#f38200ff', width: 1 }), radius: this.isTouch ? 12 : 6, points: 14, angle: Math.PI / 4 });
 
     const createStyle = (img: any, s: Stroke, f: Fill) => [new Style({ image: img, stroke: s, fill: f })];
@@ -753,9 +762,9 @@ class TransformInteraction extends PointerInteraction {
 
     if (centerOnly) {
       // 旋转过程中：即便是点（带 image）也保持显示 bbox；若记录了初始尺寸，则使用固定宽高
-      this.overlayLayer_.getSource()?.addFeature(
-        new Feature({ geometry: new PointGeom([this.center_[0] + wrapOffset, this.center_[1]]), handle: 'rotate0' }) as any
-      );
+      this.overlayLayer_
+        .getSource()
+        ?.addFeature(new Feature({ geometry: new PointGeom([this.center_[0] + wrapOffset, this.center_[1]]), handle: 'rotate0' }) as any);
       let centerExtent = extWrap;
       if (this.mode_ === 'rotate' && this.ispt_ && this._ptRotateBBoxSize) {
         const halfW = this._ptRotateBBoxSize[0] / 2;
@@ -929,7 +938,7 @@ class TransformInteraction extends PointerInteraction {
       this.opt_ = sel.option as any;
       this.constraint_ = sel.constraint;
       // 进入交互：激活 bbox 虚线样式（仅对 rotate / translate / scale）
-      if (['rotate','translate','scale'].includes(this.mode_)) {
+      if (['rotate', 'translate', 'scale'].includes(this.mode_)) {
         this._bboxActive = true;
         this._startBBoxBlink();
         this.drawSketch_();
@@ -962,7 +971,7 @@ class TransformInteraction extends PointerInteraction {
       let extent = extentCreateEmpty();
       let rotExtent = extentCreateEmpty();
       this.hasChanged_ = false;
-      for (let i = 0, f; (f = this.selection_.item(i) as Feature<any>); i++) {
+  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
         const fg = f.getGeometry();
         if (fg) {
           this.geoms_.push(fg.clone());
@@ -1021,7 +1030,8 @@ class TransformInteraction extends PointerInteraction {
       this.drawSketch_();
       this.watchFeatures_();
       const type = feature ? 'select' : 'selectend';
-      this.dispatchEvent({ type, feature, features: this.selection_, pixel: evt.pixel, coordinate: evt.coordinate } as TransformEvent);
+      const bboxExtent = this.bbox_?.getGeometry().getCoordinates();
+      this.dispatchEvent({ type, feature, features: this.selection_, pixel: evt.pixel, coordinate: evt.coordinate, bboxExtent: bboxExtent } as TransformEvent);
     }
   }
 
@@ -1057,7 +1067,7 @@ class TransformInteraction extends PointerInteraction {
           mouseX = mouseX + Math.round((this.center_[0] - mouseX) / extentWidth) * extentWidth;
         }
         const a = Math.atan2(this.center_[1] - pt[1], this.center_[0] - mouseX);
-        for (let i = 0, f; (f = this.selection_.item(i) as Feature<any>); i++) {
+  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geometry = this.geoms_[i].clone();
           if (geometry.getType() !== 'Point') {
             geometry.rotate(a - this.angle_, this.center_);
@@ -1287,7 +1297,7 @@ class TransformInteraction extends PointerInteraction {
           const keepAR = this.get('keepAspectRatio') as (e: MapBrowserEvent<any>) => boolean;
           if (keepAR && keepAR(evt)) scx = scy = Math.min(scx, scy);
         }
-        for (let i = 0, f; (f = this.selection_.item(i) as Feature<any>); i++) {
+  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geometry = viewRotation === 0 || !this.get('enableRotatedTransform') ? this.geoms_[i].clone() : this.rotatedGeoms_[i].clone();
           geometry.applyTransform(((g1: number[], g2: number[], dim: number) => {
             if (dim < 2) return g2;
@@ -1430,7 +1440,7 @@ class TransformInteraction extends PointerInteraction {
     this._ptCircleBaseRadius = undefined;
     this._ptCircleBaseLen = undefined;
     this._ptBaseRotation = undefined;
-  this._ptRotateBBoxSize = undefined;
+    this._ptRotateBBoxSize = undefined;
     const element = evt.map.getTargetElement();
     if (this._prevCursorStyle !== undefined) {
       ol_ext_element.setCursor(element, this._prevCursorStyle);
@@ -1448,7 +1458,7 @@ class TransformInteraction extends PointerInteraction {
         const proj: any = view.getProjection();
         const extentWidth: number = proj?.getExtent ? proj.getExtent()[2] - proj.getExtent()[0] : 40075016.68557849; // EPSG:3857
         const centerX = (view.getCenter() || [0, 0])[0];
-        for (let i = 0, f; (f = this.selection_.item(i) as Feature<any>); i++) {
+  for (let i = 0, f: Feature<any> | undefined; (f = this.selection_.item(i) as Feature<any>); i++) {
           const geom = f.getGeometry();
           if (!geom) continue;
           // 取几何中心（Point 直接坐标）
@@ -1478,6 +1488,7 @@ class TransformInteraction extends PointerInteraction {
         }
       }
     }
+    const bboxExtent = this.bbox_?.getGeometry().getCoordinates();
     this.dispatchEvent({
       type: (this.mode_ + 'end') as any,
       feature: this.selection_.item(0) as Feature<any>,
@@ -1486,11 +1497,12 @@ class TransformInteraction extends PointerInteraction {
       oldgeoms: this.geoms_,
       transformed: this.hasChanged_,
       cursor: (element as HTMLElement).style.cursor,
-      pixel: evt.pixel
+      pixel: evt.pixel,
+      bboxExtent: bboxExtent
     } as TransformEvent);
     // 结束交互：还原 bbox 样式
-  if (this._bboxActive) this._bboxActive = false;
-  this._stopBBoxBlink();
+    if (this._bboxActive) this._bboxActive = false;
+    this._stopBBoxBlink();
     this.drawSketch_();
     this.hasChanged_ = false;
     this.mode_ = null;

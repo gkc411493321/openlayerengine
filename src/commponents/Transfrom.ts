@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import TransformInteraction from './Transform/Transform';
+import TransformInteraction from './transform-interaction/TransformInteraction';
 import { useEarth } from '../useEarth';
 import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
@@ -14,6 +14,7 @@ import { EventsKey } from 'ol/events';
 import { Icon, Style } from 'ol/style';
 import { Utils } from '../common';
 import cloneDeep from 'lodash/cloneDeep';
+import { Toolbar } from './transform-interaction/toolbar/Toolbar';
 
 export default class Transfrom {
   /**
@@ -80,6 +81,10 @@ export default class Transfrom {
    * 是否已销毁
    */
   private disposed = false;
+  /**
+   * 变换工具条
+   */
+  private toolbar: Toolbar | undefined;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -162,7 +167,6 @@ export default class Transfrom {
   private handleRawEvent(eventName: ETransfrom, e: any) {
     if (this.disposed) return; // 已销毁直接忽略事件
     let callbackParam: ITransformCallback | null = null;
-
     // 事件集合分类，避免多处重复判断
     const startEvents = new Set([ETransfrom.TranslateStart, ETransfrom.RotateStart, ETransfrom.ScaleStart]);
     const progressingEvents = new Set([ETransfrom.Translating, ETransfrom.Rotating, ETransfrom.Scaling]);
@@ -186,6 +190,8 @@ export default class Transfrom {
       // 进入选中周期，初始化历史记录
       this.resetHistory();
       this.recordSnapshot(e.feature); // 记录初始状态
+      // 创建工具栏
+      this.createToolbar(e);
       callbackParam = buildFeatureParam();
     } else if (eventName === ETransfrom.SelectEnd) {
       if (this.checkSelect) {
@@ -240,6 +246,7 @@ export default class Transfrom {
       this.updateHelpTooltipByCursorType(e);
       this.handleEventEnd(eventName, e);
       callbackParam = buildFeatureParam();
+      console.log(e);
       // 每次结束一次原子操作时，记录一次快照（避免在进行中大量记录）
       if (e.feature) this.recordSnapshot(e.feature, eventName);
     }
@@ -302,6 +309,16 @@ export default class Transfrom {
         }
       }
     }
+  }
+  /**
+   * 创建工具栏
+   */
+  private createToolbar(e: any) {
+    const params = {
+      point: e.bboxExtent[0][2],
+      type: e.feature?.getGeometry()?.getType()
+    };
+    this.toolbar = new Toolbar(params);
   }
   /**
    * 记录当前要素几何快照
@@ -588,7 +605,14 @@ export default class Transfrom {
     const type = geom?.getType?.();
     let coords: any = undefined;
     try {
-      if (geom instanceof Point || geom instanceof LineString || geom instanceof Polygon || geom instanceof MultiPoint || geom instanceof MultiLineString || geom instanceof MultiPolygon) {
+      if (
+        geom instanceof Point ||
+        geom instanceof LineString ||
+        geom instanceof Polygon ||
+        geom instanceof MultiPoint ||
+        geom instanceof MultiLineString ||
+        geom instanceof MultiPolygon
+      ) {
         coords = geom.getCoordinates();
       } else if (geom instanceof CircleGeom) {
         // Circle 使用中心点 & 半径
@@ -673,8 +697,15 @@ export default class Transfrom {
   private transformCoordinates(feature: Feature): any {
     const geometry = feature.getGeometry();
     const type = geometry?.getType();
-  let coordinates: any = [];
-    if (geometry instanceof Point || geometry instanceof LineString || geometry instanceof Polygon || geometry instanceof MultiPoint || geometry instanceof MultiLineString || geometry instanceof MultiPolygon) {
+    let coordinates: any = [];
+    if (
+      geometry instanceof Point ||
+      geometry instanceof LineString ||
+      geometry instanceof Polygon ||
+      geometry instanceof MultiPoint ||
+      geometry instanceof MultiLineString ||
+      geometry instanceof MultiPolygon
+    ) {
       coordinates = geometry.getCoordinates();
     } else if (geometry instanceof CircleGeom) {
       coordinates = geometry.getCenter();
@@ -726,7 +757,8 @@ export default class Transfrom {
         let str = '鼠标左键按下拉伸，Ctrl键以基准点拉伸';
         if (type == 'Point' || type == 'MultiPoint' || type == 'Circle') str = '鼠标左键按下拉伸';
         this.updateHelpTooltip(str, e.eventPixel);
-        break; }
+        break;
+      }
       case ECursor.NeswResize:
       case ECursor.NwseResize: {
         const type = this.checkSelect?.getGeometry()?.getType();
@@ -737,7 +769,8 @@ export default class Transfrom {
           if (style && image && !(image instanceof Icon)) str = '鼠标左键按下缩放';
         }
         this.updateHelpTooltip(str, e.eventPixel);
-        break; }
+        break;
+      }
       default:
         // 其它光标：保持或还原默认提示
         this.updateHelpTooltip('选择控制点进行变换操作');
@@ -787,8 +820,16 @@ export default class Transfrom {
    */
   public destroy(): void {
     if (this.disposed) return;
-    try { this.remove(); } catch (_) { /* ignore */ }
-    try { this.removeHelpTooltip(); } catch (_) { /* ignore */ }
+    try {
+      this.remove();
+    } catch (_) {
+      /* ignore */
+    }
+    try {
+      this.removeHelpTooltip();
+    } catch (_) {
+      /* ignore */
+    }
     // 清空监听器
     this.listenerMap.forEach((set) => set.clear());
     this.listenerMap.clear();

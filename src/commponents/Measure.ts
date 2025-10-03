@@ -1,19 +1,19 @@
-import Earth from "Earth";
-import { Feature, Map } from "ol";
-import { Geometry, LineString, Point, Polygon } from "ol/geom";
-import { Draw } from "ol/interaction";
-import VectorSource from "ol/source/Vector";
-import { Fill, RegularShape, Stroke, Style, Text } from "ol/style";
-import CircleStyle from "ol/style/Circle";
+import Earth from 'Earth';
+import { Feature, Map } from 'ol';
+import { Geometry, LineString, Point, Polygon } from 'ol/geom';
+import { Draw } from 'ol/interaction';
+import VectorSource from 'ol/source/Vector';
+import { Fill, RegularShape, Stroke, Style, Text } from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
 import { getLength, getArea } from 'ol/sphere.js';
-import { Coordinate } from "ol/coordinate";
-import { FeatureLike } from "ol/Feature";
-import RenderFeature from "ol/render/Feature";
-import VectorLayer from "ol/layer/Vector";
-import { IMeasure, IMeasureEvent } from "interface";
-import { PointLayer } from "../base";
-import { useEarth } from "../useEarth";
-import { fromLonLat, toLonLat } from "ol/proj";
+import { Coordinate } from 'ol/coordinate';
+import { FeatureLike } from 'ol/Feature';
+import RenderFeature from 'ol/render/Feature';
+import VectorLayer from 'ol/layer/Vector';
+import { IMeasure, IMeasureEvent } from 'interface';
+import { PointLayer } from '../base';
+import { useEarth } from '../useEarth';
+import { fromLonLat, toLonLat } from 'ol/proj';
 /**
  * 测量类
  */
@@ -41,15 +41,15 @@ export default class Measure {
     text: new Text({
       font: '12px Calibri,sans-serif',
       fill: new Fill({
-        color: '#ffcc33',
+        color: '#ffcc33'
       }),
       backgroundFill: new Fill({
-        color: 'rgba(0, 0, 0, 0.4)',
+        color: 'rgba(0, 0, 0, 0.4)'
       }),
       padding: [5, 5, 4, 5],
       textAlign: 'left',
-      offsetX: 15,
-    }),
+      offsetX: 15
+    })
   });
   /**
    * 公共样式
@@ -60,8 +60,8 @@ export default class Measure {
    */
   private labelStyle!: Style;
   /**
-    * 片段样式
-    */
+   * 片段样式
+   */
   private segmentStyle!: Style;
   /**
    * 片段样式数组
@@ -72,7 +72,7 @@ export default class Measure {
    */
   private pointLayer: PointLayer<unknown>;
   private measureData: IMeasureEvent = {
-    data: [],
+    data: []
   };
   /**
    * 分段标签显隐
@@ -83,8 +83,8 @@ export default class Measure {
    */
   private labels: boolean = false;
   /**
-   * 
-   * @param earth 
+   *
+   * @param earth
    */
   constructor(earth: Earth) {
     this.map = earth.map;
@@ -93,45 +93,42 @@ export default class Measure {
       source: this.source,
       style: (feature) => {
         return this.styleFunction(feature);
-      },
+      }
     });
     this.map.addLayer(this.layer);
     this.pointLayer = new PointLayer(useEarth());
-
   }
   private formatLength(line: LineString): number {
     const length = getLength(line);
-    let output;
-    output = Math.round((length / 1000) * 100) / 100;
+    const output = Math.round((length / 1000) * 100) / 100;
     return output;
-  };
+  }
   private formatArea(polygon: Polygon): number {
     const area = getArea(polygon);
-    let output;
-    output = Math.round((area / 1000000) * 100) / 100;
+    const output = Math.round((area / 1000000) * 100) / 100;
     return output;
-  };
+  }
   private styleFunction(feature: FeatureLike, param?: IMeasure, drawType?: string, tip?: string): Style[] {
     if (tip) {
       this.style = new Style({
         fill: new Fill({
-          color: '#ffffff70',
+          color: '#ffffff70'
         }),
         stroke: new Stroke({
           color: param?.lineColor || '#ffcc33',
           lineDash: [10, 10],
-          width: param?.lineWidth || 2,
+          width: param?.lineWidth || 2
         }),
         image: new CircleStyle({
           radius: param?.pointSzie || 5,
           stroke: new Stroke({
-            color: '#fff',
+            color: '#fff'
           }),
           fill: new Fill({
-            color: '#ffcc33',
-          }),
-        }),
-      })
+            color: '#ffcc33'
+          })
+        })
+      });
     } else {
       this.style.getStroke().setLineDash(null);
     }
@@ -160,14 +157,14 @@ export default class Measure {
         text: new Text({
           font: '12px Calibri,sans-serif',
           fill: new Fill({
-            color: param?.textColor || '#ffcc33',
+            color: param?.textColor || '#ffcc33'
           }),
           backgroundFill: new Fill({
-            color: param?.textBackgroundColor || 'rgba(0, 0, 0, 0.4)',
+            color: param?.textBackgroundColor || 'rgba(0, 0, 0, 0.4)'
           }),
           padding: [4, 4, 4, 4],
           textBaseline: 'bottom',
-          offsetY: -12,
+          offsetY: -12
         }),
         image: new RegularShape({
           radius: 6,
@@ -175,10 +172,10 @@ export default class Measure {
           angle: Math.PI,
           displacement: [0, 8],
           fill: new Fill({
-            color: 'rgba(0, 0, 0, 0.4)',
-          }),
-        }),
-      })
+            color: 'rgba(0, 0, 0, 0.4)'
+          })
+        })
+      });
       this.segmentStyles.push(this.segmentStyle);
       let count = 0;
       line.forEachSegment((a: Coordinate, b: Coordinate) => {
@@ -199,14 +196,14 @@ export default class Measure {
         text: new Text({
           font: '12px Calibri,sans-serif',
           fill: new Fill({
-            color: param?.textColor || '#ffcc33',
+            color: param?.textColor || '#ffcc33'
           }),
           backgroundFill: new Fill({
-            color: param?.textBackgroundColor || 'rgba(0, 0, 0, 0.4)',
+            color: param?.textBackgroundColor || 'rgba(0, 0, 0, 0.4)'
           }),
           padding: [4, 4, 4, 4],
           textBaseline: 'bottom',
-          offsetY: -12,
+          offsetY: -12
         }),
         image: new RegularShape({
           radius: 6,
@@ -214,10 +211,10 @@ export default class Measure {
           angle: Math.PI,
           displacement: [0, 8],
           fill: new Fill({
-            color: 'rgba(0, 0, 0, 0.4)',
-          }),
-        }),
-      })
+            color: 'rgba(0, 0, 0, 0.4)'
+          })
+        })
+      });
       this.labelStyle.setGeometry(point);
       this.labelStyle.getText().setText('合计：' + label + unit);
       styles.push(this.labelStyle);
@@ -233,15 +230,15 @@ export default class Measure {
    * @param param 参数，详见{@link IMeasure}
    */
   private lineMeasure(param: IMeasure) {
-    useEarth().setMouseStyle("pointer");
+    useEarth().setMouseStyle('pointer');
     const activeTip = '单击继续绘制线 右击退出测量';
     const idleTip = '单击开始测量';
     let tip = idleTip;
     this.draw = new Draw({
       source: this.source,
-      type: "LineString",
+      type: 'LineString',
       style: (feature) => {
-        return this.styleFunction(feature, param, "line", tip);
+        return this.styleFunction(feature, param, 'line', tip);
       },
       condition: (e) => {
         if (e.originalEvent.button == 0) {
@@ -260,17 +257,20 @@ export default class Measure {
     this.draw.on('drawend', (e) => {
       tip = idleTip;
       const line = <Feature<LineString>>e.feature;
-      line.getGeometry()?.getCoordinates().map(item => {
-        if (param?.pointShow == undefined || param.pointShow == true) {
-          this.pointLayer.add({
-            center: item,
-            fill: {
-              color: param?.pointColor || "#fff"
-            },
-            size: param?.pointSzie || 3
-          })
-        }
-      })
+      line
+        .getGeometry()
+        ?.getCoordinates()
+        .map((item) => {
+          if (param?.pointShow == undefined || param.pointShow == true) {
+            this.pointLayer.add({
+              center: item,
+              fill: {
+                color: param?.pointColor || '#fff'
+              },
+              size: param?.pointSzie || 3
+            });
+          }
+        });
       let totalDistance = 0;
       line.getGeometry()?.forEachSegment((a: Coordinate, b: Coordinate) => {
         const segment = new LineString([a, b]);
@@ -279,19 +279,21 @@ export default class Measure {
           startP: toLonLat(a),
           endP: toLonLat(b),
           distance: distance
-        })
+        });
         totalDistance += distance;
-      })
+      });
       this.measureData.totalDistance = totalDistance;
       param.callback?.call(this, this.measureData);
     });
-    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal(e => {
-      if (this.draw) {
-        this.draw.finishDrawing();
-        this.map.removeInteraction(this.draw);
-      }
-      useEarth().setMouseStyle("auto");
-    })
+    useEarth()
+      .useGlobalEvent()
+      .addMouseOnceRightClickEventByGlobal((e) => {
+        if (this.draw) {
+          this.draw.finishDrawing();
+          this.map.removeInteraction(this.draw);
+        }
+        useEarth().setMouseStyle('auto');
+      });
     this.map.addInteraction(this.draw);
   }
   /**
@@ -319,15 +321,15 @@ export default class Measure {
   lineCenter(param: IMeasure) {
     this.segments = true;
     this.labels = false;
-    useEarth().setMouseStyle("pointer");
+    useEarth().setMouseStyle('pointer');
     const activeTip = '单击继续绘制线 右击退出测量';
     const idleTip = '单击开始测量';
     let tip = idleTip;
     this.draw = new Draw({
       source: this.source,
-      type: "LineString",
+      type: 'LineString',
       style: (feature) => {
-        return this.styleFunction(feature, param, "line", tip);
+        return this.styleFunction(feature, param, 'line', tip);
       },
       condition: (e) => {
         if (e.originalEvent.button == 0) {
@@ -340,28 +342,30 @@ export default class Measure {
         return false;
       }
     });
-    this.draw.on("drawstart", (e) => {
+    this.draw.on('drawstart', (e) => {
       const line = <LineString>e.feature.getGeometry();
       tip = activeTip;
       setTimeout(() => {
         if (!useEarth().useGlobalEvent().hasGlobalMouseLeftUpEvent()) {
           useEarth().useGlobalEvent().enableGlobalMouseLeftUpEvent();
-          useEarth().useGlobalEvent().addMouseLeftUpEventByGlobal(() => {
-            if (this.draw) {
-              this.draw.finishDrawing();
-              this.draw.appendCoordinates([line.getCoordinates()[0]])
-            }
-          })
+          useEarth()
+            .useGlobalEvent()
+            .addMouseLeftUpEventByGlobal(() => {
+              if (this.draw) {
+                this.draw.finishDrawing();
+                this.draw.appendCoordinates([line.getCoordinates()[0]]);
+              }
+            });
           this.pointLayer.add({
             center: line.getCoordinates()[0],
             fill: {
-              color: param?.pointColor || "#fff"
+              color: param?.pointColor || '#fff'
             },
             size: param?.pointSzie || 3
-          })
+          });
         }
       }, 50);
-    })
+    });
     this.draw.on('drawend', (e) => {
       tip = idleTip;
       const line = <Feature<LineString>>e.feature;
@@ -371,10 +375,10 @@ export default class Measure {
         this.pointLayer.add({
           center: positions[1],
           fill: {
-            color: param?.pointColor || "#fff"
+            color: param?.pointColor || '#fff'
           },
           size: param?.pointSzie || 3
-        })
+        });
       }
       line.getGeometry()?.forEachSegment((a: Coordinate, b: Coordinate) => {
         const segment = new LineString([a, b]);
@@ -383,20 +387,22 @@ export default class Measure {
           startP: toLonLat(a),
           endP: toLonLat(b),
           distance: distance
-        })
-      })
+        });
+      });
     });
-    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal(e => {
-      if (useEarth().useGlobalEvent().hasGlobalMouseLeftUpEvent()) {
-        useEarth().useGlobalEvent().disableGlobalMouseLeftUpEvent();
-      }
-      if (this.draw) {
-        this.draw.finishDrawing();
-        this.map.removeInteraction(this.draw);
-      }
-      useEarth().setMouseStyle("auto");
-      param.callback?.call(this, this.measureData);
-    })
+    useEarth()
+      .useGlobalEvent()
+      .addMouseOnceRightClickEventByGlobal((e) => {
+        if (useEarth().useGlobalEvent().hasGlobalMouseLeftUpEvent()) {
+          useEarth().useGlobalEvent().disableGlobalMouseLeftUpEvent();
+        }
+        if (this.draw) {
+          this.draw.finishDrawing();
+          this.map.removeInteraction(this.draw);
+        }
+        useEarth().setMouseStyle('auto');
+        param.callback?.call(this, this.measureData);
+      });
     this.map.addInteraction(this.draw);
   }
   /**
@@ -406,15 +412,15 @@ export default class Measure {
   polygonMeasure(param: IMeasure) {
     this.segments = true;
     this.labels = true;
-    useEarth().setMouseStyle("pointer");
+    useEarth().setMouseStyle('pointer');
     const activeTip = '单击继续绘制线 右击退出测量';
     const idleTip = '单击开始测量';
     let tip = idleTip;
     this.draw = new Draw({
       source: this.source,
-      type: "Polygon",
+      type: 'Polygon',
       style: (feature) => {
-        return this.styleFunction(feature, param, "Polygon", tip);
+        return this.styleFunction(feature, param, 'Polygon', tip);
       },
       condition: (e) => {
         if (e.originalEvent.button == 0) {
@@ -427,34 +433,39 @@ export default class Measure {
         return false;
       }
     });
-    this.draw.on("drawstart", (e) => {
+    this.draw.on('drawstart', (e) => {
       tip = activeTip;
-    })
+    });
     this.draw.on('drawend', (e) => {
       tip = idleTip;
       const polygon = <Feature<Polygon>>e.feature;
       if (param?.pointShow == undefined || param.pointShow == true) {
-        polygon.getGeometry()?.getCoordinates()[0].map(item => {
-          this.pointLayer.add({
-            center: item,
-            fill: {
-              color: param?.pointColor || "#fff"
-            },
-            size: param?.pointSzie || 3
-          })
-          this.measureData.data.push(toLonLat(item));
-        })
+        polygon
+          .getGeometry()
+          ?.getCoordinates()[0]
+          .map((item) => {
+            this.pointLayer.add({
+              center: item,
+              fill: {
+                color: param?.pointColor || '#fff'
+              },
+              size: param?.pointSzie || 3
+            });
+            this.measureData.data.push(toLonLat(item));
+          });
       }
       this.measureData.area = this.formatArea(polygon.getGeometry()!);
       param.callback?.call(this, this.measureData);
     });
-    useEarth().useGlobalEvent().addMouseOnceRightClickEventByGlobal(e => {
-      if (this.draw) {
-        this.draw.finishDrawing();
-        this.map.removeInteraction(this.draw);
-      }
-      useEarth().setMouseStyle("auto");
-    })
+    useEarth()
+      .useGlobalEvent()
+      .addMouseOnceRightClickEventByGlobal((e) => {
+        if (this.draw) {
+          this.draw.finishDrawing();
+          this.map.removeInteraction(this.draw);
+        }
+        useEarth().setMouseStyle('auto');
+      });
     this.map.addInteraction(this.draw);
   }
   /**

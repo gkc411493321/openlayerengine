@@ -51,8 +51,8 @@ export default class Utils<T> {
    * @author: wuyue.nan
    */
   static linearInterpolation(startPos: number[], endPos: number[], t: number): number[] {
-    let a = this.constantMultiVector2(1 - t, startPos)
-    let b = this.constantMultiVector2(t, endPos)
+  const a = this.constantMultiVector2(1 - t, startPos)
+  const b = this.constantMultiVector2(t, endPos)
     return this.vector2Add(a, b)
   }
   /**
@@ -86,9 +86,9 @@ export default class Utils<T> {
    * @author: wuyue.nan
    */
   static bezierSquareCalc(startPos: number[], center: number[], endPos: number[], t: number): number[] {
-    let a = this.constantMultiVector2(Math.pow((1 - t), 2), startPos)
-    let b = this.constantMultiVector2((2 * t * (1 - t)), center)
-    let c = this.constantMultiVector2(Math.pow(t, 2), endPos)
+  const a = this.constantMultiVector2(Math.pow((1 - t), 2), startPos)
+  const b = this.constantMultiVector2((2 * t * (1 - t)), center)
+  const c = this.constantMultiVector2(Math.pow(t, 2), endPos)
     return this.vector2Add(this.vector2Add(a, b), c)
   }
   /**
@@ -105,7 +105,7 @@ export default class Utils<T> {
     const style = new Style({
       geometry: new Point(end),
       image: new Icon({
-        src: '/image/arrow.svg',
+  src: '/image/arrow.svg',
         anchor: [0.75, 0.5],
         imgSize: [16, 16],
         rotateWithView: true,
@@ -138,7 +138,7 @@ export default class Utils<T> {
         const offset = Math.floor(center[0] / worldWidth);
         const frameState = event.frameState;
         if (frameState) {
-          let elapsed = frameState.time - start;
+          const elapsed = frameState.time - start;
           if (elapsed >= options.duration) {
             if (options.isRepeat) {
               start = Date.now();

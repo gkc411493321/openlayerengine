@@ -56,8 +56,8 @@ export default class FlightLineSource {
     /**
      * 箭头相关
      */
-    this.arrowImage = new Image()
-    this.arrowImage.src = '/image/arrow.svg'
+  this.arrowImage = new Image()
+  this.arrowImage.src = '/image/arrow.svg'
     this.arrowLoad = false
     this.arrowImage.onload = () => {
       this.arrowLoad = true
@@ -65,13 +65,12 @@ export default class FlightLineSource {
   }
 
   getControlPoint(startPos: number[], endPos: number[], centerPos: number[], ratio: number) {
-    let xDiff = endPos[0] - startPos[0]
-    let addX = startPos[0] + xDiff
-    let addY = startPos[1]
-    let controlX, controlY
-    controlX = addX
-    controlY = addY
-    let controlPos = [controlX, controlY]
+  const xDiff = endPos[0] - startPos[0]
+  const addX = startPos[0] + xDiff
+  const addY = startPos[1]
+  const controlX = addX
+  const controlY = addY
+  const controlPos = [controlX, controlY]
     return Utils.linearInterpolation(centerPos, controlPos, ratio)
   }
 
