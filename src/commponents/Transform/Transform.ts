@@ -49,6 +49,8 @@ import Map from 'ol/Map';
 // 视图对象无需单独类型导入（直接通过 map.getView 访问）
 import { EventsKey } from 'ol/events';
 import { ol_ext_element } from './element';
+import { useEarth } from '../../useEarth';
+// import { fromLonLat } from 'ol/proj'; // 未使用，移除避免 lint 警告
 
 // ---- 类型定义区域 ----
 /**
@@ -166,6 +168,11 @@ class TransformInteraction extends PointerInteraction {
   private center_: Coordinate = [0, 0];
   private isUpdating_ = false;
   private angle_ = 0;
+  // bbox 是否处于激活变换中（旋转 / 平移 / 缩放时显示虚线）
+  private _bboxActive: boolean = false;
+  // 闪烁相关
+  private _bboxBlinkTimer: any = null;
+  private _bboxBlinkVisible: boolean = true;
   private previousCursor_: string | undefined;
   private _prevCursorStyle: string | undefined;
   private _featureListeners: EventsKey[] = [];
@@ -185,6 +192,8 @@ class TransformInteraction extends PointerInteraction {
   private _ptBaseRotation?: number;
   // 动态计算点半径的函数（供命中测试使用）
   private _pointRadius: (f: Feature<any>) => number | number[] = () => 0;
+  // 旋转开始时记录点图标未旋转 bbox 尺寸（地图单位宽高），旋转过程中保持固定
+  private _ptRotateBBoxSize?: [number, number];
 
   // 光标样式映射（可按需覆写）
   public Cursors: Record<string, string> = {
@@ -240,6 +249,13 @@ class TransformInteraction extends PointerInteraction {
       properties: { name: 'Transform overlay', displayInLayerSwitcher: false },
       style: (feature: any): Style[] | Style | undefined => {
         try {
+          // 动态：当正在交互（_bboxActive=true）时，对 bbox 使用虚线样式 + 闪烁（可见/隐藏切换 stroke）
+            if (feature === this.bbox_ && this._bboxActive) {
+            if (this._bboxBlinkVisible) {
+              return this.style['bboxActiveOn'] || this.style['bboxActive'] || this.style['defaultActive'] || this.style.default;
+            }
+            return this.style['bboxActiveOff'] || this.style['bboxActive'] || this.style['defaultActive'] || this.style.default;
+          }
           const key = (feature.get?.('handle') || 'default') + (feature.get?.('constraint') || '') + (feature.get?.('option') || '');
           return this.style[key];
         } catch {
@@ -334,6 +350,11 @@ class TransformInteraction extends PointerInteraction {
   override setActive(active: boolean): void {
     if (this.overlayLayer_) this.overlayLayer_.setVisible(active);
     super.setActive(active);
+    if (!active) {
+      this._bboxActive = false;
+      this._stopBBoxBlink();
+      this.drawSketch_();
+    }
   }
 
   /**
@@ -348,23 +369,30 @@ class TransformInteraction extends PointerInteraction {
       pointFill?: Fill;
     } = {}
   ): void {
-    const stroke = options.pointStroke || new Stroke({ color: [255, 0, 0, 1], width: 2 });
-    const strokedash = options.stroke || new Stroke({ color: [255, 0, 0, 1], width: 1, lineDash: [8, 8] });
-    const fill0 = options.fill || new Fill({ color: [255, 0, 0, 0.01] });
+    const stroke = options.pointStroke || new Stroke({ color: [80,80,80], width: 1 });
+    const strokedash = options.stroke || new Stroke({ color: [80,80,80], width: 1});
+    const fill0 = options.fill || new Fill({ color: [204,204,204,0.3] });
     const fill = options.pointFill || new Fill({ color: [255, 255, 255, 0.8] });
+    // 虚线样式（活动中）
+  const dashStroke = new Stroke({ color: [80,80,80], width: 1, lineDash: [6,4] });
+  const dashStrokeOff = new Stroke({ color: [80,80,80,0.2], width: 1, lineDash: [6,4] }); // 闪烁隐藏态降低透明度
 
-    const rotate = new Icon({ src: '/image/rotate.svg', color: [255, 96, 0, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
-    const stretchH = new Icon({ src: '/image/stretchH.png', color: [255, 96, 0, 1], scale: this.isTouch ? 1.8 : 1 });
-    const stretchV = new Icon({ src: '/image/stretchV.png', color: [255, 96, 0, 1], scale: this.isTouch ? 1.8 : 1 });
-    const scaleI = new Icon({ src: '/image/scale.png', color: [255, 96, 0, 1], scale: this.isTouch ? 1.8 : 1 });
-    const translate = new Icon({ src: '/image/translate.png', color: [255, 96, 0, 1], scale: this.isTouch ? 1.8 : 1 });
-    const center = new Icon({ src: '/image/center.png', color: [255, 96, 0, 1], scale: this.isTouch ? 1.8 : 1 });
+    const rotate = new Icon({ src: '/image/rotate.svg', color: [80,80,80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1});
+    const stretchH = new Icon({ src: '/image/stretchH.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const stretchV = new Icon({ src: '/image/stretchV.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const scaleI = new Icon({ src: '/image/scale.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const translate = new Icon({ src: '/image/translate.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const center = new Icon({ src: '/image/center.png', color: [80,80,80, 1], scale: this.isTouch ? 1.8 : 1 });
     const bigpt = new RegularShape({ stroke: new Stroke({ color: '#f38200ff', width: 1 }), radius: this.isTouch ? 12 : 6, points: 14, angle: Math.PI / 4 });
 
     const createStyle = (img: any, s: Stroke, f: Fill) => [new Style({ image: img, stroke: s, fill: f })];
 
     this.style = {
       default: createStyle(bigpt, strokedash, fill0),
+      // 闪烁双态：On / Off
+      bboxActive: [new Style({ stroke: dashStroke, fill: fill0 })], // 兼容旧 key
+      bboxActiveOn: [new Style({ stroke: dashStroke, fill: fill0 })],
+      bboxActiveOff: [new Style({ stroke: dashStrokeOff, fill: fill0 })],
       translate: createStyle(translate, stroke, fill),
       rotate: createStyle(rotate, stroke, fill),
       rotate0: createStyle(center, stroke, fill),
@@ -378,6 +406,26 @@ class TransformInteraction extends PointerInteraction {
       scaleh3: createStyle(stretchV, stroke, fill)
     } as Record<string, Style[]>;
     this.drawSketch_();
+  }
+
+  /** 启动 bbox 闪烁 */
+  private _startBBoxBlink(): void {
+    if (this._bboxBlinkTimer) return;
+    this._bboxBlinkVisible = true;
+    this._bboxBlinkTimer = setInterval(() => {
+      this._bboxBlinkVisible = !this._bboxBlinkVisible;
+      if (this.bbox_) this.bbox_.changed?.();
+    }, 420); // 约 ~2.4Hz
+  }
+
+  /** 停止 bbox 闪烁并恢复可见 */
+  private _stopBBoxBlink(): void {
+    if (this._bboxBlinkTimer) {
+      clearInterval(this._bboxBlinkTimer);
+      this._bboxBlinkTimer = null;
+    }
+    this._bboxBlinkVisible = true;
+    if (this.bbox_) this.bbox_.changed?.();
   }
 
   /**
@@ -704,16 +752,23 @@ class TransformInteraction extends PointerInteraction {
     const coordsWrap = coords?.map((c) => [c[0] + wrapOffset, c[1]]) as Coordinate[] | undefined;
 
     if (centerOnly) {
-      if (!this.ispt_) {
-        this.overlayLayer_
-          .getSource()
-          ?.addFeature(new Feature({ geometry: new PointGeom([this.center_[0] + wrapOffset, this.center_[1]]), handle: 'rotate0' }) as any);
-        const geom: Geometry = polygonFromExtent(extWrap);
-        const viewCenter = map.getView().getCenter();
-        if (this.get('enableRotatedTransform') && viewRotation !== 0 && viewCenter) geom.rotate(viewRotation, viewCenter);
-        const f = (this.bbox_ = new Feature(geom));
-        this.overlayLayer_.getSource()?.addFeature(f);
+      // 旋转过程中：即便是点（带 image）也保持显示 bbox；若记录了初始尺寸，则使用固定宽高
+      this.overlayLayer_.getSource()?.addFeature(
+        new Feature({ geometry: new PointGeom([this.center_[0] + wrapOffset, this.center_[1]]), handle: 'rotate0' }) as any
+      );
+      let centerExtent = extWrap;
+      if (this.mode_ === 'rotate' && this.ispt_ && this._ptRotateBBoxSize) {
+        const halfW = this._ptRotateBBoxSize[0] / 2;
+        const halfH = this._ptRotateBBoxSize[1] / 2;
+        const cx = this.center_[0] + wrapOffset;
+        const cy = this.center_[1];
+        centerExtent = [cx - halfW, cy - halfH, cx + halfW, cy + halfH];
       }
+      const geom: Geometry = polygonFromExtent(centerExtent as Extent);
+      const viewCenter = map.getView().getCenter();
+      if (this.get('enableRotatedTransform') && viewRotation !== 0 && viewCenter) geom.rotate(viewRotation, viewCenter);
+      const f = (this.bbox_ = new Feature(geom));
+      this.overlayLayer_.getSource()?.addFeature(f);
       return;
     }
 
@@ -793,8 +848,13 @@ class TransformInteraction extends PointerInteraction {
         }
       }
     }
-
     this.overlayLayer_.getSource()?.addFeatures(features);
+    const a = this.bbox_.getGeometry().getCoordinates();
+    if (useEarth().useDefaultLayer().point.get('bbox').length === 0) {
+      useEarth().useDefaultLayer().point.add({ id: 'bbox', center: a[0][2], size: 20 });
+    } else {
+      useEarth().useDefaultLayer().point.set({ id: 'bbox', center: a[0][2] });
+    }
   }
 
   /**
@@ -868,6 +928,30 @@ class TransformInteraction extends PointerInteraction {
       this.mode_ = sel.handle;
       this.opt_ = sel.option as any;
       this.constraint_ = sel.constraint;
+      // 进入交互：激活 bbox 虚线样式（仅对 rotate / translate / scale）
+      if (['rotate','translate','scale'].includes(this.mode_)) {
+        this._bboxActive = true;
+        this._startBBoxBlink();
+        this.drawSketch_();
+      }
+      // 如进入点图标旋转，记录初始 bbox 尺寸（依据当前 scale 与像素尺寸换算）
+      if (this.mode_ === 'rotate' && this.ispt_ && this.selection_.getLength() === 1) {
+        const pf = this.selection_.item(0) as Feature<any>;
+        if (this._pointHasIconImage_(pf)) {
+          const map = this.getMap();
+          if (map) {
+            const sizePx = this._pointGetVisualSizePixel_(pf);
+            const centerPx = map.getPixelFromCoordinate(this.center_);
+            if (sizePx && centerPx) {
+              const p1: [number, number] = [centerPx[0] - sizePx[0] / 2, centerPx[1] - sizePx[1] / 2];
+              const p2: [number, number] = [centerPx[0] + sizePx[0] / 2, centerPx[1] + sizePx[1] / 2];
+              const c1 = map.getCoordinateFromPixel(p1);
+              const c2 = map.getCoordinateFromPixel(p2);
+              if (c1 && c2) this._ptRotateBBoxSize = [Math.abs(c2[0] - c1[0]), Math.abs(c2[1] - c1[1])];
+            }
+          }
+        }
+      }
       const viewRotation = this.getMap()?.getView().getRotation() || 0;
       this.coordinate_ = (feature as any).get('handle') ? (feature.getGeometry() as any).getCoordinates() : evt.coordinate;
       const gm = this.getMap();
@@ -1302,6 +1386,12 @@ class TransformInteraction extends PointerInteraction {
         break;
     }
     this.isUpdating_ = false;
+    const a = this.bbox_?.getGeometry().getCoordinates();
+    if (useEarth().useDefaultLayer().point.get('bbox').length === 0) {
+      useEarth().useDefaultLayer().point.add({ id: 'bbox', center: a[0][2], size: 20 });
+    } else {
+      useEarth().useDefaultLayer().point.set({ id: 'bbox', center: a[0][2] });
+    }
   }
 
   /**
@@ -1340,6 +1430,7 @@ class TransformInteraction extends PointerInteraction {
     this._ptCircleBaseRadius = undefined;
     this._ptCircleBaseLen = undefined;
     this._ptBaseRotation = undefined;
+  this._ptRotateBBoxSize = undefined;
     const element = evt.map.getTargetElement();
     if (this._prevCursorStyle !== undefined) {
       ol_ext_element.setCursor(element, this._prevCursorStyle);
@@ -1397,6 +1488,9 @@ class TransformInteraction extends PointerInteraction {
       cursor: (element as HTMLElement).style.cursor,
       pixel: evt.pixel
     } as TransformEvent);
+    // 结束交互：还原 bbox 样式
+  if (this._bboxActive) this._bboxActive = false;
+  this._stopBBoxBlink();
     this.drawSketch_();
     this.hasChanged_ = false;
     this.mode_ = null;
