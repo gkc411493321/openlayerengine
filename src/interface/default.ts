@@ -723,7 +723,7 @@ export interface ITransformCallback {
   /**
    * 像素位置
    */
-  eventPixel: number[];
+  eventPixel?: number[];
   /**
    * 鼠标事件类型，用于鼠标进入和离开变换点事件
    */

@@ -51,6 +51,14 @@ export enum ETransfrom {
    * 结束缩放
    */
   ScaleEnd = 'scaleend',
+  /**
+   * 撤销
+   */
+  Undo = 'undo',
+  /**
+   * 重做
+   */
+  Redo = 'redo',
 }
 
 export enum ETranslateType {

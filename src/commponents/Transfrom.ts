@@ -15,6 +15,7 @@ import { Icon, Style } from 'ol/style';
 import { Utils } from '../common';
 import cloneDeep from 'lodash/cloneDeep';
 import { Toolbar } from './transform-interaction/toolbar/Toolbar';
+import { feature } from '@turf/turf';
 
 export default class Transfrom {
   /**
@@ -154,7 +155,9 @@ export default class Transfrom {
       ETransfrom.RotateEnd,
       ETransfrom.ScaleStart,
       ETransfrom.Scaling,
-      ETransfrom.ScaleEnd
+      ETransfrom.ScaleEnd,
+      ETransfrom.Undo,
+      ETransfrom.Redo
     ];
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
@@ -238,6 +241,13 @@ export default class Transfrom {
         };
         this.checkEnterHandle = false;
       }
+    } else if (eventName === ETransfrom.Undo || eventName === ETransfrom.Redo) {
+      callbackParam = {
+        type: eventName,
+        featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+        featurePosition: e.feature && this.transformCoordinates(e.feature),
+        feature: e.feature
+      };
     } else if (startEvents.has(eventName)) {
       // Start 类事件
       this.handleEventStart(eventName, e);
@@ -453,21 +463,24 @@ export default class Transfrom {
   /**
    * 撤销
    */
-  public undo(): boolean {
-    if (this.historyStack.length <= 1) return false; // 至少保留初始状态
+  public undo() {
+    if (this.historyStack.length <= 1) return null; // 至少保留初始状态
     const current = this.historyStack.pop();
-    if (!current) return false;
+    if (!current) return null;
     this.redoStack.push(current);
     const previous = this.historyStack[this.historyStack.length - 1];
-    return this.applySnapshot(previous);
+    const feature = this.applySnapshot(previous);
+    if (feature) {
+      this.handleRawEvent(ETransfrom.Undo, { feature });
+    }
   }
   /**
    * 重做
    */
-  public redo(): boolean {
-    if (!this.redoStack.length) return false;
+  public redo() {
+    if (!this.redoStack.length) return null;
     const snapshot = this.redoStack.pop();
-    if (!snapshot) return false;
+    if (!snapshot) return null;
     // 当前状态（应用前）入历史
     const currentFeature = this.getFeatureById(snapshot.id);
     if (currentFeature) {
@@ -475,8 +488,10 @@ export default class Transfrom {
       currentClone.setId(snapshot.id);
       this.historyStack.push({ id: snapshot.id, feature: currentClone });
     }
-
-    return this.applySnapshot(snapshot);
+    const feature = this.applySnapshot(snapshot);
+    if (feature) {
+      this.handleRawEvent(ETransfrom.Redo, { feature });
+    }
   }
   /**
    * 根据 id 获取要素
@@ -503,17 +518,16 @@ export default class Transfrom {
   /**
    * 应用一个快照到对应要素
    */
-  private applySnapshot(snapshot?: { id: string; feature: Feature }): boolean {
-    if (!snapshot || !snapshot.feature) return false;
+  private applySnapshot(snapshot?: { id: string; feature: Feature }): Feature | null {
+    if (!snapshot || !snapshot.feature) return null;
     const geomSnap = snapshot.feature.getGeometry?.();
-    if (!geomSnap) return false;
+    if (!geomSnap) return null;
     const { coords } = this.extractGeometryInfo(geomSnap);
     const type = snapshot.feature.get('layerType');
     const param = snapshot.feature.get('param');
     if (param && coords && type && this.checkLayer) {
       // 根据具体几何类型安全设置坐标
       let layer;
-      let flag = false;
       if (type == 'Point') {
         layer = this.checkLayer as PointLayer;
         // 还原点的属性（包括缩放、旋转等 style 信息存放在 param 中）
@@ -618,10 +632,9 @@ export default class Transfrom {
           this.toolbar.updateOptions({ point: bboxExtent[0][2] });
         }
       }
-      flag = true;
-      return flag;
+      return snapshot.feature;
     } else {
-      return false;
+      return null;
     }
   }
   /**
