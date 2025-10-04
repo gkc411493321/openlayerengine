@@ -267,7 +267,7 @@ export default class Base {
    */
   protected updatePolylineParam(feature: Feature<Geometry>): void {
     // 兼容普通 Polyline 与 飞行线 Polyline（IPolylineFlyParam 不继承 IPolylineParam，字段名称也不同: position vs positions）
-  const param = feature.get('param') as (IPolylineParam<unknown> | IPolylineFlyParam<unknown>) | undefined;
+    const param = feature.get('param') as (IPolylineParam<unknown> | IPolylineFlyParam<unknown>) | undefined;
     if (!param) return;
     const isNormalPolyline = (p: any): p is IPolylineParam<unknown> => 'positions' in p;
     const isFlyPolyline = (p: any): p is IPolylineFlyParam<unknown> => 'position' in p && !('positions' in p);
@@ -395,7 +395,7 @@ export default class Base {
         // 半径 -> size
         if (typeof image.getRadius === 'function') {
           const r = image.getRadius();
-            if (r != null) param.size = r;
+          if (r != null) param.size = r;
         }
         // stroke
         const stroke = image.getStroke && image.getStroke();
@@ -719,11 +719,11 @@ export default class Base {
         rotation: (typeof text.getRotation === 'function' ? text.getRotation() : undefined) || param.label?.rotation,
         fill: (() => {
           const f = text.getFill && text.getFill();
-            if (f && typeof f.getColor === 'function') {
-              const c = f.getColor();
-              if (c) return { color: c as string };
-            }
-            return param.label?.fill;
+          if (f && typeof f.getColor === 'function') {
+            const c = f.getColor();
+            if (c) return { color: c as string };
+          }
+          return param.label?.fill;
         })(),
         stroke: (() => {
           const s = text.getStroke && text.getStroke();
@@ -761,18 +761,27 @@ export default class Base {
         try {
           const pointGeom = geometry as import('ol/geom').Point;
           param.center = pointGeom.getCoordinates();
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
       }
       if (style) {
         const icon = style.getImage?.() as Icon | undefined;
         if (icon) {
-          const src = icon.getSrc(); if (src) param.src = src;
-          const size = icon.getSize(); if (size) param.size = size;
-          const color = icon.getColor(); if (typeof color === 'string') param.color = color;
-          const displacement = icon.getDisplacement(); if (Array.isArray(displacement)) param.displacement = displacement as number[];
-          const scaleVal = icon.getScale?.(); if (scaleVal) param.scale = scaleVal;
-          const rotation = icon.getRotation?.(); if (rotation != null) param.rotation = Utils.rad2deg(rotation);
-          const anchor = (icon as any).anchor_; if (anchor && Array.isArray(anchor)) param.anchor = anchor as number[];
+          const src = icon.getSrc();
+          if (src) param.src = src;
+          const size = icon.getSize();
+          if (size) param.size = size;
+          const color = icon.getColor();
+          if (typeof color === 'string') param.color = color;
+          const displacement = icon.getDisplacement();
+          if (Array.isArray(displacement)) param.displacement = displacement as number[];
+          const scaleVal = icon.getScale?.();
+          if (scaleVal) param.scale = scaleVal;
+          const rotation = icon.getRotation?.();
+          if (rotation != null) param.rotation = Utils.rad2deg(rotation);
+          const anchor = (icon as any).anchor_;
+          if (anchor && Array.isArray(anchor)) param.anchor = anchor as number[];
         }
         syncLabelCommon(style.getText?.());
       }
@@ -784,9 +793,12 @@ export default class Base {
           // 兼容普通与飞行线
           if ('positions' in param) param.positions = coords;
           if ('position' in param && !('positions' in param)) param.position = coords as number[][];
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
       }
-      if (style && 'positions' in param) { // 仅普通折线做样式同步
+      if (style && 'positions' in param) {
+        // 仅普通折线做样式同步
         const stroke = style.getStroke && style.getStroke();
         if (stroke && typeof stroke.getColor === 'function') {
           param.stroke = Object.assign({}, param.stroke, {
@@ -799,7 +811,8 @@ export default class Base {
         }
         const fill = style.getFill && style.getFill();
         if (fill && typeof fill.getColor === 'function') {
-          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+          const fillColor = fill.getColor();
+          if (fillColor) param.fill = { color: fillColor as string };
         }
         syncLabelCommon(style.getText?.());
       }
@@ -808,13 +821,16 @@ export default class Base {
         try {
           const point = geometry as import('ol/geom').Point;
           param.center = point.getCoordinates();
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
       }
       if (style) {
         const image: any = style.getImage && style.getImage();
         if (image) {
           if (typeof image.getRadius === 'function') {
-            const r = image.getRadius(); if (r != null) param.size = r;
+            const r = image.getRadius();
+            if (r != null) param.size = r;
           }
           const stroke = image.getStroke && image.getStroke();
           if (stroke && typeof stroke.getColor === 'function') {
@@ -827,7 +843,8 @@ export default class Base {
           }
           const fill = image.getFill && image.getFill();
           if (fill && typeof fill.getColor === 'function') {
-            const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+            const fillColor = fill.getColor();
+            if (fillColor) param.fill = { color: fillColor as string };
           }
         }
         syncLabelCommon(style.getText?.());
@@ -836,9 +853,11 @@ export default class Base {
       if (geometry && geometry.getType && geometry.getType() === 'Circle') {
         try {
           const circle = geometry as import('ol/geom').Circle;
-            param.center = circle.getCenter();
-            param.radius = circle.getRadius();
-        } catch (_) { /* ignore */ }
+          param.center = circle.getCenter();
+          param.radius = circle.getRadius();
+        } catch (_) {
+          /* ignore */
+        }
       }
       if (style) {
         const stroke = style.getStroke && style.getStroke();
@@ -852,7 +871,8 @@ export default class Base {
         }
         const fill = style.getFill && style.getFill();
         if (fill && typeof fill.getColor === 'function') {
-          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+          const fillColor = fill.getColor();
+          if (fillColor) param.fill = { color: fillColor as string };
         }
         syncLabelCommon(style.getText?.());
       }
@@ -861,7 +881,9 @@ export default class Base {
         try {
           const polygon = geometry as import('ol/geom').Polygon;
           param.positions = polygon.getCoordinates();
-        } catch (_) { /* ignore */ }
+        } catch (_) {
+          /* ignore */
+        }
       }
       if (style) {
         const stroke = style.getStroke && style.getStroke();
@@ -875,7 +897,8 @@ export default class Base {
         }
         const fill = style.getFill && style.getFill();
         if (fill && typeof fill.getColor === 'function') {
-          const fillColor = fill.getColor(); if (fillColor) param.fill = { color: fillColor as string };
+          const fillColor = fill.getColor();
+          if (fillColor) param.fill = { color: fillColor as string };
         }
         syncLabelCommon(style.getText?.());
       }

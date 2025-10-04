@@ -16,6 +16,9 @@ import { Utils } from '../common';
 import cloneDeep from 'lodash/cloneDeep';
 import { Toolbar } from './transform-interaction/toolbar/Toolbar';
 import { feature } from '@turf/turf';
+import { Layer } from 'ol/layer';
+import { Source } from 'ol/source';
+import LayerRenderer from 'ol/renderer/Layer';
 
 export default class Transfrom {
   /**
@@ -90,6 +93,10 @@ export default class Transfrom {
    * 键盘事件处理函数（用于销毁时解绑）
    */
   private keyDownFun: (() => void) | undefined;
+  /**
+   * 是否进入复制状态
+   */
+  private copyStatus: { id: string } | null = null;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -418,7 +425,90 @@ export default class Transfrom {
       this.transforms.exitEdit(pixel);
     } else if (key === 'remove') {
       this.handleRemoveEvent(pixel);
+    } else if (key === 'copy') {
+      // 注意：不能对 OpenLayers Feature 使用 lodash.cloneDeep，否则其原型方法(get/getGeometry等)会丢失，
+      // 导致复制过程中无法获取几何与属性，出现“复制后元素不显示 / 不创建”的问题（尤其在跨屏或快速移动时更明显）。
+      // 这里直接传入原始 Feature（方法内只读使用），避免破坏。
+      this.handleCopyEvent(this.checkSelect);
+      this.transforms.exitEdit(pixel);
     }
+  }
+  /**
+   * 处理元素复制
+   */
+  private handleCopyEvent(feature: any) {
+    if (!feature) return;
+    const type: string = feature.get('layerType');
+    const originParam = cloneDeep(feature.get('param')) || {};
+    const layer = this.getLayerByFeature(feature) as any;
+    if (!layer) return;
+    // 预取原始几何坐标，避免每帧读取 geometry
+    const geom = feature.getGeometry();
+    if (!geom) return;
+    const baseCoords = type === 'Circle' ? (geom as any).getCenter() : (geom as any).getCoordinates ? (geom as any).getCoordinates() : null;
+    if (!baseCoords) return;
+    // 节流（约 60fps -> wait ~16ms）
+    const moveHandler = Utils.throttle(
+      (evt: { pixel: number[] }) => {
+        this.updateHelpTooltip('点击地图完成复制,右键地图退出复制');
+        let newValue: any = null;
+        if (type === 'Point' || type === 'Billboard') {
+          newValue = Utils.getFeatureToPixel(evt.pixel, baseCoords);
+          originParam.center = newValue;
+        } else if (type === 'Polygon' || type === 'Polyline') {
+          newValue = Utils.getFeatureToPixel(evt.pixel, baseCoords);
+          originParam.positions = newValue;
+        } else if (type === 'Circle') {
+          newValue = Utils.getFeatureToPixel(evt.pixel, baseCoords);
+          originParam.center = newValue; // center
+        }
+        if (!this.copyStatus) {
+          originParam.id = Utils.GetGUID();
+          // 初次创建：add 一次
+          layer.add(originParam);
+          this.copyStatus = { id: originParam.id };
+        } else if (originParam.id) {
+          // 更新位置（优先 center 否则 positions）
+          layer.setPosition?.(originParam.id, originParam.center || originParam.positions);
+        }
+      },
+      16,
+      { leading: true, trailing: true }
+    );
+
+    // 启用全局鼠标移动
+    useEarth().useGlobalEvent().enableGlobalMouseMoveEvent();
+    useEarth()
+      .useGlobalEvent()
+      .addMouseMoveEventByGlobal((event) => moveHandler(event));
+
+    useEarth()
+      .useGlobalEvent()
+      .addMouseOnceClickEventByGlobal((event) => {
+        // 确定复制要素
+        if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
+          useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
+          moveHandler.flush?.();
+          this.copyStatus = null;
+        }
+      });
+    useEarth()
+      .useGlobalEvent()
+      .addMouseOnceRightClickEventByGlobal((event) => {
+        // 取消复制要输
+        if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
+          useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
+          moveHandler.cancel?.();
+          if (this.copyStatus?.id) {
+            try {
+              layer.remove(this.copyStatus.id);
+            } catch (_) {
+              /* ignore */
+            }
+          }
+          this.copyStatus = null;
+        }
+      });
   }
   /**
    * 处理删除事件
@@ -959,5 +1049,6 @@ export default class Transfrom {
     this.disposed = true;
     this.historyStack = [];
     this.redoStack = [];
+    this.copyStatus = null;
   }
 }

@@ -27,7 +27,7 @@ window.onload = () => {
   testTransfrom();
   // testOverlayLayer();
   // testGlobalEvent();
-  testDynamicDraw();
+  // testDynamicDraw();
   // testMeasure();
   // testWindLayer();
   // testDescriptor();
