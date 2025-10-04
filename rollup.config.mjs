@@ -43,7 +43,7 @@ const isProd = mode === 'prod';
 
 export default defineConfig({
   input: `src/index.ts`,
-  // external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
+  external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
   output: [
     {
       file: pkg.main,
@@ -94,10 +94,15 @@ export default defineConfig({
       ],
       hook: 'writeBundle'
     }),
-    typescript(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      declaration: true,
+      declarationDir: 'dist/types',
+      emitDeclarationOnly: false
+    }),
     shader(),
     nodeResolve(),
-    commonjs(),
-    // terser()
+  commonjs(),
+  terser()
   ]
 });

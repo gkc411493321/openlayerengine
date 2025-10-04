@@ -5,19 +5,19 @@
 
     /* Basic Options */
     // "incremental": true,                   /* Enable incremental compilation */
-    "target": "ES5" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019', 'ES2020', or 'ESNEXT'. */,
+  "target": "ES2018" /* 升级目标，保留原生 class 继承，避免 OpenLayers PointerInteraction 在 ES5 降级下出现 "Class constructor ... cannot be invoked without 'new'" 错误。 */,
     "module": "ESNext" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', 'es2020', or 'ESNext'. */,
     // "lib": [],                             /* Specify library files to be included in the compilation. */
     // "allowJs": true,                       /* Allow javascript files to be compiled. */
     // "checkJs": true,                       /* Report errors in .js files. */
     // "jsx": "preserve",                     /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
-    "declaration": true /* Generates corresponding '.d.ts' file. */,
-    "declarationDir": "./types",
+  "declaration": true /* Generates corresponding '.d.ts' file. */,
+  "declarationDir": "./dist/types",
     // "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
     // "sourceMap": true /* Generates corresponding '.map' file. */,
     // "outFile": "./cesium-extend",                       /* Concatenate and emit output to single file. */
     "outDir": "./dist" /* Redirect output structure to the directory. */,
-    // "rootDir": "./src" /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */,
+  "rootDir": "./src" /* 设定 rootDir 使声明文件不再多一层 src 目录，生成 dist/types/index.d.ts */,
     // "composite": true /* Enable project compilation */,
     // "tsBuildInfoFile": "./",               /* Specify file to store incremental compilation information */
     // "removeComments": true,                /* Do not emit comments to output. */
@@ -66,6 +66,15 @@
 
     /* Advanced Options */
     "skipLibCheck": true /* Skip type checking of declaration files. */,
-    "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
-  }
+  "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
+  "types": ["node"]
+  },
+  "exclude": [
+    "vite.config.ts",
+    "rollup.config.mjs",
+    "typedoc.json",
+    "dist",
+    "node_modules",
+    ".test"
+  ]
 }
