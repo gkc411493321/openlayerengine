@@ -16,6 +16,26 @@ import url from '@rollup/plugin-url';
 import postcss from 'rollup-plugin-postcss';
 import { defineConfig } from 'rollup';
 import copy from 'rollup-plugin-copy';
+import fs from 'fs';
+
+// 自定义 ?raw 资源加载插件，使 *.svg?raw 返回源代码字符串（兼容 vite 风格导入）
+function rawPlugin() {
+  return {
+    name: 'raw-plugin',
+    load(id) {
+      if (id.endsWith('?raw')) {
+        const realId = id.replace(/\?raw$/, '');
+        try {
+          const code = fs.readFileSync(realId, 'utf-8');
+          return `export default ${JSON.stringify(code)};`;
+        } catch (e) {
+          this.error(`raw-plugin: cannot read file ${realId}: ${e}`);
+        }
+      }
+      return null;
+    }
+  };
+}
 
 // eslint-disable-next-line no-undef
 const mode = process.env.MODE;
@@ -23,7 +43,7 @@ const isProd = mode === 'prod';
 
 export default defineConfig({
   input: `src/index.ts`,
-  external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
+  // external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
   output: [
     {
       file: pkg.main,
@@ -50,6 +70,8 @@ export default defineConfig({
     }
   ],
   plugins: [
+    // 放在最前，优先截获 *?raw 资源
+    rawPlugin(),
     // 处理样式（SCSS -> 单独 CSS 文件 dist/index.css）
     postcss({
       extract: true,
@@ -76,6 +98,6 @@ export default defineConfig({
     shader(),
     nodeResolve(),
     commonjs(),
-    terser()
+    // terser()
   ]
 });
