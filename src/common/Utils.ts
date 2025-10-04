@@ -1,19 +1,95 @@
-import { IPointParam } from "interface";
-import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { easeOut } from "ol/easing";
-import { getWidth } from "ol/extent";
-import { Geometry, Point } from "ol/geom";
-import VectorLayer from "ol/layer/Vector";
-import { unByKey } from "ol/Observable";
-import { getVectorContext } from "ol/render";
-import RenderEvent from "ol/render/Event";
-import VectorSource from "ol/source/Vector";
-import { Style, Stroke, Icon } from "ol/style";
-import CircleStyle from "ol/style/Circle";
-import { useEarth } from "../useEarth";
+import { IPointParam } from 'interface';
+import { Feature } from 'ol';
+import { Coordinate } from 'ol/coordinate';
+import { easeOut } from 'ol/easing';
+import { getWidth } from 'ol/extent';
+import { Geometry, Point } from 'ol/geom';
+import VectorLayer from 'ol/layer/Vector';
+import { unByKey } from 'ol/Observable';
+import { getVectorContext } from 'ol/render';
+import RenderEvent from 'ol/render/Event';
+import VectorSource from 'ol/source/Vector';
+import { Style, Stroke, Icon } from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
+import { useEarth } from '../useEarth';
+import cloneDeep from 'lodash/cloneDeep';
 
 export default class Utils<T> {
+  /**
+   * 将 feature 平移到指定屏幕像素 pixel 位置（pixel 为地图容器内像素坐标）
+   * 支持 Point、LineString、Polygon、Circle
+   * 返回新的坐标数组或参数对象（不直接修改原 feature）
+   * @param pixel 屏幕像素坐标 [x, y]
+   * @param feature OpenLayers Feature 实例
+   */
+  static moveFeatureToPixel(pixel: number[], feature: Feature): Feature | null {
+    feature = cloneDeep(feature);
+    const map = useEarth().map;
+    const geometry = feature.getGeometry();
+    if (!geometry) return null;
+    const type = geometry.getType();
+    const newCenter = map.getCoordinateFromPixel(pixel);
+    if (!newCenter) return null;
+    const properties = feature.getProperties();
+    if (!properties || !properties.param) return null;
+    properties.param.id = this.GetGUID();
+    if (properties.listenerKey) delete properties.listenerKey;
+    const newFeature = new Feature();
+    newFeature.setProperties(properties);
+    // Point
+    if (type === 'Point') {
+      newFeature.setGeometry(new Point(newCenter));
+      return newFeature;
+    }
+    // Circle
+    if (type === 'Circle') {
+      const circle = geometry as import('ol/geom').Circle;
+      const radius = circle.getRadius();
+      newFeature.setGeometry(new (circle.constructor as any)(newCenter, radius));
+      return newFeature;
+    }
+    // LineString / MultiPoint
+    if (type === 'LineString' || type === 'MultiPoint') {
+      const coords = (geometry as any).getCoordinates() as number[][];
+      const extent = geometry.getExtent();
+      const [cx, cy] = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+      const dx = newCenter[0] - cx;
+      const dy = newCenter[1] - cy;
+      const newCoords = coords.map((c: number[]) => [c[0] + dx, c[1] + dy]);
+      const geom = (geometry as any).clone();
+      geom.setCoordinates(newCoords);
+      newFeature.setGeometry(geom);
+      return newFeature;
+    }
+    // Polygon / MultiLineString
+    if (type === 'Polygon' || type === 'MultiLineString') {
+      const coords = (geometry as any).getCoordinates() as number[][][];
+      const extent = geometry.getExtent();
+      const [cx, cy] = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+      const dx = newCenter[0] - cx;
+      const dy = newCenter[1] - cy;
+      const newCoords = coords.map((ring: number[][]) => ring.map((c: number[]) => [c[0] + dx, c[1] + dy]));
+      const geom = (geometry as any).clone();
+      geom.setCoordinates(newCoords);
+      newFeature.setGeometry(geom);
+      return newFeature;
+    }
+    // MultiPolygon
+    if (type === 'MultiPolygon') {
+      const coords = (geometry as any).getCoordinates() as number[][][][];
+      const extent = geometry.getExtent();
+      const [cx, cy] = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+      const dx = newCenter[0] - cx;
+      const dy = newCenter[1] - cy;
+      const newCoords = coords.map((poly: number[][][]) => poly.map((ring: number[][]) => ring.map((c: number[]) => [c[0] + dx, c[1] + dy])));
+      const geom = (geometry as any).clone();
+      geom.setCoordinates(newCoords);
+      newFeature.setGeometry(geom);
+      return newFeature;
+    }
+    // 其他类型暂不支持
+    return null;
+  }
   /**
    * @description: 获取一个新的GUID
    * @param {'N'|'D'|'B'|'P'|'X'} format 输出字符串样式，N-无连接符、D-减号连接符，BPX-未实现，默认D
@@ -51,9 +127,9 @@ export default class Utils<T> {
    * @author: wuyue.nan
    */
   static linearInterpolation(startPos: number[], endPos: number[], t: number): number[] {
-  const a = this.constantMultiVector2(1 - t, startPos)
-  const b = this.constantMultiVector2(t, endPos)
-    return this.vector2Add(a, b)
+    const a = this.constantMultiVector2(1 - t, startPos);
+    const b = this.constantMultiVector2(t, endPos);
+    return this.vector2Add(a, b);
   }
   /**
    * @description: 常数乘以二维向量数组的函数
@@ -73,7 +149,7 @@ export default class Utils<T> {
    * @author: wuyue.nan
    */
   static vector2Add(a: number[], b: number[]): number[] {
-    return [a[0] + b[0], a[1] + b[1]]
+    return [a[0] + b[0], a[1] + b[1]];
   }
 
   /**
@@ -86,18 +162,18 @@ export default class Utils<T> {
    * @author: wuyue.nan
    */
   static bezierSquareCalc(startPos: number[], center: number[], endPos: number[], t: number): number[] {
-  const a = this.constantMultiVector2(Math.pow((1 - t), 2), startPos)
-  const b = this.constantMultiVector2((2 * t * (1 - t)), center)
-  const c = this.constantMultiVector2(Math.pow(t, 2), endPos)
-    return this.vector2Add(this.vector2Add(a, b), c)
+    const a = this.constantMultiVector2(Math.pow(1 - t, 2), startPos);
+    const b = this.constantMultiVector2(2 * t * (1 - t), center);
+    const c = this.constantMultiVector2(Math.pow(t, 2), endPos);
+    return this.vector2Add(this.vector2Add(a, b), c);
   }
   /**
-  * 创建样式
-  * @param start 开始点 
-  * @param end 结束点
-  * @param color 填充颜色
-  * @returns 返回`Style`
-  */
+   * 创建样式
+   * @param start 开始点
+   * @param end 结束点
+   * @param color 填充颜色
+   * @returns 返回`Style`
+   */
   static createStyle(start: Coordinate, end: Coordinate, color?: string): Style {
     const dx = end[0] - start[0];
     const dy = end[1] - start[1];
@@ -105,14 +181,14 @@ export default class Utils<T> {
     const style = new Style({
       geometry: new Point(end),
       image: new Icon({
-  src: '/image/arrow.svg',
+        src: '/image/arrow.svg',
         anchor: [0.75, 0.5],
         imgSize: [16, 16],
         rotateWithView: true,
         rotation: -rotation,
-        color: color || "#ffcc33"
+        color: color || '#ffcc33'
       })
-    })
+    });
     return style;
   }
   /**
@@ -156,20 +232,20 @@ export default class Utils<T> {
               radius: radius,
               stroke: new Stroke({
                 color: `rgba(${options.flashColor.R}, ${options.flashColor.G}, ${options.flashColor.B},${opacity})`,
-                width: 0.25 + opacity,
-              }),
-            }),
+                width: 0.25 + opacity
+              })
+            })
           });
-          const flashGeomClone = flashGeom.clone()
+          const flashGeomClone = flashGeom.clone();
           vectorContext.setStyle(style);
           flashGeomClone.translate(offset * worldWidth, 0);
           vectorContext.drawGeometry(flashGeomClone);
           flashGeomClone.translate(worldWidth, 0);
           vectorContext.drawGeometry(flashGeomClone);
-          layer.changed()
+          layer.changed();
         }
       });
-      feature.set("listenerKey", listenerKey);
+      feature.set('listenerKey', listenerKey);
     }
   }
 
@@ -193,6 +269,6 @@ export default class Utils<T> {
    */
   static rad2deg(rad: number): number {
     const deg = (rad * 180) / Math.PI;
-    return (deg % 360 + 360) % 360;
+    return ((deg % 360) + 360) % 360;
   }
 }

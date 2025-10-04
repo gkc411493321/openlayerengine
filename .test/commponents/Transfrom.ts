@@ -1,4 +1,4 @@
-import { BillboardLayer, CircleLayer, ETransfrom, PointLayer, PolygonLayer, PolylineLayer, Transfrom, useEarth } from '../../src';
+import { BillboardLayer, CircleLayer, ETransfrom, PointLayer, PolygonLayer, PolylineLayer, Transfrom, useEarth, Utils } from '../../src';
 
 export const testTransfrom = () => {
   const transfrom = new Transfrom({});

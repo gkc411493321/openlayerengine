@@ -188,7 +188,6 @@ export default class Transfrom {
           this.undo();
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
-          console.log('undo');
         }
         if (event.key === 'y' && event.ctrlKey && this.checkSelect) {
           // 重做
