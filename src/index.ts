@@ -1,7 +1,7 @@
 // 引入 OpenLayers 默认样式，随库一起打包/抽取，消费端无需单独再 import 'ol/ol.css'
 import 'ol/ol.css';
 // 全局样式（打包时由 rollup postcss 提取出 dist/index.css）
-import './style/index.scss';
+import './assets/style/index.scss';
 
 
 export { default as Earth } from './Earth';

@@ -11,7 +11,7 @@ import { testDynamicDraw } from './commponents/DynamicDraw';
 import { testGlobalEvent } from './commponents/GlobalEvent';
 import { testMeasure } from './commponents/Measure';
 import { testContextMenu } from './commponents/ContextMenu';
-import '../src/style/index.scss';
+import '../src/assets/style/index.scss';
 import { testTransfrom } from './commponents/Transfrom';
 
 window.onload = () => {
