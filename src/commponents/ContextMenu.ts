@@ -1,6 +1,7 @@
 import { useEarth } from "../useEarth";
 import Earth from "../Earth";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface IContextMenuOption {
 
 }
@@ -32,24 +33,28 @@ export default class ContextMenu {
   /**
    * 按模块添加点击事件
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   public addModuleMenu() {
 
   }
   /**
    * 设置默认点击事件
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   public addDefaultMenu() {
 
   }
   /**
    * 按模块销毁菜单
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   public remove() {
 
   }
   /**
    * 销毁菜单
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   public destory() {
 
   }

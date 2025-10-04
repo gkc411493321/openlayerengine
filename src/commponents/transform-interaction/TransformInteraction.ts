@@ -50,6 +50,13 @@ import Map from 'ol/Map';
 import { EventsKey } from 'ol/events';
 import { ol_ext_element } from './element';
 import { useEarth } from '../../useEarth';
+// 资源通过 ESM import 让打包器处理（方案A）
+import rotateSvg from '../../assets/image/rotate.png';
+import stretchHImg from '../../assets/image/stretchH.png';
+import stretchVImg from '../../assets/image/stretchV.png';
+import scalePng from '../../assets/image/scale.png';
+import translatePng from '../../assets/image/translate.png';
+import centerPng from '../../assets/image/center.png';
 // import { fromLonLat } from 'ol/proj'; // 未使用，移除避免 lint 警告
 // 静态资源（rollup url 插件处理）
 // 使用公共目录下的静态资源路径（开发时由 Vite public/ 提供，构建时复制到 dist/image）
@@ -385,12 +392,12 @@ class TransformInteraction extends PointerInteraction {
     const dashStroke = new Stroke({ color: [80, 80, 80], width: 1, lineDash: [6, 4] });
     const dashStrokeOff = new Stroke({ color: [80, 80, 80, 0.2], width: 1, lineDash: [6, 4] }); // 闪烁隐藏态降低透明度
 
-    const rotate = new Icon({ src: '/image/rotate.svg', color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
-    const stretchH = new Icon({ src: '/image/stretchH.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const stretchV = new Icon({ src: '/image/stretchV.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const scaleI = new Icon({ src: '/image/scale.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const translate = new Icon({ src: '/image/translate.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-    const center = new Icon({ src: '/image/center.png', color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const rotate = new Icon({ src: rotateSvg, color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
+  const stretchH = new Icon({ src: stretchHImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const stretchV = new Icon({ src: stretchVImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const scaleI = new Icon({ src: scalePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const translate = new Icon({ src: translatePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+  const center = new Icon({ src: centerPng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
     const bigpt = new RegularShape({ stroke: new Stroke({ color: '#f38200ff', width: 1 }), radius: this.isTouch ? 12 : 6, points: 14, angle: Math.PI / 4 });
 
     const createStyle = (img: any, s: Stroke, f: Fill) => [new Style({ image: img, stroke: s, fill: f })];

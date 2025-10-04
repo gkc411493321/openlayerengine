@@ -43,7 +43,8 @@ const isProd = mode === 'prod';
 
 export default defineConfig({
   input: `src/index.ts`,
-  external: ['cesium', 'ol', '@turf/turf', 'mitt', 'heatmap.js'],
+  // 不再 external 'ol' 与 '@turf/turf'，打包进产物，消费端无需单独安装它们
+  external: ['cesium', 'mitt', 'heatmap.js'],
   output: [
     {
       file: pkg.main,
@@ -62,8 +63,8 @@ export default defineConfig({
       format: 'iife',
       sourcemap: !isProd,
       globals: {
+        // 仅对 external 的依赖提供全局变量映射
         cesium: 'Cesium',
-        '@turf/turf': 'Turf',
         mitt: 'Mitt',
         'heatmap.js': 'Heatmap'
       }
@@ -81,14 +82,19 @@ export default defineConfig({
       use: ['sass']
     }),
     // 小图片自动转 base64，大于 limit 的复制到 dist/assets
+    // 资源文件处理：此前使用 limit:4096 以内联小图片，但出现部分 png 被压缩后 dataURI 内容为空的问题（可能与某些工具链/缓存交互有关）。
+    // 为保证发布库中引用的图标路径稳定且便于调试，这里改为 limit:0 强制始终复制到 dist/assets 下。
+    // 下游使用时可自行选择再行处理（例如通过构建工具做进一步的资产哈希或内联优化）。
     url({
       include: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg'],
+      // 将小图标（<4KB）内联为 data URI，减少消费端路径依赖；较大资源仍输出到 dist/assets
       limit: 4096,
       fileName: 'assets/[name][hash][extname]'
     }),
     copy({
       targets: [
-        { src: 'public/image/*', dest: 'dist/image' },
+        // 说明：原先复制 public/image/* 以供硬编码 /image/... 引用；
+        // 现已改为 ESM import 引入 src/assets/image 下的资源交由 url 插件处理 -> 移除以避免与文件句柄冲突 (EBUSY)。
         { src: 'public/earthspec1k.jpg', dest: 'dist' },
         { src: 'public/waterNormals.jpg', dest: 'dist' }
       ],

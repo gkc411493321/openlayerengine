@@ -1,5 +1,6 @@
 // 一个用于描述 flyLine 属性 的数据源
 import { Utils } from "../../common";
+import arrowSvg from '../../assets/image/arrow.svg';
 
 interface IParams {
   times: number;
@@ -57,7 +58,8 @@ export default class FlightLineSource {
      * 箭头相关
      */
   this.arrowImage = new Image()
-  this.arrowImage.src = '/image/arrow.svg'
+  // 使用打包后的资源路径
+  this.arrowImage.src = arrowSvg
     this.arrowLoad = false
     this.arrowImage.onload = () => {
       this.arrowLoad = true

@@ -18,10 +18,8 @@
   },
   "author": "wuyue",
   "peerDependencies": {
-    "@turf/turf": "^6.5.0",
     "heatmap.js": "^2.0.5",
-    "mitt": "^3.0.0",
-    "ol": "^7.2.2"
+    "mitt": "^3.0.0"
   },
   "dependencies": {
     "lodash": "^4.17.21",
@@ -29,6 +27,8 @@
     "ol-wind": "^1.1.2"
   },
   "devDependencies": {
+    "@turf/turf": "^6.5.0",
+    "ol": "^7.2.2",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "^0.4.0",
