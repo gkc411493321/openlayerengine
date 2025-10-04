@@ -663,11 +663,12 @@ class TransformInteraction extends PointerInteraction {
       if (img.getScale) {
         const sc: any = img.getScale();
         if (Array.isArray(sc)) {
-          sx = sc[0] || 1;
-          sy = sc[1] || 1;
+          // 翻转（scale 可能为负）时使用绝对值，保证命中检测 bbox 正常
+          sx = Math.abs(sc[0] || 1);
+          sy = Math.abs(sc[1] || 1);
         } else if (typeof sc === 'number') {
-          sx = sc;
-          sy = sc;
+          sx = Math.abs(sc);
+          sy = Math.abs(sc);
         }
       }
       return [w * sx, h * sy];
@@ -1585,11 +1586,12 @@ class TransformInteraction extends PointerInteraction {
               // 优先矩形尺寸，其次圆形半径
               const base = getBaseSize();
               if (base) {
-                return [(base[0] * sx) / 2, (base[1] * sy) / 2];
+                // 取绝对值以避免翻转后出现负半径导致 bbox 判断失败
+                return [Math.abs(base[0] * sx) / 2, Math.abs(base[1] * sy) / 2];
               }
               if (image.getRadius) {
                 const r = image.getRadius();
-                if (r) return [r * sx, r * sy];
+                if (r) return [Math.abs(r * sx), Math.abs(r * sy)];
               }
             }
           }
@@ -1621,7 +1623,10 @@ class TransformInteraction extends PointerInteraction {
             }
             return [1, 1];
           };
-          const [sx, sy] = getScalePair();
+          // 负 scale 代表翻转，这里取绝对值用于视觉半径
+          const [rawSx, rawSy] = getScalePair();
+          const sx = Math.abs(rawSx);
+          const sy = Math.abs(rawSy);
           const sizes: [number, number][] = [];
           if (image.getImageSize) {
             const isz = image.getImageSize();
@@ -1643,7 +1648,7 @@ class TransformInteraction extends PointerInteraction {
           }
           if (image.getRadius) {
             const r = image.getRadius();
-            if (r) return r * Math.max(sx, sy);
+            if (r) return Math.abs(r) * Math.max(sx, sy);
           }
         }
       }
