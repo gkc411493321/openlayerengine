@@ -97,6 +97,14 @@ export default class Transfrom {
    * 是否进入复制状态
    */
   private copyStatus: any = null;
+  /**
+   * 复制的要素
+   */
+  private copyFeature: any = null;
+  /** 最近一次 pointermove 的像素坐标（相对地图容器）。用于纯键盘事件（如 Ctrl+V）需要定位时 */
+  private lastPointerPixel: number[] | null = null;
+  /** pointermove 监听 key，用于销毁解绑 */
+  private pointerMoveKey: EventsKey | undefined;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -106,6 +114,8 @@ export default class Transfrom {
     this.setupEventPipeline();
     // 初始化键盘事件
     this.setupKeyDownEvent();
+    // 跟踪鼠标位置，供键盘触发操作使用
+    this.setupPointerTrack();
   }
   /**
    * 创建变换实例
@@ -186,25 +196,26 @@ export default class Transfrom {
     this.keyDownFun = useEarth()
       .useGlobalEvent()
       .addKeyDownEventByGlobal((event) => {
-        if (event.key === 'Escape' && this.checkSelect) {
+        const key = event.key.toLowerCase();
+        if (key === 'Escape' && this.checkSelect) {
           let extent: any = this.checkSelect.getGeometry()?.getExtent();
           extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
           // 退出编辑
           this.transforms.exitEdit(extent);
         }
-        if (event.key === 'z' && event.ctrlKey && this.checkSelect) {
+        if (key === 'z' && event.ctrlKey && this.checkSelect) {
           // 回退
           this.undo();
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
-        if (event.key === 'y' && event.ctrlKey && this.checkSelect) {
+        if (key === 'y' && event.ctrlKey && this.checkSelect) {
           // 重做
           this.redo();
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
-        if (event.key === 'Delete' && this.checkSelect) {
+        if (key === 'Delete' && this.checkSelect) {
           let extent: any = this.checkSelect.getGeometry()?.getExtent();
           extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
           // 删除
@@ -212,7 +223,62 @@ export default class Transfrom {
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
+        if (key.toLowerCase() === 'c' && event.ctrlKey && this.checkSelect) {
+          // 复制
+          this.copyFeature = cloneDeep(this.checkSelect);
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+        }
+        if (key.toLowerCase() === 'v' && event.ctrlKey && this.copyFeature) {
+          // 粘贴
+          if (this.checkSelect) {
+            let extent: any = this.checkSelect.getGeometry()?.getExtent();
+            extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
+            this.transforms.exitEdit(extent);
+          }
+          // 优先使用最近一次 pointermove 记录的像素
+          let pixel: number[] | undefined = this.lastPointerPixel ? [...this.lastPointerPixel] : undefined;
+          if (!pixel) {
+            // 回退：使用地图中心像素
+            try {
+              const size = useEarth().map.getSize();
+              if (size) pixel = [size[0] / 2, size[1] / 2];
+            } catch (_) {
+              pixel = [0, 0];
+            }
+          }
+          if (pixel) this.handleCopyEvent(this.copyFeature, pixel);
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+        }
+        if (key.toLowerCase() === 'x' && event.ctrlKey && this.checkSelect) {
+          // 剪切
+          this.copyFeature = cloneDeep(this.checkSelect);
+          let extent: any = this.checkSelect.getGeometry()?.getExtent();
+          extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
+          // 删除
+          this.handleRemoveEvent(extent);
+          // 设置鼠标默认样式
+          useEarth().setMouseStyleToDefault();
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+        }
       });
+  }
+
+  /**
+   * 监听 pointermove 记录最后的像素位置
+   */
+  private setupPointerTrack() {
+    try {
+      this.pointerMoveKey = useEarth().map.on('pointermove', (evt: any) => {
+        if (evt && Array.isArray(evt.pixel)) {
+          this.lastPointerPixel = evt.pixel.slice();
+        }
+      });
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   /**
@@ -431,14 +497,15 @@ export default class Transfrom {
       // 注意：不能对 OpenLayers Feature 使用 lodash.cloneDeep，否则其原型方法(get/getGeometry等)会丢失，
       // 导致复制过程中无法获取几何与属性，出现“复制后元素不显示 / 不创建”的问题（尤其在跨屏或快速移动时更明显）。
       // 这里直接传入原始 Feature（方法内只读使用），避免破坏。
-      this.handleCopyEvent(this.checkSelect);
+      this.copyFeature = cloneDeep(this.checkSelect);
+      this.handleCopyEvent(this.copyFeature);
       this.transforms.exitEdit(pixel);
     }
   }
   /**
    * 处理元素复制
    */
-  private handleCopyEvent(feature: any) {
+  private handleCopyEvent(feature: any, pixel?: number[]) {
     if (!feature) return;
     const type: string = feature.get('layerType');
     const originParam = cloneDeep(feature.get('param')) || {};
@@ -477,37 +544,52 @@ export default class Transfrom {
       16,
       { leading: true, trailing: true }
     );
+    if (!pixel) {
+      // 启用全局鼠标移动
+      useEarth().useGlobalEvent().enableGlobalMouseMoveEvent();
+      useEarth()
+        .useGlobalEvent()
+        .addMouseMoveEventByGlobal((event) => moveHandler(event));
 
-    // 启用全局鼠标移动
-    useEarth().useGlobalEvent().enableGlobalMouseMoveEvent();
-    useEarth()
-      .useGlobalEvent()
-      .addMouseMoveEventByGlobal((event) => moveHandler(event));
-
-    useEarth()
-      .useGlobalEvent()
-      .addMouseOnceClickEventByGlobal((event) => {
-        // 确定复制要素
-        if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
-          useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
-          moveHandler.flush?.();
-          this.copyStatus = null;
-          // 触发copy事件通知外部
-          this.handleRawEvent(ETransfrom.Copy, { feature: layer.get(originParam.id) ? layer.get(originParam.id)[0] : null, pixel: event.pixel });
-          this.removeHelpTooltip();
-        }
-      });
-    useEarth()
-      .useGlobalEvent()
-      .addMouseOnceRightClickEventByGlobal((event) => {
-        // 取消复制要输
-        if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
-          useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
-          moveHandler.cancel?.();
-          layer.remove(this.copyStatus?.id);
-          this.copyStatus = null;
-        }
-      });
+      useEarth()
+        .useGlobalEvent()
+        .addMouseOnceClickEventByGlobal((event) => {
+          // 确定复制要素
+          if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
+            useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
+            moveHandler.flush?.();
+            this.copyStatus = null;
+            // 触发copy事件通知外部
+            this.handleRawEvent(ETransfrom.Copy, { feature: layer.get(originParam.id) ? layer.get(originParam.id)[0] : null, pixel: event.pixel });
+            this.removeHelpTooltip();
+          }
+        });
+      useEarth()
+        .useGlobalEvent()
+        .addMouseOnceRightClickEventByGlobal((event) => {
+          // 取消复制要输
+          if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
+            useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
+            moveHandler.cancel?.();
+            layer.remove(this.copyStatus?.id);
+            this.copyStatus = null;
+          }
+        });
+    } else {
+      const newValue = Utils.getFeatureToPixel(pixel, baseCoords);
+      if (type === 'Point' || type === 'Billboard') {
+        originParam.center = newValue;
+      } else if (type === 'Polygon' || type === 'Polyline') {
+        originParam.positions = newValue;
+      } else if (type === 'Circle') {
+        originParam.center = newValue; // center
+      }
+      originParam.id = Utils.GetGUID();
+      // 初次创建：add 一次
+      layer.add(originParam);
+      // 触发copy事件通知外部
+      this.handleRawEvent(ETransfrom.Copy, { feature: layer.get(originParam.id) ? layer.get(originParam.id)[0] : null, pixel: pixel });
+    }
   }
   /**
    * 处理删除事件
@@ -1049,5 +1131,10 @@ export default class Transfrom {
     this.historyStack = [];
     this.redoStack = [];
     this.copyStatus = null;
+    this.copyFeature = null;
+    if (this.pointerMoveKey) {
+      unByKey(this.pointerMoveKey);
+      this.pointerMoveKey = undefined;
+    }
   }
 }
