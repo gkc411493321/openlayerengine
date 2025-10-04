@@ -178,9 +178,9 @@ export default class Transfrom {
       .useGlobalEvent()
       .addKeyDownEventByGlobal((event) => {
         if (event.key === 'Escape' && this.checkSelect) {
-          // 退出编辑
           let extent: any = this.checkSelect.getGeometry()?.getExtent();
           extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
+          // 退出编辑
           this.transforms.exitEdit(extent);
         }
         if (event.key === 'z' && event.ctrlKey && this.checkSelect) {
@@ -193,6 +193,14 @@ export default class Transfrom {
         if (event.key === 'y' && event.ctrlKey && this.checkSelect) {
           // 重做
           this.redo();
+          // 阻止默认行为，例如防止浏览器保存页面
+          event.preventDefault();
+        }
+        if (event.key === 'Delete' && this.checkSelect) {
+          let extent: any = this.checkSelect.getGeometry()?.getExtent();
+          extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
+          // 删除
+          this.handleRemoveEvent(extent);
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
@@ -276,7 +284,7 @@ export default class Transfrom {
         };
         this.checkEnterHandle = false;
       }
-    } else if (eventName === ETransfrom.Undo || eventName === ETransfrom.Redo) {
+    } else if (eventName === ETransfrom.Undo || eventName === ETransfrom.Redo || eventName === ETransfrom.Remove) {
       callbackParam = {
         type: eventName,
         featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
@@ -408,6 +416,18 @@ export default class Transfrom {
     } else if (key === 'redo') {
       this.redo();
     } else if (key === 'exit') {
+      this.transforms.exitEdit(pixel);
+    } else if (key === 'remove') {
+      this.handleRemoveEvent(pixel);
+    }
+  }
+  /**
+   * 处理删除事件
+   */
+  private handleRemoveEvent(pixel: number[]) {
+    if (this.checkSelect && this.checkLayer) {
+      this.checkLayer.remove(this.checkSelect.getId() as string);
+      this.handleRawEvent(ETransfrom.Remove, { feature: cloneDeep(this.checkSelect) });
       this.transforms.exitEdit(pixel);
     }
   }
@@ -926,6 +946,7 @@ export default class Transfrom {
   public destroy(): void {
     if (this.disposed) return;
     useEarth().setMouseStyleToDefault();
+    useEarth().useGlobalEvent().disableGlobalKeyDownEvent();
     this.remove();
     this.removeHelpTooltip();
     this.listenerMap.forEach((set) => set.clear());

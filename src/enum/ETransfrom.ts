@@ -59,6 +59,10 @@ export enum ETransfrom {
    * 重做
    */
   Redo = 'redo',
+  /**
+   * 删除
+   */
+  Remove = 'remove'
 }
 
 export enum ETranslateType {
