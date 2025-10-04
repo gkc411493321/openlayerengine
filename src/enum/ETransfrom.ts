@@ -62,7 +62,11 @@ export enum ETransfrom {
   /**
    * 删除
    */
-  Remove = 'remove'
+  Remove = 'remove',
+  /**
+   * 复制
+   */
+  Copy = 'copy'
 }
 
 export enum ETranslateType {

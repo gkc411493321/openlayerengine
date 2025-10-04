@@ -2,7 +2,7 @@ import { BillboardLayer, CircleLayer, ETransfrom, PointLayer, PolygonLayer, Poly
 
 export const testTransfrom = () => {
   const transfrom = new Transfrom({});
-  const eventNname = [ETransfrom.Select, ETransfrom.SelectEnd, ETransfrom.Remove];
+  const eventNname = [ETransfrom.Select, ETransfrom.SelectEnd, ETransfrom.Remove, ETransfrom.Copy];
   transfrom.on(eventNname, (e) => {
     console.log(e.type, e);
   });

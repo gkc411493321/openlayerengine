@@ -96,7 +96,7 @@ export default class Transfrom {
   /**
    * 是否进入复制状态
    */
-  private copyStatus: { id: string } | null = null;
+  private copyStatus: any = null;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -170,7 +170,9 @@ export default class Transfrom {
       ETransfrom.Scaling,
       ETransfrom.ScaleEnd,
       ETransfrom.Undo,
-      ETransfrom.Redo
+      ETransfrom.Redo,
+      ETransfrom.Remove,
+      ETransfrom.Copy
     ];
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
@@ -223,7 +225,7 @@ export default class Transfrom {
     const startEvents = new Set([ETransfrom.TranslateStart, ETransfrom.RotateStart, ETransfrom.ScaleStart]);
     const progressingEvents = new Set([ETransfrom.Translating, ETransfrom.Rotating, ETransfrom.Scaling]);
     const endEvents = new Set([ETransfrom.TranslateEnd, ETransfrom.RotateEnd, ETransfrom.ScaleEnd]);
-
+    const otherEvents = new Set([ETransfrom.Undo, ETransfrom.Redo, ETransfrom.Remove, ETransfrom.Copy]);
     // 统一的 feature 参数构建（包含 feature / featurePosition / featureId 等）
     const buildFeatureParam = (): ITransformCallback => ({
       type: eventName,
@@ -290,13 +292,6 @@ export default class Transfrom {
         };
         this.checkEnterHandle = false;
       }
-    } else if (eventName === ETransfrom.Undo || eventName === ETransfrom.Redo || eventName === ETransfrom.Remove) {
-      callbackParam = {
-        type: eventName,
-        featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
-        featurePosition: e.feature && this.transformCoordinates(e.feature),
-        feature: e.feature
-      };
     } else if (startEvents.has(eventName)) {
       // Start 类事件
       this.handleEventStart(eventName, e);
@@ -328,6 +323,13 @@ export default class Transfrom {
         this.toolbar.updateItem('undo', { disabled: this.historyStack.length <= 1 });
         this.toolbar.updateItem('redo', { disabled: !this.redoStack.length });
       }
+    } else if (otherEvents.has(eventName)) {
+      callbackParam = {
+        type: eventName,
+        featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+        featurePosition: e.feature && this.transformCoordinates(e.feature),
+        feature: e.feature
+      };
     }
 
     // 分发事件
@@ -490,6 +492,9 @@ export default class Transfrom {
           useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
           moveHandler.flush?.();
           this.copyStatus = null;
+          // 触发copy事件通知外部
+          this.handleRawEvent(ETransfrom.Copy, { feature: layer.get(originParam.id) ? layer.get(originParam.id)[0] : null, pixel: event.pixel });
+          this.removeHelpTooltip();
         }
       });
     useEarth()
@@ -499,13 +504,7 @@ export default class Transfrom {
         if (useEarth().useGlobalEvent().hasGlobalMouseMoveEvent()) {
           useEarth().useGlobalEvent().disableGlobalMouseMoveEvent();
           moveHandler.cancel?.();
-          if (this.copyStatus?.id) {
-            try {
-              layer.remove(this.copyStatus.id);
-            } catch (_) {
-              /* ignore */
-            }
-          }
+          layer.remove(this.copyStatus?.id);
           this.copyStatus = null;
         }
       });
