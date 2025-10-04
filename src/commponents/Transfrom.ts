@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import TransformInteraction from './transform-interaction/TransformInteraction';
+import TransformInteraction from '../extends/transform-interaction/TransformInteraction';
 import { useEarth } from '../useEarth';
 import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
@@ -14,7 +14,7 @@ import { EventsKey } from 'ol/events';
 import { Icon, Style } from 'ol/style';
 import { Utils } from '../common';
 import cloneDeep from 'lodash/cloneDeep';
-import { Toolbar } from './transform-interaction/toolbar/Toolbar';
+import { Toolbar } from '../extends/toolbar/Toolbar';
 import { feature } from '@turf/turf';
 import { Layer } from 'ol/layer';
 import { Source } from 'ol/source';

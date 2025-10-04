@@ -1,11 +1,11 @@
-import { useEarth } from '../../../useEarth';
-import { OverlayLayer } from '../../../base';
-import saveSvg from '../../../assets/image/toolbar-save.svg?raw';
-import undoSvg from '../../../assets/image/toolbar-undo.svg?raw';
-import redoSvg from '../../../assets/image/toolbar-redo.svg?raw';
-import copySvg from '../../../assets/image/toolbar-copy.svg?raw';
-import editSvg from '../../../assets/image/toolbar-edit.svg?raw';
-import removeSvg from '../../../assets/image/toolbar-remove.svg?raw';
+import { useEarth } from '../../useEarth';
+import { OverlayLayer } from '../../base';
+import saveSvg from '../../assets/image/toolbar-save.svg?raw';
+import undoSvg from '../../assets/image/toolbar-undo.svg?raw';
+import redoSvg from '../../assets/image/toolbar-redo.svg?raw';
+import copySvg from '../../assets/image/toolbar-copy.svg?raw';
+import editSvg from '../../assets/image/toolbar-edit.svg?raw';
+import removeSvg from '../../assets/image/toolbar-remove.svg?raw';
 
 
 
