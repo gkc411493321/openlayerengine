@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-02-28 14:11:08
- */
 import * as pkg from './package.json';
 import typescript from '@rollup/plugin-typescript';
 import shader from 'rollup-plugin-shader';

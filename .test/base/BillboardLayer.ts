@@ -1,11 +1,3 @@
-/*
- * @Description:
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-03-02 16:45:50
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 19:11:58
- */
 import { fromLonLat } from 'ol/proj';
 import { BillboardLayer, useEarth } from '../../src';
 

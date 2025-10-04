@@ -104,7 +104,7 @@ ___
 `number`[]
 
 number[]
-@author: wuyue.nan
+@author: gkc
 
 #### Defined in
 
@@ -130,7 +130,7 @@ ___
 `number`[]
 
 number[]
-@author: wuyue.nan
+@author: gkc
 
 #### Defined in
 
@@ -183,7 +183,7 @@ ___
 `number`[]
 
 number[]
-@author: wuyue.nan
+@author: gkc
 
 #### Defined in
 
@@ -209,7 +209,7 @@ ___
 `number`[]
 
 number[]
-@author: wuyue.nan
+@author: gkc
 
 #### Defined in
 

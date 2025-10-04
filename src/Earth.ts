@@ -158,7 +158,7 @@ export default class Earth {
    * @param {number} len
    * @param {number} radix
    * @return {*}
-   * @author: wuyue.nan
+   * @author: gkc
    */
   /**
    * 八进制字符串补0

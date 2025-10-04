@@ -67,9 +67,15 @@ npm run dev
 **`Example`**
 
 ```
+npm run clean
+
 npm run build
 
-// 将打包后的包放入node_modules即可使用
+npm pack
+
+// 将打包后的*.taz包放入node_modules即可使用
+npm install *.taz
+
 ```
 
 

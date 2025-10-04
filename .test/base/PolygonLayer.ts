@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 16:29:59
- */
 import { Collection, Feature } from 'ol';
 import { LineString, Polygon } from 'ol/geom';
 import { Modify, Select, Translate } from 'ol/interaction';

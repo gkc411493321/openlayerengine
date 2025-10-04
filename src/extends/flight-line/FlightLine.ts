@@ -251,7 +251,7 @@ export default class Flightline<T = unknown> {
   /**
    * @description: 删除飞线
    * @return {*} 
-   * @author: wuyue.nan
+   * @author: gkc
    */
   removeFeatureById(id: string): void {
     this.pointsFeatures = this.pointsFeatures.filter(item => {

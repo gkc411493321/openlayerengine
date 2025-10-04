@@ -131,7 +131,7 @@ export default class Utils<T> {
    * @param {number[]} endPos
    * @param {number} t
    * @return {*} number[]
-   * @author: wuyue.nan
+   * @author: gkc
    */
   static linearInterpolation(startPos: number[], endPos: number[], t: number): number[] {
     const a = this.constantMultiVector2(1 - t, startPos);
@@ -143,7 +143,7 @@ export default class Utils<T> {
    * @param {number} constant
    * @param {number} vector2
    * @return {*} number[]
-   * @author: wuyue.nan
+   * @author: gkc
    */
   static constantMultiVector2(constant: number, vector2: number[]): number[] {
     return [constant * vector2[0], constant * vector2[1]];
@@ -153,7 +153,7 @@ export default class Utils<T> {
    * @param {number} a
    * @param {number} b
    * @return {*} number[]
-   * @author: wuyue.nan
+   * @author: gkc
    */
   static vector2Add(a: number[], b: number[]): number[] {
     return [a[0] + b[0], a[1] + b[1]];
@@ -166,7 +166,7 @@ export default class Utils<T> {
    * @param {number} endPos
    * @param {number} t
    * @return {*} number[]
-   * @author: wuyue.nan
+   * @author: gkc
    */
   static bezierSquareCalc(startPos: number[], center: number[], endPos: number[], t: number): number[] {
     const a = this.constantMultiVector2(Math.pow(1 - t, 2), startPos);

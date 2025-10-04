@@ -8,3 +8,4 @@ dist-ssr
 *.log
 /docs/
 /ol-docs/
+*.tgz

@@ -1,11 +1,3 @@
-/*
- * @Description: 
- * @Version: 2.0
- * @Author: wuyue.nan
- * @Date: 2023-02-23 18:12:58
- * @LastEditors: wuyue.nan
- * @LastEditTime: 2023-03-03 15:28:14
- */
 import CircleLayer from "../../src/base/CircleLayer"
 import { useEarth } from '../../src';
 import { fromLonLat } from "ol/proj";

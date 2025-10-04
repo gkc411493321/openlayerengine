@@ -1,12 +1,3 @@
-/*
- * @Author: wuyue
- * @Date: 2021-01-12 09:37:57
- * @LastEditTime: 2023-02-23 16:48:35
- * @LastEditors: wuyue.nan
- * @Description: 接口定义
- */
-
-
 /**
  * @description:材质类型
  */

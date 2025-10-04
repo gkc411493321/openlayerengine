@@ -1,6 +1,6 @@
 {
   "name": "@vrsim/earth-engine-ol",
-  "version": "0.0.1-beta.0",
+  "version": "0.0.1",
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
   "types": "dist/types/index.d.ts",
@@ -16,7 +16,7 @@
     "tsc": "yarn clean && tsc && yarn copy",
     "doc": "npx typedoc --options ./typedoc.json"
   },
-  "author": "wuyue",
+  "author": "gkc",
   "peerDependencies": {
     "heatmap.js": "^2.0.5",
     "mitt": "^3.0.0"
