@@ -24,10 +24,10 @@ window.onload = () => {
   testPointLayer()
   testPolygonLayer();
   testPolylineLayer();
-  testTransfrom();
+  // testTransfrom();
   // testOverlayLayer();
   // testGlobalEvent();
-  testDynamicDraw();
+  // testDynamicDraw();
   // testMeasure();
   // testWindLayer();
   // testDescriptor();
