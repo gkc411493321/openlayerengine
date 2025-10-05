@@ -6,7 +6,7 @@ export const testBillboardLayer = () => {
   layer.add({
     id: 'billboard_1',
     center: fromLonLat([65, 20]),
-    src: '/image/fly.svg',
+    src: '../../src/assets/image/fly.svg',
     color: 'red',
     scale: 1,
     label: {

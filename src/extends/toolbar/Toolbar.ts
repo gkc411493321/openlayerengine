@@ -7,11 +7,9 @@ import copySvg from '../../assets/image/toolbar-copy.svg?raw';
 import editSvg from '../../assets/image/toolbar-edit.svg?raw';
 import removeSvg from '../../assets/image/toolbar-remove.svg?raw';
 
-
-
 interface IToolbarOptions {
   point: number[];
-  type: 'Point' | 'LineString' | 'Polygon';
+  type: 'Point' | 'LineString' | 'Polygon' | 'Circle';
 }
 
 // 单个工具条按钮配置
@@ -73,15 +71,19 @@ class Toolbar {
    * 根据 geometry type 初始化可用按钮
    */
   private initItems() {
+    console.log(this.options.type);
     // 基础按钮集合
     const base: IToolbarItem[] = [
-      { key: 'exit', title: '确认', iconClass: 'ol-toolbar-exit', icon: saveSvg, visible: true, disabled: false },
-      { key: 'undo', title: '撤销 Ctrl+Z', iconClass: 'ol-toolbar-undo', icon: undoSvg, visible: true, disabled: true },
-      { key: 'redo', title: '重做 Ctrl+Y', iconClass: 'ol-toolbar-redo', icon: redoSvg, visible: true, disabled: true },
-      { key: 'copy', title: '复制 Ctrl+C', iconClass: 'ol-toolbar-edit', icon: copySvg, visible: true, disabled: false },
-      { key: 'edit', title: '编辑', iconClass: 'ol-toolbar-edit', icon: editSvg, visible: true, disabled: false },
-      { key: 'remove', title: '删除', iconClass: 'ol-toolbar-remove', icon: removeSvg, visible: true, disabled: false }
+      { key: 'exit', title: '确认', iconClass: 'ol-toolbar-exit', icon: saveSvg, visible: true, disabled: false, active: false },
+      { key: 'undo', title: '撤销 Ctrl+Z', iconClass: 'ol-toolbar-undo', icon: undoSvg, visible: true, disabled: true, active: false },
+      { key: 'redo', title: '重做 Ctrl+Y', iconClass: 'ol-toolbar-redo', icon: redoSvg, visible: true, disabled: true, active: false },
+      { key: 'copy', title: '复制 Ctrl+C', iconClass: 'ol-toolbar-edit', icon: copySvg, visible: true, disabled: false, active: false },
+      { key: 'edit', title: '编辑', iconClass: 'ol-toolbar-edit', icon: editSvg, visible: true, disabled: false, active: false },
+      { key: 'remove', title: '删除', iconClass: 'ol-toolbar-remove', icon: removeSvg, visible: true, disabled: false, active: false }
     ];
+    if (this.options.type === 'Point' || this.options.type === 'Circle') {
+      base[4].visible = false; // 编辑
+    }
     this.items = base;
   }
 
@@ -219,4 +221,4 @@ class Toolbar {
     this.overlay.remove('toolbar');
   }
 }
-export { Toolbar, IToolbarOptions };
+export { Toolbar, IToolbarOptions, IToolbarItem };

@@ -117,8 +117,9 @@ export default class Descriptor<T = any> {
       // 窗口在上
       lineEndPosition = new LineString([lb, rb]).getCoordinateAt(0.5);
     }
-    let positions = toLonLat(lineEndPosition);
+    const positions = toLonLat(lineEndPosition);
     if (positions[0] < 0) {
+      // eslint-disable-next-line no-self-assign
       positions[0] = positions[0]
     }
     const line = useEarth().useDefaultLayer().polyline.get(this.id);
@@ -197,6 +198,7 @@ export default class Descriptor<T = any> {
     }
     element.forEach(item => {
       if (item.type == "text") {
+        //
       } else {
         list.push(
           `<li class="item ${item.class ? item.class : ''}">
@@ -276,6 +278,7 @@ export default class Descriptor<T = any> {
         const item = event.target as HTMLElement;
         if (item.className === 'close') {
           this.hide();
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
         };
       }
       this.dom.addEventListener('click', callback);

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import TransformInteraction from '../extends/transform-interaction/TransformInteraction';
 import { useEarth } from '../useEarth';
-import { ISetOverlayParam, ITransformCallback, ITransfromParams } from '../interface';
+import { ISetOverlayParam, ITransformCallback, ITransfromParams, ModifyType } from '../interface';
 import { ECursor, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { fromLonLat, toLonLat } from 'ol/proj';
@@ -14,11 +15,8 @@ import { EventsKey } from 'ol/events';
 import { Icon, Style } from 'ol/style';
 import { Utils } from '../common';
 import cloneDeep from 'lodash/cloneDeep';
-import { Toolbar } from '../extends/toolbar/Toolbar';
-import { feature } from '@turf/turf';
-import { Layer } from 'ol/layer';
-import { Source } from 'ol/source';
-import LayerRenderer from 'ol/renderer/Layer';
+import { IToolbarItem, Toolbar } from '../extends/toolbar/Toolbar';
+import DynamicDraw from './DynamicDraw';
 
 export default class Transfrom {
   /**
@@ -182,7 +180,8 @@ export default class Transfrom {
       ETransfrom.Undo,
       ETransfrom.Redo,
       ETransfrom.Remove,
-      ETransfrom.Copy
+      ETransfrom.Copy,
+      ETransfrom.Modifying
     ];
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
@@ -477,13 +476,15 @@ export default class Transfrom {
       this.updateHelpTooltip('选择控制点进行变换操作');
     });
     toolbarRoot?.addEventListener('toolbar:itemclick', (e: any) => {
-      this.handleToolbarClick(e.detail.key, e.detail.pixel);
+      this.handleToolbarClick(e.detail, e.detail.pixel);
     });
   }
   /**
    * 处理工具栏按钮点击事件
    */
-  private handleToolbarClick(key: string, pixel: number[]) {
+  private handleToolbarClick(detail: any, pixel: number[]) {
+    const key = detail.key;
+    const menuItem = detail.item as IToolbarItem;
     this.updateHelpTooltip('选择控制点进行变换操作');
     if (key === 'undo') {
       this.undo();
@@ -499,6 +500,47 @@ export default class Transfrom {
       // 这里直接传入原始 Feature（方法内只读使用），避免破坏。
       this.copyFeature = cloneDeep(this.checkSelect);
       this.handleCopyEvent(this.copyFeature);
+      this.transforms.exitEdit(pixel);
+    } else if (key === 'edit') {
+      // 开始要素编辑
+      // 创建绘制工具
+      const draw = new DynamicDraw(useEarth());
+      // 获取元素类型
+      const geom = this.checkSelect?.getGeometry();
+      const type = geom?.getType();
+      const arr: Coordinate[] = [];
+      if (type === 'Polygon') {
+        draw.editPolygon({
+          feature: this.checkSelect!,
+          isShowUnderlay: true,
+          callback: (ev) => {
+            if (ev.type === ModifyType.Modifying) {
+              //
+            } else if (ev.type === ModifyType.Modifyexit) {
+              for (const item of ev.position!) {
+                arr.push(fromLonLat(item as Coordinate));
+              }
+              draw.remove();
+            }
+          }
+        });
+      } else if (type === 'LineString') {
+        draw.editPolyline({
+          feature: this.checkSelect!,
+          isShowUnderlay: true,
+          callback: (ev) => {
+            if (ev.type === ModifyType.Modifying) {
+              this.transforms.drawSketch_(true);
+            } else if (ev.type === ModifyType.Modifyexit) {
+              for (const item of ev.position!) {
+                arr.push(fromLonLat(item as Coordinate));
+              }
+              draw.remove();
+            }
+          }
+        });
+      }
+      // 退出编辑模式
       this.transforms.exitEdit(pixel);
     }
   }

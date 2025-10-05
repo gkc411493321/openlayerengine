@@ -8,10 +8,11 @@ import { Draw, Modify } from 'ol/interaction';
 import { useEarth } from '../useEarth';
 import { DrawEvent } from 'ol/interaction/Draw';
 import { fromLonLat, toLonLat } from 'ol/proj';
-import { Circle, Fill, Icon, Stroke, Style } from 'ol/style';
+import { Circle, Fill, Stroke, Style } from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from '../base';
 import { unByKey } from 'ol/Observable';
+import { EventsKey } from 'ol/events';
 import { Coordinate } from 'ol/coordinate';
 import { Utils } from '../common';
 /**
@@ -37,7 +38,7 @@ export default class DynamicDraw {
   /**
    * 提示覆盖物监听器key
    */
-  private overlayKey: any;
+  private overlayKey: EventsKey | undefined;
   /**
    * 绘制图层
    */
@@ -126,7 +127,7 @@ export default class DynamicDraw {
           return false;
         }
       },
-      finishCondition: (e) => {
+      finishCondition: () => {
         if (type == 'Point') {
           return true;
         } else {
@@ -225,7 +226,7 @@ export default class DynamicDraw {
         useEarth().useGlobalEvent().disableGlobalMouseLeftDownEvent();
       }
       let geometry;
-      let coordinate = this.map.getCoordinateFromPixel(event.target.downPx_);
+      const coordinate = this.map.getCoordinateFromPixel(event.target.downPx_);
       let featurePosition;
       const response: IDrawEvent = {
         type: DrawType.Drawend,
@@ -386,7 +387,7 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source
     });
-    modify.on('modifyend', (evt) => {
+    modify.on('modifyend', () => {
       pointLayer.remove();
       const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
       for (const item of position[0]) {
@@ -411,7 +412,7 @@ export default class DynamicDraw {
     this.map.addInteraction(modify);
     useEarth()
       .useGlobalEvent()
-      .addMouseOnceRightClickEventByGlobal((e) => {
+      .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         polygonLayer.destroy();
         pointLayer.destroy();
@@ -420,7 +421,7 @@ export default class DynamicDraw {
           return (item = toLonLat(item));
         });
         geometry?.setCoordinates(position);
-        // layer?.getSource()?.addFeature(param.feature);
+        layer?.getSource()?.addFeature(param.feature);
         if (this.overlayKey) {
           this.overlay.remove('draw_help_tooltip');
           unByKey(this.overlayKey);
@@ -444,6 +445,20 @@ export default class DynamicDraw {
     // 删除原有面
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
     if (!param.isShowUnderlay) {
+      // 如果不显示底图，需要先移除箭头样式（避免编辑过程中仍显示旧箭头）
+      try {
+        const oldParam = param.feature.get('param');
+        if (oldParam?.isArrow) {
+          const style = param.feature.getStyle();
+          // 旧实现里箭头是带 Image 的 style，这里通过过滤 getImage() 来去除箭头部分
+          if (Array.isArray(style)) {
+            const filtered = style.filter((s: Style) => s.getImage() == null);
+            param.feature.setStyle(filtered);
+          }
+        }
+      } catch (e) {
+        // 忽略清理异常，保证后续流程不受影响
+      }
       layer?.getSource()?.removeFeature(param.feature);
     }
     // 获取原有面坐标信息
@@ -473,7 +488,7 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source
     });
-    modify.on('modifyend', (evt) => {
+    modify.on('modifyend', () => {
       point.remove();
       const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
       for (const item of position) {
@@ -490,6 +505,8 @@ export default class DynamicDraw {
       const transformP = position.map((item) => {
         return (item = toLonLat(item));
       });
+      line.getGeometry()?.setCoordinates(position);
+      line.getGeometry()?.changed();
       param.callback?.call(this, {
         type: ModifyType.Modifying,
         position: transformP
@@ -498,30 +515,34 @@ export default class DynamicDraw {
     this.map.addInteraction(modify);
     useEarth()
       .useGlobalEvent()
-      .addMouseOnceRightClickEventByGlobal((e) => {
+      .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
         const oldParam = param.feature.get('param');
-        const styles = <Style[]>param.feature.getStyle();
+        const currentStyle = param.feature.getStyle();
         if (oldParam.isArrow) {
-          // 删除原有箭头
-          const newStyles = styles.filter((item) => {
-            if (item.getImage() == null) {
-              return item;
+          // 若为函数（新版箭头实现），无需手动追加：几何已更新，下一帧会自动渲染箭头
+          if (typeof currentStyle !== 'function') {
+            let baseStyles: Style[] = [];
+            if (Array.isArray(currentStyle)) {
+              // 过滤掉旧的箭头（带 image 的 style）
+              baseStyles = currentStyle.filter((s) => s.getImage() == null);
+            } else if (currentStyle) {
+              if ((currentStyle as Style).getImage() == null) baseStyles = [currentStyle as Style];
             }
-          });
-          if (oldParam.arrowIsRepeat) {
-            line.getGeometry()?.forEachSegment((start, end) => {
-              newStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
-            });
-          } else {
-            const start = position[position.length - 2];
-            const end = position[position.length - 1];
-            newStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
+            // 重建箭头样式
+            if (oldParam.arrowIsRepeat) {
+              line.getGeometry()?.forEachSegment((start, end) => {
+                baseStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
+              });
+            } else if (position.length >= 2) {
+              const start = position[position.length - 2];
+              const end = position[position.length - 1];
+              baseStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
+            }
+            param.feature.setStyle(baseStyles);
           }
-          param.feature.setStyle(newStyles);
         }
-        layer?.getSource()?.addFeature(param.feature);
         polyline.destroy();
         point.destroy();
         const transformP = position.map((item) => {
@@ -552,7 +573,7 @@ export default class DynamicDraw {
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
     if (!param.isShowUnderlay) {
       layer?.getSource()?.removeFeature(param.feature);
-      let listenerKey = param.feature.get('listenerKey');
+      const listenerKey = param.feature.get('listenerKey');
       if (listenerKey) {
         unByKey(listenerKey);
         param.feature.set('listenerKey', null);
@@ -576,7 +597,7 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source
     });
-    modify.on('modifyend', (evt) => {
+    modify.on('modifyend', () => {
       const position = <Coordinate>point.getGeometry()?.getCoordinates();
       param.callback?.call(this, {
         type: ModifyType.Modifying,
@@ -586,7 +607,7 @@ export default class DynamicDraw {
     this.map.addInteraction(modify);
     useEarth()
       .useGlobalEvent()
-      .addMouseOnceRightClickEventByGlobal((e) => {
+      .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         pointLayer.destroy();
         const position = <Coordinate>point.getGeometry()?.getCoordinates();
