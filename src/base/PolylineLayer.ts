@@ -41,9 +41,11 @@ export default class Polyline<T = unknown> extends Base {
    * const polyline = new Polyline(useEarth());
    * ```
    */
-  constructor(earth: Earth) {
+  constructor(earth: Earth, options?: { wrapX?: boolean }) {
     const layer = new VectorLayer({
-      source: new VectorSource(),
+      source: new VectorSource({
+        wrapX: options?.wrapX !== undefined ? options.wrapX : true
+      }),
       declutter: true
     });
     super(earth, layer, 'Polyline');
@@ -369,7 +371,6 @@ export default class Polyline<T = unknown> extends Base {
       console.warn('没有找到元素，请检查ID');
       return [];
     }
-    const isArrows = features[0].get('isArrows');
     const param = <IPolylineParam<T>>features[0].get('param');
     param.positions = position;
     // if (isArrows) {

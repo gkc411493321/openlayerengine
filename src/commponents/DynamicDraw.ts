@@ -350,88 +350,103 @@ export default class DynamicDraw {
    */
   editPolygon(param: IEditParam): void {
     this.initHelpTooltip('单击修改面 alt+单击删除点 右击退出编辑');
-    // 生成图层
-    const polygonLayer = new PolygonLayer(useEarth());
-    const pointLayer = new PointLayer(useEarth());
-    // 删除原有面
+    // 1. 创建编辑临时图层（关闭 wrapX 避免多世界复制下命中异常）
+    const polygonLayer = new PolygonLayer(useEarth(), { wrapX: false });
+    const pointLayer = new PointLayer(useEarth(), { wrapX: false });
+    // 2. 原始图层与要素
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
-    if (!param.isShowUnderlay) {
-      layer?.getSource()?.removeFeature(param.feature);
-    }
-    // 获取原有面坐标信息
+    if (!param.isShowUnderlay) layer?.getSource()?.removeFeature(param.feature);
     const geometry = <Polygon>param.feature.getGeometry();
-    const position = <Coordinate[][]>geometry?.getCoordinates();
-    for (const item of position[0]) {
-      pointLayer.add({
-        center: item,
-        stroke: {
-          color: '#fff'
-        },
-        fill: {
-          color: '#00aaff'
+    const originalPositions = <Coordinate[][]>geometry.getCoordinates();
+    // 3. 记录原始 world 索引（首点）
+    let baseWorldIndex: number | undefined;
+    try {
+      const g0 = originalPositions?.[0]?.[0];
+      if (g0) {
+        const projExtent = this.map.getView().getProjection().getExtent?.();
+        if (projExtent) {
+          const ww = projExtent[2] - projExtent[0];
+          baseWorldIndex = Math.floor(g0[0] / ww);
         }
+      }
+    } catch {
+      /* ignore */
+    }
+    const ensureClosed = (ring: Coordinate[]): Coordinate[] => {
+      if (ring.length > 2) {
+        const h = ring[0];
+        const t = ring[ring.length - 1];
+        if (h[0] !== t[0] || h[1] !== t[1]) return [...ring, [h[0], h[1]] as Coordinate];
+      }
+      return ring;
+    };
+    // 4. 复制一份用于编辑的坐标（规范化至当前视图 world copy）
+    let editRing = Utils.normalizeToViewWorld(originalPositions[0]);
+    // 5. 创建控制点
+    for (const p of editRing) {
+      pointLayer.add({
+        center: p,
+        stroke: { color: '#fff' },
+        fill: { color: '#00aaff' }
       });
     }
-    // 生成编辑面
+    // 6. 创建临时多边形要素
     const polygon = polygonLayer.add({
-      positions: position,
-      stroke: {
-        color: '#00aaff',
-        width: 2
-      },
-      fill: {
-        color: '#ffffff61'
-      }
+      positions: [editRing],
+      stroke: { color: '#00aaff', width: 2 },
+      fill: { color: '#ffffff61' }
     });
-    const source = <VectorSource<Geometry>>polygonLayer.getLayer().getSource();
-    const modify = new Modify({
-      source: source
-    });
+    const modify = new Modify({ source: <VectorSource<Geometry>>polygonLayer.getLayer().getSource() });
     modify.set('dynamicDraw', true);
+    // 7. 编辑过程中回调（不改变原要素，只回调地理坐标）
     modify.on('modifyend', () => {
       pointLayer.remove();
-      const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
-      for (const item of position[0]) {
+      const ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0];
+      editRing = ensureClosed(ring);
+      for (const p of editRing) {
         pointLayer.add({
-          center: item,
-          stroke: {
-            color: '#fff'
-          },
-          fill: {
-            color: '#00aaff'
-          }
+          center: p,
+          stroke: { color: '#fff' },
+          fill: { color: '#00aaff' }
         });
       }
-      const transformP = position[0].map((item) => {
-        return (item = toLonLat(item));
-      });
-      param.callback?.call(this, {
-        type: ModifyType.Modifying,
-        position: transformP
-      });
+      const lonlat = editRing.map((c) => toLonLat(c));
+      param.callback?.call(this, { type: ModifyType.Modifying, position: lonlat });
     });
     this.map.addInteraction(modify);
+    // 8. 退出（右键）保存：将编辑 ring 映射回原始 world copy
     useEarth()
       .useGlobalEvent()
       .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         polygonLayer.destroy();
         pointLayer.destroy();
-        const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
-        const transformP = position[0].map((item) => {
-          return (item = toLonLat(item));
-        });
-        geometry?.setCoordinates(position);
+        // 最新编辑 ring
+        let ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0];
+        ring = ensureClosed(ring);
+        if (baseWorldIndex !== undefined && ring.length) {
+          ring = Utils.restoreToWorldIndex(ring, baseWorldIndex);
+          ring = ensureClosed(ring);
+        }
+        // 写回原几何 & 重新挂回原图层
+        geometry.setCoordinates([ring]);
         layer?.getSource()?.addFeature(param.feature);
         if (this.overlayKey) {
           this.overlay.remove('draw_help_tooltip');
           unByKey(this.overlayKey);
           this.overlayKey = undefined;
         }
-        param.callback?.call(this, {
-          type: ModifyType.Modifyexit,
-          position: transformP
-        });
+        // 生成回调坐标（去除可能的闭合重复点再 lonlat 化）
+        const outputRing = (() => {
+          if (ring.length > 1) {
+            const h = ring[0];
+            const t = ring[ring.length - 1];
+            if (h[0] === t[0] && h[1] === t[1]) return ring.slice(0, ring.length - 1);
+          }
+          return ring;
+        })();
+        const lonlat = outputRing.map((c) => toLonLat(c));
+        param.callback?.call(this, { type: ModifyType.Modifyexit, position: lonlat });
       });
   }
   /**
@@ -440,127 +455,91 @@ export default class DynamicDraw {
    */
   editPolyline(param: IEditParam): void {
     this.initHelpTooltip('单击修改线 alt+单击删除点 右击退出编辑');
-    // 创建编辑图层
-    const polyline = new PolylineLayer(useEarth());
-    const point = new PointLayer(useEarth());
-    // 删除原有面
+    const polyline = new PolylineLayer(useEarth(), { wrapX: false });
+    const point = new PointLayer(useEarth(), { wrapX: false });
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
     if (!param.isShowUnderlay) {
-      // 如果不显示底图，需要先移除箭头样式（避免编辑过程中仍显示旧箭头）
       try {
         const oldParam = param.feature.get('param');
         if (oldParam?.isArrow) {
           const style = param.feature.getStyle();
-          // 旧实现里箭头是带 Image 的 style，这里通过过滤 getImage() 来去除箭头部分
           if (Array.isArray(style)) {
             const filtered = style.filter((s: Style) => s.getImage() == null);
             param.feature.setStyle(filtered);
           }
         }
-      } catch (e) {
-        // 忽略清理异常，保证后续流程不受影响
+      } catch {
+        /* ignore */
       }
       layer?.getSource()?.removeFeature(param.feature);
     }
-    // 获取原有面坐标信息
     const geometry = <LineString>param.feature.getGeometry();
-    const position = <Coordinate[]>geometry?.getCoordinates();
-    // 生成控制点
-    for (const item of position) {
-      point.add({
-        center: item,
-        stroke: {
-          color: '#fff'
-        },
-        fill: {
-          color: '#00aaff'
+    const original = <Coordinate[]>geometry.getCoordinates();
+    let baseWorldIndex: number | undefined;
+    try {
+      if (original[0]) {
+        const projExtent = this.map.getView().getProjection().getExtent?.();
+        if (projExtent) {
+          const ww = projExtent[2] - projExtent[0];
+          baseWorldIndex = Math.floor(original[0][0] / ww);
         }
-      });
-    }
-    // 生成编辑面
-    const line = polyline.add({
-      positions: position,
-      stroke: {
-        color: '#00aaff',
-        width: 2
       }
-    });
-    const source = <VectorSource<Geometry>>polyline.getLayer().getSource();
-    const modify = new Modify({
-      source: source
-    });
+    } catch {
+      /* ignore */
+    }
+    let editCoords = Utils.normalizeToViewWorld(original);
+    // 控制点
+    for (const c of editCoords) {
+      point.add({ center: c, stroke: { color: '#fff' }, fill: { color: '#00aaff' } });
+    }
+    const line = polyline.add({ positions: editCoords, stroke: { color: '#00aaff', width: 2 } });
+    const modify = new Modify({ source: <VectorSource<Geometry>>polyline.getLayer().getSource() });
     modify.set('dynamicDraw', true);
     modify.on('modifyend', () => {
       point.remove();
-      const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
-      for (const item of position) {
-        point.add({
-          center: item,
-          stroke: {
-            color: '#fff'
-          },
-          fill: {
-            color: '#00aaff'
-          }
-        });
+      editCoords = (<Coordinate[]>line.getGeometry()?.getCoordinates()).slice();
+      for (const c of editCoords) {
+        point.add({ center: c, stroke: { color: '#fff' }, fill: { color: '#00aaff' } });
       }
-      const transformP = position.map((item) => {
-        return (item = toLonLat(item));
-      });
-      line.getGeometry()?.setCoordinates(position);
-      line.getGeometry()?.changed();
-      param.callback?.call(this, {
-        type: ModifyType.Modifying,
-        position: transformP
-      });
+      param.callback?.call(this, { type: ModifyType.Modifying, position: editCoords.map((p) => toLonLat(p)) });
     });
     this.map.addInteraction(modify);
     useEarth()
       .useGlobalEvent()
       .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
-        const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
-        const oldParam = param.feature.get('param');
-        const currentStyle = param.feature.getStyle();
-        if (oldParam.isArrow) {
-          // 若为函数（新版箭头实现），无需手动追加：几何已更新，下一帧会自动渲染箭头
-          if (typeof currentStyle !== 'function') {
+        polyline.destroy();
+        point.destroy();
+        let finalCoords = (<Coordinate[]>line.getGeometry()?.getCoordinates()).slice();
+        if (baseWorldIndex !== undefined && finalCoords.length) {
+          finalCoords = Utils.restoreToWorldIndex(finalCoords, baseWorldIndex) as Coordinate[];
+        }
+        geometry.setCoordinates(finalCoords);
+        layer?.getSource()?.addFeature(param.feature);
+        // 箭头恢复（仅静态 style 情况）
+        try {
+          const oldParam = param.feature.get('param');
+          const currentStyle = param.feature.getStyle();
+          if (oldParam?.isArrow && typeof currentStyle !== 'function') {
             let baseStyles: Style[] = [];
-            if (Array.isArray(currentStyle)) {
-              // 过滤掉旧的箭头（带 image 的 style）
-              baseStyles = currentStyle.filter((s) => s.getImage() == null);
-            } else if (currentStyle) {
-              if ((currentStyle as Style).getImage() == null) baseStyles = [currentStyle as Style];
-            }
-            // 重建箭头样式
+            if (Array.isArray(currentStyle)) baseStyles = currentStyle.filter((s: Style) => s.getImage() == null);
+            else if (currentStyle && (currentStyle as Style).getImage() == null) baseStyles = [currentStyle as Style];
             if (oldParam.arrowIsRepeat) {
-              line.getGeometry()?.forEachSegment((start, end) => {
-                baseStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
-              });
-            } else if (position.length >= 2) {
-              const start = position[position.length - 2];
-              const end = position[position.length - 1];
-              baseStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color));
+              geometry.forEachSegment((start, end) => baseStyles.push(Utils.createStyle(start, end, oldParam.stroke?.color)));
+            } else if (finalCoords.length >= 2) {
+              baseStyles.push(Utils.createStyle(finalCoords[finalCoords.length - 2], finalCoords[finalCoords.length - 1], oldParam.stroke?.color));
             }
             param.feature.setStyle(baseStyles);
           }
+        } catch {
+          /* ignore */
         }
-        polyline.destroy();
-        point.destroy();
-        const transformP = position.map((item) => {
-          return (item = toLonLat(item));
-        });
-        geometry?.setCoordinates(position);
-        layer?.getSource()?.addFeature(param.feature);
         if (this.overlayKey) {
           this.overlay.remove('draw_help_tooltip');
           unByKey(this.overlayKey);
           this.overlayKey = undefined;
         }
-        param.callback?.call(this, {
-          type: ModifyType.Modifyexit,
-          position: transformP
-        });
+        param.callback?.call(this, { type: ModifyType.Modifyexit, position: finalCoords.map((p) => toLonLat(p)) });
       });
   }
   /**
@@ -569,9 +548,7 @@ export default class DynamicDraw {
    */
   editPoint(param: IEditParam): void {
     this.initHelpTooltip('单击修改点 右击退出编辑');
-    // 生成图层
-    const pointLayer = new PointLayer(useEarth());
-    // 删除原有面
+    const pointLayer = new PointLayer(useEarth(), { wrapX: false });
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
     if (!param.isShowUnderlay) {
       layer?.getSource()?.removeFeature(param.feature);
@@ -581,30 +558,24 @@ export default class DynamicDraw {
         param.feature.set('listenerKey', null);
       }
     }
-    // 获取原有面坐标信息
     const geometry = <Point>param.feature.getGeometry();
-    const position = <Coordinate>geometry.getCoordinates();
-    // 生成编辑点
-    const point = pointLayer.add({
-      center: position,
-      stroke: {
-        color: '#00aaff',
-        width: 2
-      },
-      fill: {
-        color: '#ffffff61'
+    const original = <Coordinate>geometry.getCoordinates();
+    let baseWorldIndex: number | undefined;
+    try {
+      const projExtent = this.map.getView().getProjection().getExtent?.();
+      if (projExtent) {
+        const ww = projExtent[2] - projExtent[0];
+        baseWorldIndex = Math.floor(original[0] / ww);
       }
-    });
-    const source = <VectorSource<Geometry>>pointLayer.getLayer().getSource();
-    const modify = new Modify({
-      source: source
-    });
+    } catch {
+      /* ignore */
+    }
+    let editPos = Utils.normalizeToViewWorld(original);
+    const point = pointLayer.add({ center: editPos, stroke: { color: '#00aaff', width: 2 }, fill: { color: '#ffffff61' } });
+    const modify = new Modify({ source: <VectorSource<Geometry>>pointLayer.getLayer().getSource() });
     modify.on('modifyend', () => {
-      const position = <Coordinate>point.getGeometry()?.getCoordinates();
-      param.callback?.call(this, {
-        type: ModifyType.Modifying,
-        position: toLonLat(position)
-      });
+      editPos = <Coordinate>point.getGeometry()?.getCoordinates();
+      param.callback?.call(this, { type: ModifyType.Modifying, position: toLonLat(editPos) });
     });
     this.map.addInteraction(modify);
     useEarth()
@@ -612,11 +583,14 @@ export default class DynamicDraw {
       .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         pointLayer.destroy();
-        const position = <Coordinate>point.getGeometry()?.getCoordinates();
+        let finalPos = <Coordinate>point.getGeometry()?.getCoordinates();
+        if (baseWorldIndex !== undefined) {
+          finalPos = Utils.restoreToWorldIndex(finalPos, baseWorldIndex) as Coordinate;
+        }
+        geometry.setCoordinates(finalPos);
         const fParam = <IPointParam<unknown>>param.feature.get('param');
-        geometry?.setCoordinates(position);
-        if (fParam.isFlash) {
-          fParam.center = toLonLat(position);
+        if (fParam?.isFlash) {
+          fParam.center = toLonLat(finalPos);
           param.feature.set('param', fParam);
           new Utils().flash(param.feature, fParam, layer);
         }
@@ -626,10 +600,7 @@ export default class DynamicDraw {
           unByKey(this.overlayKey);
           this.overlayKey = undefined;
         }
-        param.callback?.call(this, {
-          type: ModifyType.Modifyexit,
-          position: toLonLat(position)
-        });
+        param.callback?.call(this, { type: ModifyType.Modifyexit, position: toLonLat(finalPos) });
       });
   }
   /**

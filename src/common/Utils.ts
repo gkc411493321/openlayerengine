@@ -16,6 +16,20 @@ import CircleStyle from 'ol/style/Circle';
 import { useEarth } from '../useEarth';
 
 export default class Utils<T> {
+  /** 获取当前视图投影的 worldWidth；若不可得返回 undefined */
+  static getWorldWidth(): number | undefined {
+    try {
+      const projExtent = useEarth().map.getView().getProjection().getExtent?.();
+      if (projExtent) return projExtent[2] - projExtent[0];
+    } catch {/* ignore */}
+    return undefined;
+  }
+  /** 计算指定 x 所在的 world 索引（Math.floor(x / worldWidth)）；若无法获取 worldWidth 返回 undefined */
+  static getWorldIndex(x: number): number | undefined {
+    const ww = this.getWorldWidth();
+    if (!ww || !isFinite(ww) || ww === 0) return undefined;
+    return Math.floor(x / ww);
+  }
   /**
    * 屏幕像素 pixel作为元素的新中心点，重新计算元素坐标
    * 支持 Point、LineString、Polygon、Circle
@@ -96,6 +110,59 @@ export default class Utils<T> {
 
     // 未识别的结构
     return null;
+  }
+  /**
+   * 将一组坐标(点/线/单环面)归一化到当前视图所在的 world copy。
+   */
+  static normalizeToViewWorld<TC extends Coordinate | Coordinate[]>(coords: TC): TC {
+    const map = useEarth().map;
+    const center = map.getView().getCenter();
+    const worldWidth = this.getWorldWidth();
+    if (!center || !worldWidth) return Array.isArray(coords) ? (JSON.parse(JSON.stringify(coords)) as TC) : coords;
+    const centerWorld = this.getWorldIndex(center[0]);
+    if (centerWorld === undefined) return Array.isArray(coords) ? (JSON.parse(JSON.stringify(coords)) as TC) : coords;
+    const normPoint = (p: Coordinate): Coordinate => {
+      const w = this.getWorldIndex(p[0]);
+      if (w === undefined) return [p[0], p[1]];
+      const dw = centerWorld - w;
+      return [p[0] + dw * worldWidth, p[1]] as Coordinate;
+    };
+    if (typeof (coords as Coordinate)[0] === 'number') return normPoint(coords as Coordinate) as TC;
+    if (Array.isArray(coords) && coords.length && Array.isArray((coords as any)[0])) {
+      return (coords as Coordinate[]).map((c) => normPoint(c)) as TC;
+    }
+    return coords;
+  }
+  /** 将已归一化坐标恢复到指定 world 索引 */
+  static restoreToWorldIndex<TC extends Coordinate | Coordinate[]>(coords: TC, targetWorldIndex: number | undefined): TC {
+    if (targetWorldIndex === undefined) return coords;
+    const worldWidth = this.getWorldWidth();
+    if (!worldWidth) return coords;
+    const restorePoint = (p: Coordinate): Coordinate => {
+      const curW = this.getWorldIndex(p[0]);
+      if (curW === undefined) return p;
+      const dw = targetWorldIndex - curW;
+      return dw === 0 ? p : ([p[0] + dw * worldWidth, p[1]] as Coordinate);
+    };
+    if (typeof (coords as Coordinate)[0] === 'number') return restorePoint(coords as Coordinate) as TC;
+    if (Array.isArray(coords) && coords.length && Array.isArray((coords as any)[0])) {
+      return (coords as Coordinate[]).map((c) => restorePoint(c)) as TC;
+    }
+    return coords;
+  }
+  /** 保证 ring 闭合 */
+  static ensureClosedRing(ring: Coordinate[]): Coordinate[] {
+    if (!ring || ring.length < 2) return ring.slice();
+    const h = ring[0];
+    const t = ring[ring.length - 1];
+    return h[0] === t[0] && h[1] === t[1] ? ring.slice() : [...ring, [h[0], h[1]] as Coordinate];
+  }
+  /** 去掉 ring 尾部重复闭合点 */
+  static trimClosedRing(ring: Coordinate[]): Coordinate[] {
+    if (!ring || ring.length < 2) return ring.slice();
+    const h = ring[0];
+    const t = ring[ring.length - 1];
+    return h[0] === t[0] && h[1] === t[1] ? ring.slice(0, ring.length - 1) : ring.slice();
   }
   /**
    * @description: 获取一个新的GUID
@@ -407,6 +474,4 @@ export default class Utils<T> {
       pending: () => boolean;
     };
   }
-
-  
 }

@@ -22,9 +22,11 @@ export default class PointLayer<T = unknown> extends Base {
    * const pointLayer = new PointLayer(useEarth());
    * ```
    */
-  constructor(earth: Earth) {
+  constructor(earth: Earth, options?: { wrapX?: boolean }) {
     const layer = new VectorLayer({
-      source: new VectorSource()
+      source: new VectorSource({
+        wrapX: options?.wrapX !== undefined ? options.wrapX : true
+      })
     });
     super(earth, layer, 'Point');
   }

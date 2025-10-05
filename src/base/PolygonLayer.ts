@@ -21,9 +21,12 @@ export default class PolygonLayer<T = unknown> extends Base {
    * const polygonLayer = new PolygonLayer(useEarth());
    * ```
    */
-  constructor(earth: Earth) {
+  constructor(earth: Earth, options?: { wrapX?: boolean }) {
+    // 增加 wrapX 可配置（编辑模式下需要关闭以避免多世界复制导致交互命中失败）
     const layer = new VectorLayer({
-      source: new VectorSource()
+      source: new VectorSource({
+        wrapX: options?.wrapX !== undefined ? options.wrapX : true
+      })
     });
     super(earth, layer, 'Polygon');
   }
@@ -87,7 +90,7 @@ export default class PolygonLayer<T = unknown> extends Base {
     if (param.positions) {
       features[0].getGeometry()?.setCoordinates(param.positions);
     }
-    let style = <Style>features[0].getStyle();
+  const style = <Style>features[0].getStyle();
     if (param.stroke) {
       super.setStroke(style, param.stroke);
     }
