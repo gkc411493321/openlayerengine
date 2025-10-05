@@ -387,6 +387,7 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source
     });
+    modify.set('dynamicDraw', true);
     modify.on('modifyend', () => {
       pointLayer.remove();
       const position = <Coordinate[][]>polygon.getGeometry()?.getCoordinates();
@@ -488,6 +489,7 @@ export default class DynamicDraw {
     const modify = new Modify({
       source: source
     });
+    modify.set('dynamicDraw', true);
     modify.on('modifyend', () => {
       point.remove();
       const position = <Coordinate[]>line.getGeometry()?.getCoordinates();
