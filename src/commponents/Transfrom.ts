@@ -181,7 +181,9 @@ export default class Transfrom {
       ETransfrom.Redo,
       ETransfrom.Remove,
       ETransfrom.Copy,
-      ETransfrom.Modifying
+      ETransfrom.ModifyStart,
+      ETransfrom.Modifying,
+      ETransfrom.ModifyEnd
     ];
     events.forEach((ev) => {
       this.transforms.on(ev, (raw: any) => this.handleRawEvent(ev, raw));
@@ -214,7 +216,7 @@ export default class Transfrom {
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
-        if (key === 'Delete' && this.checkSelect) {
+        if (key === 'delete' && this.checkSelect) {
           let extent: any = this.checkSelect.getGeometry()?.getExtent();
           extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
           // 删除
@@ -290,6 +292,7 @@ export default class Transfrom {
     const startEvents = new Set([ETransfrom.TranslateStart, ETransfrom.RotateStart, ETransfrom.ScaleStart]);
     const progressingEvents = new Set([ETransfrom.Translating, ETransfrom.Rotating, ETransfrom.Scaling]);
     const endEvents = new Set([ETransfrom.TranslateEnd, ETransfrom.RotateEnd, ETransfrom.ScaleEnd]);
+    const modifyEvents = new Set([ETransfrom.ModifyStart, ETransfrom.Modifying, ETransfrom.ModifyEnd]);
     const otherEvents = new Set([ETransfrom.Undo, ETransfrom.Redo, ETransfrom.Remove, ETransfrom.Copy]);
     // 统一的 feature 参数构建（包含 feature / featurePosition / featureId 等）
     const buildFeatureParam = (): ITransformCallback => ({
@@ -388,6 +391,15 @@ export default class Transfrom {
         this.toolbar.updateItem('undo', { disabled: this.historyStack.length <= 1 });
         this.toolbar.updateItem('redo', { disabled: !this.redoStack.length });
       }
+    } else if (modifyEvents.has(eventName)) {
+      callbackParam = {
+        type: eventName,
+        eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
+        eventPixel: e.pixel,
+        featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
+        featurePosition: e.position ? e.position : this.transformCoordinates(e.feature),
+        feature: e.feature
+      };
     } else if (otherEvents.has(eventName)) {
       callbackParam = {
         type: eventName,
@@ -506,36 +518,41 @@ export default class Transfrom {
       // 创建绘制工具
       const draw = new DynamicDraw(useEarth());
       // 获取元素类型
-      const geom = this.checkSelect?.getGeometry();
+      const checkSelect = this.checkSelect;
+      const geom = checkSelect?.getGeometry();
       const type = geom?.getType();
-      const arr: Coordinate[] = [];
+      this.handleRawEvent(ETransfrom.ModifyStart, { feature: checkSelect, pixel: pixel });
       if (type === 'Polygon') {
         draw.editPolygon({
-          feature: this.checkSelect!,
+          feature: checkSelect!,
           isShowUnderlay: true,
           callback: (ev) => {
             if (ev.type === ModifyType.Modifying) {
-              //
-            } else if (ev.type === ModifyType.Modifyexit) {
+              const arr: Coordinate[] = [];
               for (const item of ev.position!) {
                 arr.push(fromLonLat(item as Coordinate));
               }
+              this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
+            } else if (ev.type === ModifyType.Modifyexit) {
               draw.remove();
+              this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
             }
           }
         });
       } else if (type === 'LineString') {
         draw.editPolyline({
-          feature: this.checkSelect!,
+          feature: checkSelect!,
           isShowUnderlay: true,
           callback: (ev) => {
             if (ev.type === ModifyType.Modifying) {
-              this.transforms.drawSketch_(true);
-            } else if (ev.type === ModifyType.Modifyexit) {
+              const arr: Coordinate[] = [];
               for (const item of ev.position!) {
                 arr.push(fromLonLat(item as Coordinate));
               }
+              this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
+            } else if (ev.type === ModifyType.Modifyexit) {
               draw.remove();
+              this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
             }
           }
         });

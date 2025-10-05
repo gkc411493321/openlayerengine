@@ -14,19 +14,6 @@ export const testDynamicDraw = () => {
     .drawPolygon({
       callback: (e) => {
         console.log(e);
-        if (e.type === DrawType.Drawend) {
-          setTimeout(() => {
-            useEarth()
-              .useDrawTool()
-              .editPolygon({
-                feature: e.feature!,
-                isShowUnderlay: true,
-                callback: (ev) => {
-                  console.log(ev);
-                }
-              });
-          }, 1000);
-        }
       }
     });
 };

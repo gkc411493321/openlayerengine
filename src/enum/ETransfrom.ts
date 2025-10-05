@@ -68,13 +68,17 @@ export enum ETransfrom {
    */
   Copy = 'copy',
   /**
+   * 开始修改
+   */
+  ModifyStart = 'modifystart',
+  /**
    * 修改中
    */
   Modifying = 'modifying',
   /**
    * 退出修改
    */
-  Modifyexit = 'modifyexit',
+  ModifyEnd = 'modifyend'
 }
 
 export enum ETranslateType {

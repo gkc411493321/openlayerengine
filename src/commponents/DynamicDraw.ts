@@ -15,6 +15,12 @@ import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Coordinate } from 'ol/coordinate';
 import { Utils } from '../common';
+
+// 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
+type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
+type HistoryPolygonRecord = { type: 'Polygon'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
+type HistoryPointRecord = { type: 'Point'; before: Coordinate; after: Coordinate; apply: (coord: Coordinate) => void };
+type HistoryRecord = HistoryLineRecord | HistoryPolygonRecord | HistoryPointRecord;
 /**
  * 动态绘制类
  */
@@ -43,6 +49,16 @@ export default class DynamicDraw {
    * 绘制图层
    */
   private layer: VectorLayer<VectorSource<Geometry>>;
+  /** 撤销栈 */
+  private undoStack: HistoryRecord[] = [];
+  /** 重做栈 */
+  private redoStack: HistoryRecord[] = [];
+  /** 当前编辑阶段键盘监听 */
+  private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  /** 提示牌 DOM */
+  private helpTooltipElement: HTMLDivElement | null = null;
+  /** 基础提示内容（不含撤销/重做动态部分） */
+  private baseTooltipContent = '';
   /**
    * 构造器
    * @param earth 地图实例
@@ -63,8 +79,10 @@ export default class DynamicDraw {
    * 提示牌初始化方法
    */
   private initHelpTooltip(str: string) {
+    this.baseTooltipContent = str;
     const div = document.createElement('div');
     div.innerHTML = "<div class='ol-tooltip'>" + str + '</div>';
+    this.helpTooltipElement = div as HTMLDivElement;
     document.body.appendChild(div);
     this.overlay.add({
       id: 'draw_help_tooltip',
@@ -75,6 +93,21 @@ export default class DynamicDraw {
     this.overlayKey = this.map.on('pointermove', (evt) => {
       this.overlay.setPosition('draw_help_tooltip', evt.coordinate);
     });
+  }
+
+  /** 根据 undo/redo 状态动态刷新提示 */
+  private updateUndoRedoTooltip() {
+    if (!this.helpTooltipElement) return;
+    // 仅在编辑过程中使用：当两栈都为空时不显示快捷键提示
+    let extra = '<br/>';
+    if (this.undoStack.length > 0) {
+      extra += `<span style="color:#ff9800; font-weight: bold;">Ctrl+Z 撤销 (${this.undoStack.length})</span>`;
+    }
+    if (this.redoStack.length > 0) {
+      if (extra) extra += `<span style="color:#888; padding:0 6px;">|</span>`;
+      extra += `<span style="color:#00bfa5; font-weight: bold;">Ctrl+Y 重做 (${this.redoStack.length})</span>`;
+    }
+    this.helpTooltipElement.innerHTML = `<div class='ol-tooltip'>${this.baseTooltipContent}${extra ? ' ' + extra : ''}</div>`;
   }
   /**
    * 绘制工具初始化
@@ -349,7 +382,14 @@ export default class DynamicDraw {
    * @param param 参数，详见{@link IEditParam}
    */
   editPolygon(param: IEditParam): void {
-    this.initHelpTooltip('单击修改面 alt+单击删除点 右击退出编辑');
+    this.initHelpTooltip('单击修改面，alt+单击删除点，右击退出编辑');
+    // 开始新的编辑会话，清空历史并移除旧监听
+    this.undoStack = [];
+    this.redoStack = [];
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
+    }
     // 1. 创建编辑临时图层（关闭 wrapX 避免多世界复制下命中异常）
     const polygonLayer = new PolygonLayer(useEarth(), { wrapX: false });
     const pointLayer = new PointLayer(useEarth(), { wrapX: false });
@@ -398,22 +438,72 @@ export default class DynamicDraw {
     });
     const modify = new Modify({ source: <VectorSource<Geometry>>polygonLayer.getLayer().getSource() });
     modify.set('dynamicDraw', true);
-    // 7. 编辑过程中回调（不改变原要素，只回调地理坐标）
-    modify.on('modifyend', () => {
+    let beforeRing: Coordinate[] | null = null;
+    const cloneRing = (ring: Coordinate[]) => ring.map((c) => [c[0], c[1]] as Coordinate);
+    const refreshControlPoints = (ring: Coordinate[]) => {
       pointLayer.remove();
-      const ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0];
+      for (const p of ring) {
+        pointLayer.add({ center: p, stroke: { color: '#fff' }, fill: { color: '#00aaff' } });
+      }
+    };
+    // 捕获拖动开始前坐标
+    modify.on('modifystart', () => {
+      const ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0] || [];
+      beforeRing = cloneRing(ring);
+    });
+    // 7. 编辑过程中回调（不改变原要素，只回调地理坐标）并记录历史
+    modify.on('modifyend', () => {
+      const ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0] || [];
       editRing = ensureClosed(ring);
-      for (const p of editRing) {
-        pointLayer.add({
-          center: p,
-          stroke: { color: '#fff' },
-          fill: { color: '#00aaff' }
-        });
+      refreshControlPoints(editRing);
+      // 推入历史（before -> after）
+      if (beforeRing) {
+        const afterRing = cloneRing(editRing);
+        // 若前后不同再记录
+        const changed = beforeRing.length !== afterRing.length || beforeRing.some((p, i) => p[0] !== afterRing[i][0] || p[1] !== afterRing[i][1]);
+        if (changed) {
+          this.undoStack.push({
+            type: 'Polygon',
+            before: beforeRing,
+            after: afterRing,
+            apply: (coords: Coordinate[]) => {
+              polygon.getGeometry() && (<Polygon>polygon.getGeometry()).setCoordinates([coords]);
+              editRing = coords;
+              refreshControlPoints(editRing);
+              const lonlatApply = editRing.map((c) => toLonLat(c));
+              param.callback?.call(this, { type: ModifyType.Modifying, position: lonlatApply });
+            }
+          });
+          this.redoStack.length = 0;
+          this.updateUndoRedoTooltip();
+        }
+        beforeRing = null;
       }
       const lonlat = editRing.map((c) => toLonLat(c));
       param.callback?.call(this, { type: ModifyType.Modifying, position: lonlat });
     });
     this.map.addInteraction(modify);
+    this.keydownHandler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) {
+        if (this.undoStack.length) {
+          e.preventDefault();
+          const rec = this.undoStack.pop() as HistoryPolygonRecord;
+          this.redoStack.push(rec);
+          rec.apply(rec.before.map((c: Coordinate) => [c[0], c[1]] as Coordinate));
+          this.updateUndoRedoTooltip();
+        }
+      } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
+        if (this.redoStack.length) {
+          e.preventDefault();
+          const rec = this.redoStack.pop() as HistoryPolygonRecord;
+          this.undoStack.push(rec);
+          rec.apply(rec.after.map((c: Coordinate) => [c[0], c[1]] as Coordinate));
+          this.updateUndoRedoTooltip();
+        }
+      }
+    };
+    window.addEventListener('keydown', this.keydownHandler);
+    this.updateUndoRedoTooltip();
     // 8. 退出（右键）保存：将编辑 ring 映射回原始 world copy
     useEarth()
       .useGlobalEvent()
@@ -421,6 +511,14 @@ export default class DynamicDraw {
         this.map.removeInteraction(modify);
         polygonLayer.destroy();
         pointLayer.destroy();
+        // 清空历史 & 移除键盘监听
+        this.undoStack = [];
+        this.redoStack = [];
+        if (this.keydownHandler) {
+          window.removeEventListener('keydown', this.keydownHandler);
+          this.keydownHandler = null;
+        }
+        this.updateUndoRedoTooltip();
         // 最新编辑 ring
         let ring = (<Coordinate[][]>polygon.getGeometry()?.getCoordinates())[0];
         ring = ensureClosed(ring);
@@ -454,7 +552,14 @@ export default class DynamicDraw {
    * @param param 参数，详见{@link IEditParam}
    */
   editPolyline(param: IEditParam): void {
-    this.initHelpTooltip('单击修改线 alt+单击删除点 右击退出编辑');
+    this.initHelpTooltip('单击修改线，alt+单击删除点，右击退出编辑');
+    // 新会话清空历史
+    this.undoStack = [];
+    this.redoStack = [];
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
+    }
     const polyline = new PolylineLayer(useEarth(), { wrapX: false });
     const point = new PointLayer(useEarth(), { wrapX: false });
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
@@ -495,21 +600,76 @@ export default class DynamicDraw {
     const line = polyline.add({ positions: editCoords, stroke: { color: '#00aaff', width: 2 } });
     const modify = new Modify({ source: <VectorSource<Geometry>>polyline.getLayer().getSource() });
     modify.set('dynamicDraw', true);
+    let beforeLine: Coordinate[] | null = null;
+    const cloneLine = (arr: Coordinate[]) => arr.map((c) => [c[0], c[1]] as Coordinate);
+    modify.on('modifystart', () => {
+      beforeLine = cloneLine((<LineString>line.getGeometry()).getCoordinates());
+    });
     modify.on('modifyend', () => {
       point.remove();
       editCoords = (<Coordinate[]>line.getGeometry()?.getCoordinates()).slice();
       for (const c of editCoords) {
         point.add({ center: c, stroke: { color: '#fff' }, fill: { color: '#00aaff' } });
       }
+      if (beforeLine) {
+        const afterLine = cloneLine(editCoords);
+        const changed = beforeLine.length !== afterLine.length || beforeLine.some((p, i) => p[0] !== afterLine[i][0] || p[1] !== afterLine[i][1]);
+        if (changed) {
+          this.undoStack.push({
+            type: 'LineString',
+            before: beforeLine,
+            after: afterLine,
+            apply: (coords: Coordinate[]) => {
+              line.getGeometry() && (<LineString>line.getGeometry()).setCoordinates(coords);
+              editCoords = coords.slice();
+              point.remove();
+              for (const c2 of editCoords) point.add({ center: c2, stroke: { color: '#fff' }, fill: { color: '#00aaff' } });
+              param.callback?.call(this, { type: ModifyType.Modifying, position: editCoords.map((p) => toLonLat(p)) });
+            }
+          });
+          this.redoStack.length = 0;
+          this.updateUndoRedoTooltip();
+        }
+        beforeLine = null;
+      }
       param.callback?.call(this, { type: ModifyType.Modifying, position: editCoords.map((p) => toLonLat(p)) });
     });
     this.map.addInteraction(modify);
+    this.keydownHandler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) {
+        if (this.undoStack.length) {
+          e.preventDefault();
+          const rec = this.undoStack.pop() as HistoryLineRecord;
+          this.redoStack.push(rec);
+          rec.apply(rec.before.map((c: Coordinate) => [c[0], c[1]] as Coordinate));
+          this.updateUndoRedoTooltip();
+        }
+      } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
+        if (this.redoStack.length) {
+          e.preventDefault();
+          const rec = this.redoStack.pop() as HistoryLineRecord;
+          this.undoStack.push(rec);
+          rec.apply(rec.after.map((c: Coordinate) => [c[0], c[1]] as Coordinate));
+          this.updateUndoRedoTooltip();
+        }
+      }
+    };
+    window.addEventListener('keydown', this.keydownHandler);
+    this.updateUndoRedoTooltip();
     useEarth()
       .useGlobalEvent()
       .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         polyline.destroy();
         point.destroy();
+        // 退出清空历史并移除监听
+        this.undoStack = [];
+        this.redoStack = [];
+        if (this.keydownHandler) {
+          window.removeEventListener('keydown', this.keydownHandler);
+          this.keydownHandler = null;
+        }
+        this.updateUndoRedoTooltip();
         let finalCoords = (<Coordinate[]>line.getGeometry()?.getCoordinates()).slice();
         if (baseWorldIndex !== undefined && finalCoords.length) {
           finalCoords = Utils.restoreToWorldIndex(finalCoords, baseWorldIndex) as Coordinate[];
@@ -547,7 +707,14 @@ export default class DynamicDraw {
    * @param param 参数，详见{@link IEditParam}
    */
   editPoint(param: IEditParam): void {
-    this.initHelpTooltip('单击修改点 右击退出编辑');
+    this.initHelpTooltip('单击修改点，右击退出编辑');
+    // 新会话清空历史
+    this.undoStack = [];
+    this.redoStack = [];
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
+    }
     const pointLayer = new PointLayer(useEarth(), { wrapX: false });
     const layer = <VectorLayer<VectorSource<Geometry>>>useEarth().getLayerAtFeature(param.feature);
     if (!param.isShowUnderlay) {
@@ -573,16 +740,68 @@ export default class DynamicDraw {
     let editPos = Utils.normalizeToViewWorld(original);
     const point = pointLayer.add({ center: editPos, stroke: { color: '#00aaff', width: 2 }, fill: { color: '#ffffff61' } });
     const modify = new Modify({ source: <VectorSource<Geometry>>pointLayer.getLayer().getSource() });
+    let beforePos: Coordinate | null = null;
+    modify.on('modifystart', () => {
+      beforePos = (<Point>point.getGeometry()).getCoordinates().slice() as Coordinate;
+    });
     modify.on('modifyend', () => {
       editPos = <Coordinate>point.getGeometry()?.getCoordinates();
+      if (beforePos) {
+        const afterPos = (<Point>point.getGeometry()).getCoordinates().slice() as Coordinate;
+        const changed = beforePos[0] !== afterPos[0] || beforePos[1] !== afterPos[1];
+        if (changed) {
+          this.undoStack.push({
+            type: 'Point',
+            before: beforePos,
+            after: afterPos,
+            apply: (coord: Coordinate) => {
+              point.getGeometry() && (<Point>point.getGeometry()).setCoordinates(coord.slice() as Coordinate);
+              editPos = coord.slice() as Coordinate;
+              param.callback?.call(this, { type: ModifyType.Modifying, position: toLonLat(editPos) });
+            }
+          });
+          this.redoStack.length = 0;
+          this.updateUndoRedoTooltip();
+        }
+        beforePos = null;
+      }
       param.callback?.call(this, { type: ModifyType.Modifying, position: toLonLat(editPos) });
     });
     this.map.addInteraction(modify);
+    this.keydownHandler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) {
+        if (this.undoStack.length) {
+          e.preventDefault();
+          const rec = this.undoStack.pop() as HistoryPointRecord;
+          this.redoStack.push(rec);
+          rec.apply([rec.before[0], rec.before[1]] as Coordinate);
+          this.updateUndoRedoTooltip();
+        }
+      } else if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) {
+        if (this.redoStack.length) {
+          e.preventDefault();
+          const rec = this.redoStack.pop() as HistoryPointRecord;
+          this.undoStack.push(rec);
+          rec.apply([rec.after[0], rec.after[1]] as Coordinate);
+          this.updateUndoRedoTooltip();
+        }
+      }
+    };
+    window.addEventListener('keydown', this.keydownHandler);
+    this.updateUndoRedoTooltip();
     useEarth()
       .useGlobalEvent()
       .addMouseOnceRightClickEventByGlobal(() => {
         this.map.removeInteraction(modify);
         pointLayer.destroy();
+        // 清空历史并移除监听
+        this.undoStack = [];
+        this.redoStack = [];
+        if (this.keydownHandler) {
+          window.removeEventListener('keydown', this.keydownHandler);
+          this.keydownHandler = null;
+        }
+        this.updateUndoRedoTooltip();
         let finalPos = <Coordinate>point.getGeometry()?.getCoordinates();
         if (baseWorldIndex !== undefined) {
           finalPos = Utils.restoreToWorldIndex(finalPos, baseWorldIndex) as Coordinate;
