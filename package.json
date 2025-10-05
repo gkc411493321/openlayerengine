@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@turf/turf": "^6.5.0",
-    "ol": "^7.2.2",
+    "ol": "^7.5.2",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "^0.4.0",

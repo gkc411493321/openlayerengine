@@ -849,6 +849,11 @@ export default class DynamicDraw {
    * 清空绘制图层
    */
   remove() {
+    if (this.overlayKey) {
+      this.overlay.remove('draw_help_tooltip');
+      unByKey(this.overlayKey);
+      this.overlayKey = undefined;
+    }
     this.layer.getSource()?.clear();
   }
 }
