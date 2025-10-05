@@ -101,10 +101,10 @@ export default class DynamicDraw {
     // 仅在编辑过程中使用：当两栈都为空时不显示快捷键提示
     let extra = '<br/>';
     if (this.undoStack.length > 0) {
-      extra += `<span style="color:#ff9800; font-weight: bold;">Ctrl+Z 撤销 (${this.undoStack.length})</span>`;
+      extra += `<span style="color:#ff9800; font-weight: bold; padding-right:6px;">Ctrl+Z 撤销 (${this.undoStack.length})</span>`;
     }
     if (this.redoStack.length > 0) {
-      if (extra) extra += `<span style="color:#888; padding:0 6px;">|</span>`;
+      if (extra) extra += `<span style="color:#888;"></span>`;
       extra += `<span style="color:#00bfa5; font-weight: bold;">Ctrl+Y 重做 (${this.redoStack.length})</span>`;
     }
     this.helpTooltipElement.innerHTML = `<div class='ol-tooltip'>${this.baseTooltipContent}${extra ? ' ' + extra : ''}</div>`;

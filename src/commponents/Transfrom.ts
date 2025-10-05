@@ -79,6 +79,8 @@ export default class Transfrom {
    * Tooltip DOM 元素（复用避免内存泄漏）
    */
   private helpTooltipEl: HTMLDivElement | null = null;
+  /** 基础提示标识（用于动态拼接快捷键及撤销重做数量） */
+  private readonly baseTransformTipFlag = '选择控制点进行变换操作';
   /**
    * 是否已销毁
    */
@@ -198,7 +200,7 @@ export default class Transfrom {
       .useGlobalEvent()
       .addKeyDownEventByGlobal((event) => {
         const key = event.key.toLowerCase();
-        if (key === 'Escape' && this.checkSelect) {
+        if (key === 'escape' && this.checkSelect) {
           let extent: any = this.checkSelect.getGeometry()?.getExtent();
           extent = extent ? useEarth().map.getPixelFromCoordinate([extent[0], extent[3]]) : [0, 0];
           // 退出编辑
@@ -227,6 +229,8 @@ export default class Transfrom {
         if (key.toLowerCase() === 'c' && event.ctrlKey && this.checkSelect) {
           // 复制
           this.copyFeature = cloneDeep(this.checkSelect);
+          // 设置标牌
+          this.helpTooltipEl!.innerHTML = this.buildTransformBaseTooltip();
           // 阻止默认行为，例如防止浏览器保存页面
           event.preventDefault();
         }
@@ -316,7 +320,7 @@ export default class Transfrom {
       this.checkSelect = e.feature;
       this.checkLayer = this.getLayerByFeature(e.feature);
       this.removeHelpTooltip();
-      this.initHelpTooltip('选择控制点进行变换操作');
+      this.initHelpTooltip(this.baseTransformTipFlag);
       // 进入选中周期，初始化历史记录
       this.resetHistory();
       this.recordSnapshot(e.feature); // 记录初始状态
@@ -351,7 +355,7 @@ export default class Transfrom {
       }
     } else if (eventName === ETransfrom.LeaveHandle) {
       if (this.checkEnterHandle) {
-        if (this.overlayKey) this.updateHelpTooltip('选择控制点进行变换操作');
+        if (this.overlayKey) this.updateHelpTooltip(this.baseTransformTipFlag);
         else this.removeHelpTooltip();
         callbackParam = {
           type: eventName,
@@ -485,7 +489,7 @@ export default class Transfrom {
       this.updateHelpTooltip(e.detail.item.title);
     });
     toolbarRoot?.addEventListener('toolbar:itemleave', (e: any) => {
-      this.updateHelpTooltip('选择控制点进行变换操作');
+      this.updateHelpTooltip(this.baseTransformTipFlag);
     });
     toolbarRoot?.addEventListener('toolbar:itemclick', (e: any) => {
       this.handleToolbarClick(e.detail, e.detail.pixel);
@@ -497,7 +501,7 @@ export default class Transfrom {
   private handleToolbarClick(detail: any, pixel: number[]) {
     const key = detail.key;
     const menuItem = detail.item as IToolbarItem;
-    this.updateHelpTooltip('选择控制点进行变换操作');
+    this.updateHelpTooltip(this.baseTransformTipFlag);
     if (key === 'undo') {
       this.undo();
     } else if (key === 'redo') {
@@ -729,6 +733,7 @@ export default class Transfrom {
     // 新的操作产生后，清空 redo 栈
     this.redoStack = [];
     this.hasRecordedInitial = true;
+    this.refreshBaseTransformTooltipIfNeeded();
   }
   /**
    * 重置（Select 开始时）
@@ -757,6 +762,7 @@ export default class Transfrom {
     if (feature) {
       this.handleRawEvent(ETransfrom.Undo, { feature });
     }
+    this.refreshBaseTransformTooltipIfNeeded();
   }
   /**
    * 重做
@@ -776,6 +782,7 @@ export default class Transfrom {
     if (feature) {
       this.handleRawEvent(ETransfrom.Redo, { feature });
     }
+    this.refreshBaseTransformTooltipIfNeeded();
   }
   /**
    * 根据 id 获取要素
@@ -1004,7 +1011,11 @@ export default class Transfrom {
       this.helpTooltipEl.className = 'ol-tooltip';
       document.body.appendChild(this.helpTooltipEl);
     }
-    this.helpTooltipEl.textContent = str;
+    if (str === this.baseTransformTipFlag) {
+      this.helpTooltipEl.innerHTML = this.buildTransformBaseTooltip();
+    } else {
+      this.helpTooltipEl.textContent = str;
+    }
     // 初次添加 overlay
     if (!this.overlayKey) {
       this.overlay.add({
@@ -1025,7 +1036,11 @@ export default class Transfrom {
    */
   private updateHelpTooltip(str: string, pixel?: number[]) {
     if (!this.overlayKey || !this.helpTooltipEl) return;
-    this.helpTooltipEl.textContent = str;
+    if (str === this.baseTransformTipFlag) {
+      this.helpTooltipEl.innerHTML = this.buildTransformBaseTooltip();
+    } else {
+      this.helpTooltipEl.textContent = str;
+    }
     const params: ISetOverlayParam = { id: 'help_tooltip', element: this.helpTooltipEl };
     if (pixel) params['position'] = useEarth().map.getCoordinateFromPixel(pixel);
     this.overlay.set(params);
@@ -1083,6 +1098,41 @@ export default class Transfrom {
     return coordinates;
   }
 
+  /** 构建基础提示：包含快捷键以及当前可撤销/重做次数 */
+  private buildTransformBaseTooltip(): string {
+    const undoCount = Math.max(0, this.historyStack.length - 1); // 初始快照不计入
+    const redoCount = this.redoStack.length;
+    const canPaste = !!this.copyFeature;
+    const keySpan = (combo: string, label: string, color?: string, disabled?: boolean, extraDesc?: string): string => {
+      const style: string[] = [];
+      if (color) style.push(`color:${color}`);
+      if (disabled) style.push('opacity:0.5');
+      const desc = extraDesc ? `${label}${extraDesc}` : label;
+      return `<span style="${style.join(';')}">${combo} ${desc}</span>`;
+    };
+    const baseItems: string[] = [
+      keySpan('Ctrl+C', '复制', '#fff'),
+      keySpan('Ctrl+V', '粘贴', canPaste ? '#fff' : '#999'),
+      keySpan('Ctrl+X', '剪切', '#fff'),
+      keySpan('Del', '删除', '#d9363fff'),
+      keySpan('Esc', '退出', '#fc972bff')
+    ];
+    const staticLine = `${this.baseTransformTipFlag}<br/> ${baseItems.join(' | ')}`;
+    const dyn: string[] = [];
+    if (undoCount > 0) dyn.push(`<span style="color:#ff9800; font-weight: bold;">Ctrl+Z 撤销 (${undoCount})</span>`);
+    if (redoCount > 0) dyn.push(`<span style="color:#00bfa5; font-weight: bold;">Ctrl+Y 重做 (${redoCount})</span>`);
+    if (!dyn.length) return staticLine;
+    return staticLine + '<br/>' + dyn.join(' | ');
+  }
+  /** 当当前显示基础提示时刷新撤销/重做计数 */
+  private refreshBaseTransformTooltipIfNeeded() {
+    if (!this.helpTooltipEl) return;
+    const txt = this.helpTooltipEl.textContent || '';
+    if (txt.startsWith(this.baseTransformTipFlag)) {
+      this.updateHelpTooltip(this.baseTransformTipFlag);
+    }
+  }
+
   /**
    * 根据鼠标事件类型，更新标牌文本
    */
@@ -1099,7 +1149,7 @@ export default class Transfrom {
         if (this.options.translateType == ETranslateType.Feature || this.defaultParams.translateType == ETranslateType.Feature) {
           this.updateHelpTooltip('鼠标左键按下平移');
         } else {
-          this.updateHelpTooltip('选择控制点进行变换操作');
+          this.updateHelpTooltip(this.baseTransformTipFlag);
         }
         break;
       case ECursor.Grab:
@@ -1127,7 +1177,7 @@ export default class Transfrom {
       }
       default:
         // 其它光标：保持或还原默认提示
-        this.updateHelpTooltip('选择控制点进行变换操作');
+        this.updateHelpTooltip(this.baseTransformTipFlag);
     }
   }
   /**
