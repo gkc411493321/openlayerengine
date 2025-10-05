@@ -11,7 +11,7 @@ export const testDynamicDraw = () => {
   // })
   useEarth()
     .useDrawTool()
-    .drawPolygon({
+    .drawCircle({
       callback: (e) => {
         console.log(e);
       }

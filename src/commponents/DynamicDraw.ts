@@ -1,6 +1,6 @@
 import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon, IEditParam, IPointParam, ModifyType } from '../interface';
 import { Feature, Map } from 'ol';
-import { Geometry, LineString, Point, Polygon } from 'ol/geom';
+import { Geometry, LineString, Point, Polygon, Circle as CircleGeom } from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Earth from '../Earth';
@@ -8,9 +8,9 @@ import { Draw, Modify } from 'ol/interaction';
 import { useEarth } from '../useEarth';
 import { DrawEvent } from 'ol/interaction/Draw';
 import { fromLonLat, toLonLat } from 'ol/proj';
-import { Circle, Fill, Stroke, Style } from 'ol/style';
+import { Fill, Stroke, Style } from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer } from '../base';
+import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, CircleLayer } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Coordinate } from 'ol/coordinate';
@@ -59,21 +59,51 @@ export default class DynamicDraw {
   private helpTooltipElement: HTMLDivElement | null = null;
   /** 基础提示内容（不含撤销/重做动态部分） */
   private baseTooltipContent = '';
+  /** 使用的临时绘制 source（不再长期存储结果） */
+  private tempSource: VectorSource<Geometry>;
+  /** 临时绘制图层（仅用于交互过程显示） */
+  private tempLayer: VectorLayer<VectorSource<Geometry>>;
+  /** 目标基础图层实例（懒加载） */
+  private pointLayer?: PointLayer;
+  private polylineLayer?: PolylineLayer;
+  private polygonLayer?: PolygonLayer;
+  private circleLayer?: CircleLayer;
   /**
    * 构造器
    * @param earth 地图实例
    */
   constructor(earth: Earth) {
+    // 仅保留一个临时绘制图层用于交互，结果要素将写入基础图层
     const source = new VectorSource();
-    const layer = new VectorLayer({
-      source: source
-    });
-    layer.set('layerType', 'dynamicDrawLayer');
-    earth.addLayer(layer);
+    const layer = new VectorLayer({ source });
+    layer.set('layerType', 'dynamicDrawTempLayer');
+    earth.addLayer(layer); // 保持与旧实现兼容（仍在地图上显示绘制过程）
     this.map = earth.map;
-    this.source = source;
-    this.layer = layer;
+    this.source = source; // 兼容旧属性命名
+    this.layer = layer;   // 兼容旧属性命名
+    this.tempSource = source;
+    this.tempLayer = layer;
     this.overlay = new OverlayLayer(useEarth());
+  }
+  /** 获取对应基础图层（懒创建，避免与用户手工创建重复冲突：如果外部已存在同类型图层，可在 Earth 封装里拓展一个获取逻辑；这里简单内部创建一次） */
+  private getBaseLayer(type: 'Point' | 'LineString' | 'Polygon' | 'Circle') {
+    if (type === 'Point') {
+      if (!this.pointLayer) this.pointLayer = new PointLayer(useEarth());
+      return this.pointLayer;
+    }
+    if (type === 'LineString') {
+      if (!this.polylineLayer) this.polylineLayer = new PolylineLayer(useEarth());
+      return this.polylineLayer;
+    }
+    if (type === 'Polygon') {
+      if (!this.polygonLayer) this.polygonLayer = new PolygonLayer(useEarth());
+      return this.polygonLayer;
+    }
+    if (type === 'Circle') {
+      if (!this.circleLayer) this.circleLayer = new CircleLayer(useEarth());
+      return this.circleLayer;
+    }
+    return undefined;
   }
   /**
    * 提示牌初始化方法
@@ -115,7 +145,16 @@ export default class DynamicDraw {
    */
   private initDraw(
     type: 'Point' | 'LineString' | 'LinearRing' | 'Polygon' | 'MultiPoint' | 'MultiLineString' | 'MultiPolygon' | 'GeometryCollection' | 'Circle',
-    param?: IDrawPoint | IDrawLine | IDrawPolygon
+    param?: (IDrawPoint | IDrawLine | IDrawPolygon | undefined) & {
+      strokeColor?: string;
+      strokeWidth?: number;
+      fillColor?: string;
+      // 绘制结束后是否保留图形（沿用旧逻辑）
+      keepGraphics?: boolean;
+      // 限制点数量（旧参数在 IDrawPoint 内）
+      limit?: number;
+      callback?: (e: IDrawEvent) => void;
+    }
   ) {
     if (this.draw) {
       this.map.removeInteraction(this.draw);
@@ -147,8 +186,9 @@ export default class DynamicDraw {
     // 如果存在绘制工具 则清除以前的绘制工具
     // if (this.draw) this.map.removeInteraction(this.draw);
     // 创建绘制
+    // 使用临时 source 承载交互中的要素
     this.draw = new Draw({
-      source: this.source,
+      source: this.tempSource,
       type: type,
       style: drawStyle,
       stopClick: true,
@@ -281,69 +321,90 @@ export default class DynamicDraw {
           featurePosition.push(toLonLat(item));
         }
       }
-      if (type == 'LineString' && featurePosition && featurePosition?.length > 1) {
-        response.featurePosition = featurePosition;
-        response.feature = event.feature;
-        const LineParam = <IDrawLine>param;
-        event.feature.setStyle(
-          new Style({
-            stroke: new Stroke({
-              color: LineParam?.strokeColor || '#ffcc33',
-              width: LineParam?.strokeWidth || 2
-            })
-          })
-        );
-        callback.call(this, response);
-      }
-      if (type == 'Polygon') {
-        if (featurePosition && featurePosition?.length > 3) {
+      // ==== 新增：将结果写入对应基础图层 ====
+      const geometryType = type;
+      const baseLayer = this.getBaseLayer(
+        geometryType === 'Circle' ? 'Circle' : (geometryType as 'Point' | 'LineString' | 'Polygon')
+      );
+      try {
+        if (geometryType === 'LineString' && featurePosition && featurePosition.length > 1 && baseLayer instanceof PolylineLayer) {
+          const lineParam = param as IDrawLine;
+            const geom = event.feature.getGeometry() as LineString;
+            const coords = geom.getCoordinates();
+            const f = baseLayer.add({
+              positions: coords,
+              stroke: { color: lineParam?.strokeColor || '#ffcc33', width: lineParam?.strokeWidth || 2 }
+            });
+            f.set('dynamicDraw', true);
+            response.feature = f;
+            response.featurePosition = featurePosition;
+            callback.call(this, response);
+        } else if (geometryType === 'Polygon') {
+          if (featurePosition && featurePosition.length > 3 && baseLayer instanceof PolygonLayer) {
+            const geom = event.feature.getGeometry() as Polygon;
+            const coords = geom.getCoordinates();
+            const polygonParam = param as IDrawPolygon;
+            const f = baseLayer.add({
+              positions: coords,
+              stroke: { color: polygonParam?.strokeColor || '#ffcc33', width: polygonParam?.strokeWidth || 2 },
+              fill: { color: polygonParam?.fillColor || 'rgba(255,255,255,0.2)' }
+            });
+            f.set('dynamicDraw', true);
+            response.feature = f;
+            response.featurePosition = featurePosition;
+            callback.call(this, response);
+          }
+        } else if (geometryType === 'Point' && featurePosition && baseLayer instanceof PointLayer) {
+          drawNum++;
+          const pointParam = param as IDrawPoint & { strokeColor?: string; strokeWidth?: number; fillColor?: string };
+          const geom = event.feature.getGeometry() as Point;
+          const coord = geom.getCoordinates();
+          const f = baseLayer.add({
+            center: coord,
+            size: pointParam?.size || 2,
+            fill: { color: pointParam?.fillColor || '#ffcc33' },
+            stroke: pointParam?.strokeColor ? { color: pointParam.strokeColor, width: pointParam.strokeWidth } : undefined
+          });
+          f.set('dynamicDraw', true);
+          response.feature = f;
           response.featurePosition = featurePosition;
-          response.feature = event.feature;
-          const polygonParam = <IDrawPolygon>param;
-          event.feature.setStyle(
-            new Style({
-              stroke: new Stroke({
-                color: polygonParam?.strokeColor || '#ffcc33',
-                width: polygonParam?.strokeWidth || 2
-              }),
-              fill: new Fill({
-                color: polygonParam?.fillColor || 'rgba(255, 255, 255, 0.2)'
-              })
-            })
-          );
           callback.call(this, response);
-        } else {
-          setTimeout(() => {
-            this.source.removeFeature(event.feature);
-          }, 10);
+          if (this.draw && pointParam.limit) {
+            if (drawNum == pointParam.limit) {
+              this.exitDraw({ position: toLonLat(coordinate) }, callback);
+            }
+          }
+        } else if (geometryType === 'Circle' && baseLayer instanceof CircleLayer) {
+          const circleGeom = event.feature.getGeometry() as CircleGeom;
+          const center = circleGeom.getCenter();
+          const radius = circleGeom.getRadius();
+          const circleParam = (param as { strokeColor?: string; strokeWidth?: number; fillColor?: string }) || {};
+          const f = baseLayer.add({
+            center,
+            radius,
+            stroke: { color: circleParam.strokeColor || '#ffcc33', width: circleParam.strokeWidth || 2 },
+            fill: { color: circleParam.fillColor || 'rgba(255,255,255,0.2)' }
+          });
+          f.set('dynamicDraw', true);
+          response.feature = f;
+          response.featurePosition = toLonLat(center);
+          callback.call(this, response);
         }
-      }
-      if (type == 'Point' && featurePosition) {
-        drawNum++;
-        response.featurePosition = featurePosition;
-        response.feature = event.feature;
-        const pointParam = <IDrawPoint>param;
-        event.feature.setStyle(
-          new Style({
-            image: new Circle({
-              radius: pointParam.size || 2,
-              fill: new Fill({
-                color: pointParam.fillColor || '#ffcc33'
-              })
-            })
-          })
-        );
-        callback.call(this, response);
-        if (this.draw && pointParam.limit) {
-          if (drawNum == pointParam.limit) {
-            this.exitDraw({ position: toLonLat(coordinate) }, callback);
+      } finally {
+        // 无论是否成功添加，都移除临时要素
+        setTimeout(() => {
+          this.tempSource.removeFeature(event.feature);
+        }, 0);
+        if (param?.keepGraphics === false && response.feature) {
+          // 如果用户要求不保留结果，则从基础图层移除
+          try {
+            const feat = response.feature as Feature<Geometry>;
+            const l = useEarth().getLayerAtFeature(feat) as VectorLayer<VectorSource<Geometry>> | undefined;
+            l?.getSource()?.removeFeature(feat);
+          } catch {
+            /* ignore */
           }
         }
-      }
-      if (param?.keepGraphics === false) {
-        setTimeout(() => {
-          this.source.removeFeature(event.feature);
-        }, 10);
       }
     });
     // 退出绘制回调函数
@@ -376,6 +437,10 @@ export default class DynamicDraw {
   drawPolygon(param?: IDrawPolygon) {
     // 初始化绘制工具
     this.initDraw('Polygon', param);
+  }
+  /** 动态绘制圆 */
+  drawCircle(param?: { strokeColor?: string; strokeWidth?: number; fillColor?: string; callback?: (e: IDrawEvent) => void }) {
+    this.initDraw('Circle', param);
   }
   /**
    * 动态修改面
@@ -832,18 +897,25 @@ export default class DynamicDraw {
    */
   get(type: 'Point' | 'LineString' | 'Polygon'): Feature<Geometry>[] | undefined;
   get(type?: 'Point' | 'LineString' | 'Polygon'): Feature<Geometry>[] | undefined {
+    // 新策略：汇总所有基础图层中由 DynamicDraw 创建的要素（带 dynamicDraw 标记）
+    const collect = <T extends BaseLayerLike>(layer?: T, matchType?: string) => {
+      if (!layer) return [] as Feature<Geometry>[];
+      const feats = layer.getLayer().getSource()?.getFeatures() || [];
+      return feats.filter((f) => f.get('dynamicDraw') && (!matchType || f.getGeometry()?.getType() === matchType));
+    };
+    type BaseLayerLike = { getLayer: () => VectorLayer<VectorSource<Geometry>> };
     if (type) {
-      const features = this.layer.getSource()?.getFeatures();
-      const arr: Feature<Geometry>[] = [];
-      if (features) {
-        for (const item of features) {
-          if (type == item.getGeometryName()) arr.push(item);
-        }
-      }
-      return arr;
-    } else {
-      return this.layer.getSource()?.getFeatures();
+      if (type === 'Point') return collect(this.pointLayer, 'Point');
+      if (type === 'LineString') return collect(this.polylineLayer, 'LineString');
+      if (type === 'Polygon') return collect(this.polygonLayer, 'Polygon');
+      return [];
     }
+    return [
+      ...collect(this.pointLayer, 'Point'),
+      ...collect(this.polylineLayer, 'LineString'),
+      ...collect(this.polygonLayer, 'Polygon'),
+      ...collect(this.circleLayer, 'Circle')
+    ];
   }
   /**
    * 清空绘制图层
@@ -854,6 +926,7 @@ export default class DynamicDraw {
       unByKey(this.overlayKey);
       this.overlayKey = undefined;
     }
-    this.layer.getSource()?.clear();
+    // 仅清空临时绘制层，不移除基础图层结果
+    this.tempSource.clear();
   }
 }
