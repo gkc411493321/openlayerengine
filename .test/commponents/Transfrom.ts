@@ -6,7 +6,6 @@ export const testTransfrom = () => {
   transfrom.on(eventNname, (e) => {
     console.log(e.type, e);
   });
-
   // document.addEventListener('keydown', function (event) {
   //   // 检查是否同时按下了Ctrl键和字母S
   //   console.log(event.key, event.ctrlKey);
