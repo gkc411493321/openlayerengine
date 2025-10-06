@@ -949,6 +949,9 @@ class TransformInteraction extends PointerInteraction {
       if (feature.get('dynamicDraw')) {
         flag = true;
       }
+      if (feature.get('param') && feature.get('param').plotType) {
+        flag = true;
+      }
     }
     return flag;
   }
