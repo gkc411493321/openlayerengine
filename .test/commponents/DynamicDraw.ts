@@ -10,5 +10,9 @@ export const testDynamicDraw = () => {
   //     console.log(e)
   //   }
   // })
-  new PlotDraw().startDraw(EPlotType.AttackArrow);
+  useEarth().useDrawTool().drawwAttackArrow({
+      callback: (e) => {
+        console.log(e)
+      }
+  });
 };

@@ -320,6 +320,7 @@ export interface IPolygonParam<T> extends IAddBaseParam<T> {
    * 标签样式
    */
   label?: ILabel;
+
 }
 export interface ISetPolygonParam {
   /**

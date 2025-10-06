@@ -67,6 +67,7 @@ class PlotDraw {
       })
     });
     const layer = new VectorLayer({ source, style });
+    layer.set('dynamicDraw', true);
     this.map.addLayer(layer);
     return layer;
   }
@@ -117,7 +118,7 @@ class PlotDraw {
       event.addMouseMoveEventByGlobal(this.mouseMoveEvent.bind(this));
       event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
       // 事件：开始绘制（首点）
-      this.emit('start', { type: this.geom?.getPlotType?.(), firstPoint: normalizedProjected });
+      this.emit('start', { type: this.geom?.getPlotType?.(), point: normalizedProjected, index: 0, pointCount: 1 });
     }
     // 判断是否绘制到最大值
     if (this.geom?.fixPointCount === this.geom?.getPointCount()) {
@@ -134,7 +135,7 @@ class PlotDraw {
     const points = this.points.concat([tempProjected]);
     this.geom.setPoints(points);
     // 事件：移动（动态预览点）
-    this.emit('moving', { tempPoint: tempProjected, points, pointCount: this.points.length });
+    this.emit('moving', { tempPoint: tempProjected, points, pointCount: this.points.length, index: this.points.length - 1, type: this.geom?.getPlotType?.() });
   }
   /**
    * 鼠标右键事件
@@ -241,6 +242,7 @@ class PlotDraw {
   public init(type: EPlotType) {
     this.geom = this.createGeom(type);
     this.feature = new Feature(this.geom);
+    this.feature.set('dynamicDraw', true);
     this.layer?.getSource()?.addFeature(this.feature);
     // 创建监听事件
     this.createEvent();

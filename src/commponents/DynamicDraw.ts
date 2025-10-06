@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { DrawType, IDrawEvent, IDrawLine, IDrawPoint, IDrawPolygon, IEditParam, IPointParam, ModifyType } from '../interface';
 import { Feature, Map } from 'ol';
 import { Geometry, LineString, Point, Polygon, Circle as CircleGeom } from 'ol/geom';
@@ -15,6 +16,9 @@ import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Coordinate } from 'ol/coordinate';
 import { Utils } from '../common';
+import PlotDraw from '../extends/plot/plotDraw';
+import { EPlotType } from '../enum';
+import { IPlotAttackArrow } from '../interface';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -80,7 +84,7 @@ export default class DynamicDraw {
     earth.addLayer(layer); // 保持与旧实现兼容（仍在地图上显示绘制过程）
     this.map = earth.map;
     this.source = source; // 兼容旧属性命名
-    this.layer = layer;   // 兼容旧属性命名
+    this.layer = layer; // 兼容旧属性命名
     this.tempSource = source;
     this.tempLayer = layer;
     this.overlay = new OverlayLayer(useEarth());
@@ -323,22 +327,20 @@ export default class DynamicDraw {
       }
       // ==== 新增：将结果写入对应基础图层 ====
       const geometryType = type;
-      const baseLayer = this.getBaseLayer(
-        geometryType === 'Circle' ? 'Circle' : (geometryType as 'Point' | 'LineString' | 'Polygon')
-      );
+      const baseLayer = this.getBaseLayer(geometryType === 'Circle' ? 'Circle' : (geometryType as 'Point' | 'LineString' | 'Polygon'));
       try {
         if (geometryType === 'LineString' && featurePosition && featurePosition.length > 1 && baseLayer instanceof PolylineLayer) {
           const lineParam = param as IDrawLine;
-            const geom = event.feature.getGeometry() as LineString;
-            const coords = geom.getCoordinates();
-            const f = baseLayer.add({
-              positions: coords,
-              stroke: { color: lineParam?.strokeColor || '#ffcc33', width: lineParam?.strokeWidth || 2 }
-            });
-            f.set('dynamicDraw', true);
-            response.feature = f;
-            response.featurePosition = featurePosition;
-            callback.call(this, response);
+          const geom = event.feature.getGeometry() as LineString;
+          const coords = geom.getCoordinates();
+          const f = baseLayer.add({
+            positions: coords,
+            stroke: { color: lineParam?.strokeColor || '#ffcc33', width: lineParam?.strokeWidth || 2 }
+          });
+          f.set('dynamicDraw', true);
+          response.feature = f;
+          response.featurePosition = featurePosition;
+          callback.call(this, response);
         } else if (geometryType === 'Polygon') {
           if (featurePosition && featurePosition.length > 3 && baseLayer instanceof PolygonLayer) {
             const geom = event.feature.getGeometry() as Polygon;
@@ -441,6 +443,65 @@ export default class DynamicDraw {
   /** 动态绘制圆 */
   drawCircle(param?: { strokeColor?: string; strokeWidth?: number; fillColor?: string; callback?: (e: IDrawEvent) => void }) {
     this.initDraw('Circle', param);
+  }
+  /**
+   * 动态绘制进攻箭头
+   */
+  drawwAttackArrow(param?: IDrawPolygon) {
+    // 初始化绘制工具
+    const plot = new PlotDraw();
+    plot.init(EPlotType.AttackArrow);
+    plot.on<IPlotAttackArrow>('start', (e) => {
+      // 回调：绘制开始
+      param?.callback?.call(this, {
+        type: DrawType.Drawstart,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('add-point', (e) => {
+      // 回调：绘制中点击（新增控制点）
+      param?.callback?.call(this, {
+        type: DrawType.DrawingClick,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('moving', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      param?.callback?.call(this, {
+        type: DrawType.Drawing,
+        eventPosition: toLonLat(e.tempPoint || e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('end', (e) => {
+      if (e.points && e.points.length > 2) {
+        const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
+        const geom = e.feature?.getGeometry() as Polygon;
+        const coords = geom.getCoordinates();
+        const f = baseLayer?.add({
+          positions: coords,
+          stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
+          fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
+        });
+        const attackArrowParam = {
+          positions: coords,
+          plotType: EPlotType.AttackArrow,
+          plotPoints: e.points
+        };
+        f?.set('param', attackArrowParam);
+        const response: IDrawEvent = {
+          type: DrawType.Drawend,
+          eventPosition: toLonLat(e.points[e.points.length - 1])
+        };
+        const featurePosition = [];
+        for (const item of e.coordinates![0]) {
+          featurePosition.push(toLonLat(item));
+        }
+        response.feature = f;
+        response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      }
+      plot.destroy();
+    });
   }
   /**
    * 动态修改面

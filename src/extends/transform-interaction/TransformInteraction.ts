@@ -392,12 +392,12 @@ class TransformInteraction extends PointerInteraction {
     const dashStroke = new Stroke({ color: [80, 80, 80], width: 1, lineDash: [6, 4] });
     const dashStrokeOff = new Stroke({ color: [80, 80, 80, 0.2], width: 1, lineDash: [6, 4] }); // 闪烁隐藏态降低透明度
 
-  const rotate = new Icon({ src: rotateSvg, color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
-  const stretchH = new Icon({ src: stretchHImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const stretchV = new Icon({ src: stretchVImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const scaleI = new Icon({ src: scalePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const translate = new Icon({ src: translatePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
-  const center = new Icon({ src: centerPng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const rotate = new Icon({ src: rotateSvg, color: [80, 80, 80, 1], displacement: [0, 30], scale: this.isTouch ? 1.8 : 1 });
+    const stretchH = new Icon({ src: stretchHImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const stretchV = new Icon({ src: stretchVImg, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const scaleI = new Icon({ src: scalePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const translate = new Icon({ src: translatePng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
+    const center = new Icon({ src: centerPng, color: [80, 80, 80, 1], scale: this.isTouch ? 1.8 : 1 });
     const bigpt = new RegularShape({ stroke: new Stroke({ color: '#f38200ff', width: 1 }), radius: this.isTouch ? 12 : 6, points: 14, angle: Math.PI / 4 });
 
     const createStyle = (img: any, s: Stroke, f: Fill) => [new Style({ image: img, stroke: s, fill: f })];
@@ -934,7 +934,7 @@ class TransformInteraction extends PointerInteraction {
   /**
    * 校验地图实例是否存在动态绘制
    */
-  private checkDynmicDraw_(): boolean {
+  private checkDynmicDraw_(evt: MapBrowserEvent<any>): boolean {
     let flag = false;
     useEarth()
       .map.getInteractions()
@@ -943,6 +943,13 @@ class TransformInteraction extends PointerInteraction {
           flag = true;
         }
       });
+    const sel = this.getFeatureAtPixel_(evt.pixel);
+    const feature = sel.feature;
+    if (feature) {
+      if (feature.get('dynamicDraw')) {
+        flag = true;
+      }
+    }
     return flag;
   }
 
@@ -950,7 +957,7 @@ class TransformInteraction extends PointerInteraction {
    * Pointer 按下：命中手柄决定模式，缓存初始几何、外包框、中心、角度等。
    */
   private handleDownEvent_(evt: MapBrowserEvent<any>): boolean | void {
-    if (this.checkDynmicDraw_()) return;
+    if (this.checkDynmicDraw_(evt)) return;
     // 右键（button === 2）退出编辑：不区分是否点在要素或手柄上
     const oe: any = (evt as any).originalEvent;
     if (oe && oe.button === 2) {

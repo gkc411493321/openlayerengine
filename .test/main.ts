@@ -24,7 +24,7 @@ window.onload = () => {
   testPointLayer()
   testPolygonLayer();
   testPolylineLayer();
-  // testTransfrom();
+  testTransfrom();
   // testOverlayLayer();
   // testGlobalEvent();
   testDynamicDraw();
