@@ -18,9 +18,8 @@ export const testDynamicDraw = () => {
         console.log(e);
         if (e.type === DrawType.Drawend) {
           setTimeout(() => {
-            const p = new PlotEdit();
-            p.init({ feature: e.feature! });
-          }, 1000);
+            useEarth().useDrawTool().editAttackArrow({ feature: e.feature! });
+          }, 0);
         }
       }
     });

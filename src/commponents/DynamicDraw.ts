@@ -20,6 +20,7 @@ import PlotDraw from '../extends/plot/plotDraw';
 import { EPlotType } from '../enum';
 import { IPlotAttackArrow } from '../interface';
 import AttackArrow from '../extends/plot/geom/AttackArrow';
+import PlotEdit from '../extends/plot/plotEdit';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -502,6 +503,29 @@ export default class DynamicDraw {
         param?.callback?.call(this, response);
       }
       plot.destroy();
+    });
+  }
+  /**
+   * 动态编辑进攻箭头
+   */
+  editAttackArrow(param: IEditParam): void {
+    const p = new PlotEdit();
+    p.init({ feature: param.feature });
+    p.on('modifyStart', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      console.log('modifyStart', e);
+    });
+    p.on('modifying', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      console.log('modifying', e);
+    });
+    p.on('modifyEnd', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      console.log('modifyEnd', e);
+    });
+    p.on('modifyExit', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      console.log('modifyExit', e);
     });
   }
   /**
