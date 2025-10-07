@@ -952,6 +952,10 @@ class TransformInteraction extends PointerInteraction {
       if (feature.get('param') && feature.get('param').plotType) {
         flag = true;
       }
+      const exclude = ['plot-ctl-point', 'plot-ctl-polygon'];
+      if (feature.get('module') && exclude.includes(feature.get('module'))) {
+        flag = true;
+      }
     }
     return flag;
   }

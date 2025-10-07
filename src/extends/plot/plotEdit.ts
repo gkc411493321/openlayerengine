@@ -175,7 +175,8 @@ class plotEdit {
       id: 'edit-plot',
       positions: coords,
       stroke: { color: '#00aaff', width: 2 },
-      fill: { color: '#ffffff61' }
+      fill: { color: '#ffffff61' },
+      module: 'plot-ctl-polygon'
     });
   }
   /**
