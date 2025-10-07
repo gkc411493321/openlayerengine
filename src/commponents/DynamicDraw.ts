@@ -11,7 +11,7 @@ import { DrawEvent } from 'ol/interaction/Draw';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Fill, Stroke, Style } from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, CircleLayer } from '../base';
+import { OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, CircleLayer, Base } from '../base';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Coordinate } from 'ol/coordinate';
@@ -509,23 +509,31 @@ export default class DynamicDraw {
    * 动态编辑进攻箭头
    */
   editAttackArrow(param: IEditParam): void {
+    const isShowUnderlay = param.isShowUnderlay === undefined ? true : param.isShowUnderlay;
+    const layer = useEarth().getLayer(param.feature.get('layerId')) as Base;
+    if (!isShowUnderlay) {
+      layer.hide(param.feature.getId() as string);
+    }
     const p = new PlotEdit();
     p.init({ feature: param.feature });
     p.on('modifyStart', (e) => {
       // 回调：绘制移动（实时移动位置，优先使用临时点）
-      console.log('modifyStart', e);
+      // console.log('modifyStart', e);
     });
     p.on('modifying', (e) => {
       // 回调：绘制移动（实时移动位置，优先使用临时点）
-      console.log('modifying', e);
+      // console.log('modifying', e);
     });
     p.on('modifyEnd', (e) => {
       // 回调：绘制移动（实时移动位置，优先使用临时点）
-      console.log('modifyEnd', e);
+      // console.log('modifyEnd', e);
     });
     p.on('modifyExit', (e) => {
       // 回调：绘制移动（实时移动位置，优先使用临时点）
-      console.log('modifyExit', e);
+      (param.feature.getGeometry() as Polygon).setCoordinates(e.coords);
+      if (!isShowUnderlay) {
+        layer.show(param.feature.getId() as string);
+      }
     });
   }
   /**

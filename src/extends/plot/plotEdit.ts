@@ -7,7 +7,7 @@ import PolygonLayer from '../../base/PolygonLayer';
 import PointLayer from '../../base/PointLayer';
 import { EPlotType } from '../../enum';
 import AttackArrow from './geom/AttackArrow';
-import { DragPan, Modify, Snap } from 'ol/interaction';
+import { Modify, Snap } from 'ol/interaction';
 import type { ModifyEvent } from 'ol/interaction/Modify';
 import VectorSource from 'ol/source/Vector';
 import { Geometry, Point } from 'ol/geom';
@@ -73,14 +73,18 @@ class plotEdit {
    * 修改点下标
    */
   private modifyPointIndex: number | undefined;
+  /** 初始(基准) world 索引，保证在多次平移(world wrap)后所有点仍保持在同一 world，避免形变 */
+  private baseWorldIndex: number | undefined;
   /**
    * 事件监听器
    */
   private listeners = new globalThis.Map<PlotEditEventType, Set<(payload: IPlotEditEventPayload) => void>>();
   /**
-   * 当前修改交互（便于销毁）
+   * 鼠标按下事件销毁回调
    */
-  private modifyInteraction?: Modify;
+  private mouseDown: (() => void) | undefined;
+
+  private pointIdMap: Map<string, number> | undefined;
 
   constructor() {
     this.map = useEarth().map;
@@ -133,20 +137,27 @@ class plotEdit {
    */
   private createLayer() {
     this.polygonLayer = new PolygonLayer(useEarth());
-    this.pointLayer = new PointLayer(useEarth());
+    this.pointLayer = new PointLayer<Point>(useEarth());
   }
   /**
    * 创建控制点
    */
   private createEditPoint(points: Coordinate[]) {
-    for (const item of points) {
+    // 记录点与id映射map
+    const pointIdMap = new Map<string, number>();
+    for (let index = 0; index < points.length; index++) {
+      const item = points[index];
+      const id = Utils.GetGUID();
+      pointIdMap.set(id, index);
       this.pointLayer?.add({
+        id: id,
         center: item,
         stroke: { color: '#fff' },
         fill: { color: '#00aaff' },
-        module: 'point'
+        module: 'plot-ctl-point'
       });
     }
+    this.pointIdMap = pointIdMap;
   }
   /**
    * 创建编辑要素
@@ -183,7 +194,7 @@ class plotEdit {
   /**
    * 创建修改监听
    */
-  private createModifyEvent(modify: Modify) {
+  private a(modify: Modify) {
     let offMove: () => void;
     modify.on('modifystart', (e: ModifyEvent) => {
       // 分发修改开始回调
@@ -200,8 +211,12 @@ class plotEdit {
         .useGlobalEvent()
         .addMouseMoveEventByGlobal((e: GlobalMoveEvent) => {
           if (this.modifyPointIndex !== undefined) {
-            const normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(e.position));
-            this.plotPoints[this.modifyPointIndex] = normalizedProjected;
+            // 先按当前视图归一化，再恢复到基准 world，确保所有控制点位于同一 world copy
+            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(e.position));
+            if (this.baseWorldIndex !== undefined) {
+              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+            }
+            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
             // 更新多边形坐标
             this.updateEditPolygon();
             // 分发修改中回调
@@ -211,7 +226,10 @@ class plotEdit {
     });
     modify.on('modifyend', (e: ModifyEvent) => {
       const center = (e.features.getArray()[0].getGeometry()! as Point).getCoordinates();
-      const normalizedProjected = Utils.normalizeToViewWorld(center);
+      let normalizedProjected = Utils.normalizeToViewWorld(center);
+      if (this.baseWorldIndex !== undefined) {
+        normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+      }
       if (this.modifyPointIndex !== undefined) {
         this.plotPoints[this.modifyPointIndex] = normalizedProjected;
         // 更新多边形坐标
@@ -233,27 +251,74 @@ class plotEdit {
         this.emit('modifyExit', { index: this.modifyPointIndex });
       });
   }
-  private test() {
+  private createModifyEvent() {
     const snap = new Snap({ source: this.pointLayer?.getLayer().getSource() as VectorSource<Geometry> });
     this.map.addInteraction(snap);
     const event = useEarth().useGlobalEvent();
+    // 鼠标移入
+    event.addMouseMoveEventByModule('plot-ctl-point', (e) => {
+      if (e.feature) {
+        useEarth().setMouseStyle('move');
+      } else {
+        useEarth().setMouseStyleToDefault();
+      }
+    });
     // 鼠标按下
-    const mouseDown = event.addMouseLeftDownEventByModule('point', (e) => {
-      if (e) {
+    this.mouseDown = event.addMouseLeftDownEventByModule('plot-ctl-point', (e) => {
+      if (e && e.feature) {
         // 禁用地图拖拽
         useEarth().disabledMapDrag();
+        // 修改point样式
+        // 分发修改开始回调
+        const index = this.pointIdMap?.get(e.id);
+        if (index !== undefined) {
+          this.modifyPointIndex = index;
+        }
+        const center = (e.feature.getGeometry() as Point).getCoordinates();
+        this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
+        // 修改控制点样式
         this.pointLayer?.set({ id: e.id, size: 8 });
         // 监听鼠标移动
-        const mouseMove = event.addMouseMoveEventByGlobal((ev) => {
-          this.pointLayer?.setPosition(e.id, fromLonLat(ev.position));
+        const mouseMove = event.addMouseMoveEventByGlobal((move) => {
+          if (this.modifyPointIndex !== undefined) {
+            this.pointLayer?.setPosition(e.id, fromLonLat(move.position));
+            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(move.position));
+            if (this.baseWorldIndex !== undefined) {
+              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+            }
+            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+            // 更新多边形坐标
+            this.updateEditPolygon();
+            // 分发修改中回调
+            this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
+          }
         });
         // 监听鼠标抬起
-        const mouseUp = event.addMouseLeftUpEventByModule('point', (ee) => {
-          console.log(e);
-          useEarth().enableMapDrag();
-          mouseMove();
-          mouseUp();
-          this.pointLayer?.set({ id: e.id, size: 4, center: fromLonLat(ee.position) });
+        const mouseUp = event.addMouseLeftUpEventByModule('plot-ctl-point', (up) => {
+          if (this.modifyPointIndex !== undefined) {
+            useEarth().enableMapDrag();
+            mouseMove();
+            mouseUp();
+            this.pointLayer?.set({ id: e.id, size: 4, center: fromLonLat(up.position) });
+            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(up.position));
+            if (this.baseWorldIndex !== undefined) {
+              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+            }
+            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+            // 更新多边形坐标
+            this.updateEditPolygon();
+            // 分发修改完成回调
+            this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
+          }
+        });
+        // 监听鼠标右键
+        const mouseClick = event.addMouseRightClickEventByGlobal(() => {
+          this.mouseDown?.();
+          mouseClick();
+          this.pointLayer?.remove();
+          this.polygonLayer?.remove();
+          // 分发退出修改回调
+          this.emit('modifyExit', { index: this.modifyPointIndex });
         });
       }
     });
@@ -267,6 +332,10 @@ class plotEdit {
     if (!param || !param.plotPoints) return;
     // 记录控制点位置
     this.plotPoints = param.plotPoints;
+    // 记录基准 world（取首点）
+    if (this.plotPoints.length) {
+      this.baseWorldIndex = Utils.getWorldIndex(this.plotPoints[0][0]);
+    }
     // 记录标绘类型
     this.plotType = param.plotType;
     // 创建控制点
@@ -280,9 +349,7 @@ class plotEdit {
     // this.modifyInteraction = modify;
     // // 创建修改监听
     // this.createModifyEvent(modify);
-    setTimeout(() => {
-      this.test();
-    }, 1000);
+    this.createModifyEvent();
   }
 
   /**
@@ -291,16 +358,14 @@ class plotEdit {
   public destroy() {
     // 发出退出事件（如果未主动右键退出）
     this.emit('modifyExit', { index: this.modifyPointIndex });
-    if (this.modifyInteraction) {
-      this.map.removeInteraction(this.modifyInteraction);
-      this.modifyInteraction = undefined;
-    }
+    this.mouseDown?.();
     this.pointLayer?.remove();
     this.polygonLayer?.remove();
     this.listeners.clear();
     this.plotPoints = [];
     this.modifyPointIndex = undefined;
     this.plotType = undefined;
+    this.baseWorldIndex = undefined;
   }
 }
 

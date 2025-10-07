@@ -22,8 +22,8 @@ export const testDynamicDraw = () => {
         console.log(e);
         if (e.type === DrawType.Drawend) {
           setTimeout(() => {
-            useEarth().useDrawTool().editAttackArrow({ feature: e.feature! });
-          }, 0);
+            useEarth().useDrawTool().editAttackArrow({ feature: e.feature!, isShowUnderlay: false });
+          }, 1000);
         }
       }
     });
