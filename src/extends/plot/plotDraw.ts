@@ -11,7 +11,7 @@ import CircleStyle from 'ol/style/Circle';
 import { Coordinate } from 'ol/coordinate';
 import * as PlotUtils from './utils';
 import { fromLonLat } from 'ol/proj';
-import Utils from '../../common/Utils';
+// import Utils from '../../common/Utils'; // 不再需要手动 normalize，改用 wrapX 让要素在复制世界可见
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -50,11 +50,34 @@ class PlotDraw {
     // 创建图层
     this.layer = this.createLayer();
   }
+  /** 获取投影 worldWidth（可能为 undefined） */
+  private getWorldWidth(): number | undefined {
+    try {
+      const extent = this.map.getView().getProjection().getExtent?.();
+      if (extent) return extent[2] - extent[0];
+    } catch {/* ignore */}
+    return undefined;
+  }
+  /**
+   * 将 newPoint 的 x 调整到与 basePoint 最近的 world copy，保证 |dx| <= worldWidth/2
+   * 若缺少 worldWidth 则直接返回 newPoint（浅拷贝避免外部修改）
+   */
+  private adjustToNearestWorld(basePoint: [number, number], newPoint: [number, number]): [number, number] {
+    const ww = this.getWorldWidth();
+    if (!ww || !isFinite(ww) || ww <= 0) return [newPoint[0], newPoint[1]];
+    let x = newPoint[0];
+    // 使用 while 处理极端情况下跨越多个 world 的点击
+    while (x - basePoint[0] > ww / 2) x -= ww;
+    while (x - basePoint[0] < -ww / 2) x += ww;
+    return [x, newPoint[1]];
+  }
   /**
    * 创建图层
    */
   private createLayer() {
-    const source = new VectorSource();
+    // 开启 wrapX: 使要素在地图左右无限平移(复制世界)时会被 OpenLayers 自动复制显示
+    // 之前通过手动 normalizeToViewWorld 平移坐标到当前 world，会导致要素坐标跳出基础投影范围从而在绘制过程中或结束后不可见
+    const source = new VectorSource({ wrapX: true });
     const style = new Style({
       fill: new Fill({
         color: 'rgba(255, 255, 255, 0.2)'
@@ -99,20 +122,19 @@ class PlotDraw {
    * 鼠标单击事件
    */
   private mouseClickEvent(param: { position: Coordinate; pixel: number[] }) {
-    // 使用全局封装的 Utils.normalizeToViewWorld 处理跨 world（国际换日线）问题
-    const rawProjected = fromLonLat(param.position as [number, number]);
-    const normalizedProjected = Utils.normalizeToViewWorld(rawProjected);
-    // 判断点击点是否过近（使用投影坐标计算欧氏距离）
-    if (this.points.length > 0 && PlotUtils.MathDistance(normalizedProjected, this.points[this.points.length - 1]) < 0.0001) {
+    // 直接使用基础 world 投影坐标；借助 wrapX=true 让要素在所有复制世界中自动显示
+    const projectedRaw = fromLonLat(param.position as [number, number]);
+    const projected = this.points.length > 0 ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number]) : projectedRaw;
+    if (this.points.length > 0 && PlotUtils.MathDistance(projected, this.points[this.points.length - 1]) < 0.0001) {
       console.warn('点过近');
       return false;
     }
-    this.points.push(normalizedProjected);
+    this.points.push(projected);
     this.geom?.setPoints(this.points);
     // 事件：新增点
     this.emit('add-point', {
       index: this.points.length - 1,
-      point: normalizedProjected,
+      point: projected,
       pointCount: this.points.length,
       type: this.geom?.getPlotType?.()
     });
@@ -122,7 +144,7 @@ class PlotDraw {
       const offRightClick = event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
       this.offEvents.push(offMove, offRightClick);
       // 事件：开始绘制（首点）
-      this.emit('start', { type: this.geom?.getPlotType?.(), point: normalizedProjected, index: 0, pointCount: 1 });
+      this.emit('start', { type: this.geom?.getPlotType?.(), point: projected, index: 0, pointCount: 1 });
     }
     // 判断是否绘制到最大值
     if (this.geom?.fixPointCount === this.geom?.getPointCount()) {
@@ -134,12 +156,12 @@ class PlotDraw {
    */
   private mouseMoveEvent(param: { position: Coordinate; pixel: number[] }) {
     if (!this.geom) return;
-    const rawProjected = fromLonLat(param.position as [number, number]);
-    const tempProjected = Utils.normalizeToViewWorld(rawProjected);
-    const points = this.points.concat([tempProjected]);
+    const projectedRaw = fromLonLat(param.position as [number, number]);
+    const projected = this.points.length > 0 ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number]) : projectedRaw;
+    const points = this.points.concat([projected]);
     this.geom.setPoints(points);
     // 事件：移动（动态预览点）
-    this.emit('moving', { tempPoint: tempProjected, points, pointCount: this.points.length, index: this.points.length - 1, type: this.geom?.getPlotType?.() });
+    this.emit('moving', { tempPoint: projected, points, pointCount: this.points.length, index: this.points.length - 1, type: this.geom?.getPlotType?.() });
   }
   /**
    * 鼠标右键事件
