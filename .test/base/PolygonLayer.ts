@@ -8,20 +8,20 @@ import { PointLayer, PolygonLayer, useEarth } from '../../src';
 export const testPolygonLayer = () => {
   const layer = new PolygonLayer(useEarth());
   const polygon = <Feature<Polygon>>layer.add({
-    id: "polygon_1",
+    id: 'polygon_1',
     positions: [[fromLonLat([110, 30]), fromLonLat([110, 50]), fromLonLat([120, 40]), fromLonLat([110, 30])]],
     label: {
-      text: "带标签多边形"
+      text: '带标签多边形'
     },
-    module: "polygon"
-  })
+    module: 'polygon'
+  });
   layer.add({
-    id: "polygon_2",
+    id: 'polygon_2',
     positions: [[fromLonLat([110, 10]), fromLonLat([110, 20]), fromLonLat([120, 30]), fromLonLat([110, 10])]],
     fill: {
-      color: "#fffff3"
+      color: '#fffff3'
     }
-  })
+  });
   // useEarth().useDrawTool().editPolygon({
   //   feature: polygon,
   //   isShowUnderlay: true,
@@ -29,4 +29,4 @@ export const testPolygonLayer = () => {
   //     console.log(e)
   //   }
   // });
-}
+};

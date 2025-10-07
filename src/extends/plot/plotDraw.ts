@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { EPlotType } from '../../enum';
 import { useEarth } from '../../useEarth';
 import { Feature, Map } from 'ol';
@@ -39,6 +40,10 @@ class PlotDraw {
   private points: PlotUtils.Point[] = [];
   /** 事件监听集合：事件名 -> 回调集合 */
   private listeners: Record<string, Set<PlotDrawListener>> = {};
+  /**
+   * 事件监听注销函数集合
+   */
+  private offEvents: any[] = [];
 
   constructor() {
     this.map = useEarth().map;
@@ -87,10 +92,8 @@ class PlotDraw {
    */
   private createEvent() {
     const event = useEarth().useGlobalEvent();
-    if (!event.hasGlobalMouseClickEvent()) event.enableGlobalMouseClickEvent();
-    if (!event.hasGlobalMouseRightClickEvent()) event.enableGlobalMouseRightClickEvent();
-    if (!event.hasGlobalMouseMoveEvent()) event.enableGlobalMouseMoveEvent();
-    event.addMouseClickEventByGlobal(this.mouseClickEvent.bind(this));
+    const off = event.addMouseClickEventByGlobal(this.mouseClickEvent.bind(this));
+    this.offEvents.push(off);
   }
   /**
    * 鼠标单击事件
@@ -115,8 +118,9 @@ class PlotDraw {
     });
     if (this.points.length === 1) {
       const event = useEarth().useGlobalEvent();
-      event.addMouseMoveEventByGlobal(this.mouseMoveEvent.bind(this));
-      event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
+      const offMove = event.addMouseMoveEventByGlobal(this.mouseMoveEvent.bind(this));
+      const offRightClick = event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
+      this.offEvents.push(offMove, offRightClick);
       // 事件：开始绘制（首点）
       this.emit('start', { type: this.geom?.getPlotType?.(), point: normalizedProjected, index: 0, pointCount: 1 });
     }
@@ -172,10 +176,8 @@ class PlotDraw {
     this.geom = undefined;
     this.feature = undefined;
     // 移除监听
-    const event = useEarth().useGlobalEvent();
-    event.disableGlobalMouseClickEvent();
-    event.disableGlobalMouseMoveEvent();
-    event.disableGlobalMouseRightClickEvent();
+    this.offEvents.forEach((off: any) => off());
+
   }
   /**
    * 事件分发

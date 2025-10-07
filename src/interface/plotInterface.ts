@@ -36,3 +36,10 @@ export interface IPlotAttackArrow {
    */
   type?: EPlotType;
 }
+
+export interface IPlotEditParams {
+  /**
+   * 标绘要素
+   */
+  feature: Feature;
+}

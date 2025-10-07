@@ -19,6 +19,7 @@ import { Utils } from '../common';
 import PlotDraw from '../extends/plot/plotDraw';
 import { EPlotType } from '../enum';
 import { IPlotAttackArrow } from '../interface';
+import AttackArrow from '../extends/plot/geom/AttackArrow';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -475,7 +476,7 @@ export default class DynamicDraw {
     plot.on<IPlotAttackArrow>('end', (e) => {
       if (e.points && e.points.length > 2) {
         const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
-        const geom = e.feature?.getGeometry() as Polygon;
+        const geom = new AttackArrow([], e.points, {});
         const coords = geom.getCoordinates();
         const f = baseLayer?.add({
           positions: coords,
