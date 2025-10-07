@@ -200,63 +200,6 @@ class plotEdit {
   /**
    * 创建修改监听
    */
-  private a(modify: Modify) {
-    let offMove: () => void;
-    modify.on('modifystart', (e: ModifyEvent) => {
-      // 分发修改开始回调
-      const center = (e.features.getArray()[0].getGeometry()! as Point).getCoordinates();
-      for (let i = 0; i < this.plotPoints.length; i++) {
-        const p = this.plotPoints[i];
-        if (p[0] == center[0] && p[1] == center[1]) {
-          this.modifyPointIndex = i;
-          break;
-        }
-      }
-      this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
-      offMove = useEarth()
-        .useGlobalEvent()
-        .addMouseMoveEventByGlobal((e: GlobalMoveEvent) => {
-          if (this.modifyPointIndex !== undefined) {
-            // 先按当前视图归一化，再恢复到基准 world，确保所有控制点位于同一 world copy
-            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(e.position));
-            if (this.baseWorldIndex !== undefined) {
-              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
-            }
-            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-            // 更新多边形坐标
-            this.updateEditPolygon();
-            // 分发修改中回调
-            this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: e });
-          }
-        });
-    });
-    modify.on('modifyend', (e: ModifyEvent) => {
-      const center = (e.features.getArray()[0].getGeometry()! as Point).getCoordinates();
-      let normalizedProjected = Utils.normalizeToViewWorld(center);
-      if (this.baseWorldIndex !== undefined) {
-        normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
-      }
-      if (this.modifyPointIndex !== undefined) {
-        this.plotPoints[this.modifyPointIndex] = normalizedProjected;
-        // 更新多边形坐标
-        this.updateEditPolygon();
-        // 关闭鼠标移动监听
-        offMove();
-        // 分发修改完成回调
-        this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: e });
-      }
-    });
-    const offRightClick = useEarth()
-      .useGlobalEvent()
-      .addMouseRightClickEventByGlobal(() => {
-        this.pointLayer?.remove();
-        this.polygonLayer?.remove();
-        this.map.removeInteraction(modify);
-        offRightClick();
-        // 分发退出修改回调
-        this.emit('modifyExit', { index: this.modifyPointIndex });
-      });
-  }
   private createModifyEvent() {
     const snap = new Snap({ source: this.pointLayer?.getLayer().getSource() as VectorSource<Geometry> });
     this.map.addInteraction(snap);
@@ -348,13 +291,7 @@ class plotEdit {
     this.createEditPoint(param.plotPoints);
     // 创建多边形
     this.createEditPolygon(param);
-    // 创建modify
-    // const modify = new Modify({ source: <VectorSource<Geometry>>this.pointLayer?.getLayer().getSource() });
-    // modify.set('dynamicDraw', true);
-    // this.map.addInteraction(modify);
-    // this.modifyInteraction = modify;
     // // 创建修改监听
-    // this.createModifyEvent(modify);
     this.createModifyEvent();
   }
 
