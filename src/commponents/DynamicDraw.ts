@@ -517,23 +517,28 @@ export default class DynamicDraw {
     const p = new PlotEdit();
     p.init({ feature: param.feature });
     p.on('modifyStart', (e) => {
-      // 回调：绘制移动（实时移动位置，优先使用临时点）
-      // console.log('modifyStart', e);
+      // 回调：绘制开始
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
     });
     p.on('modifying', (e) => {
-      // 回调：绘制移动（实时移动位置，优先使用临时点）
-      // console.log('modifying', e);
+      // 回调：绘制移动
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
     });
     p.on('modifyEnd', (e) => {
-      // 回调：绘制移动（实时移动位置，优先使用临时点）
-      // console.log('modifyEnd', e);
+      // 回调：绘制移动结束
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
     });
     p.on('modifyExit', (e) => {
-      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      // 回调：退出绘制
+      p.destroy();
       (param.feature.getGeometry() as Polygon).setCoordinates(e.coords);
+      const fParam = param.feature.get('param');
+      fParam.plotPoints = e.points;
+      param.feature.set('param', fParam);
       if (!isShowUnderlay) {
         layer.show(param.feature.getId() as string);
       }
+      param.callback?.call(this, { type: ModifyType.Modifyexit, plotParam: e });
     });
   }
   /**

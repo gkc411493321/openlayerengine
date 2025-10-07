@@ -83,8 +83,14 @@ class plotEdit {
    * 鼠标按下事件销毁回调
    */
   private mouseDown: (() => void) | undefined;
-
+  /**
+   * 映射点id与索引的map
+   */
   private pointIdMap: Map<string, number> | undefined;
+  /**
+   * 鼠标右键按下事件销毁回调
+   */
+  private mouseRight: (() => void) | undefined;
 
   constructor() {
     this.map = useEarth().map;
@@ -312,9 +318,9 @@ class plotEdit {
           }
         });
         // 监听鼠标右键
-        const mouseClick = event.addMouseRightClickEventByGlobal(() => {
+        this.mouseRight = event.addMouseRightClickEventByGlobal(() => {
           this.mouseDown?.();
-          mouseClick();
+          this.mouseRight?.();
           this.pointLayer?.remove();
           this.polygonLayer?.remove();
           // 分发退出修改回调
@@ -357,8 +363,9 @@ class plotEdit {
    */
   public destroy() {
     // 发出退出事件（如果未主动右键退出）
-    this.emit('modifyExit', { index: this.modifyPointIndex });
     this.mouseDown?.();
+    this.mouseRight?.();
+    // 销毁图层与监听
     this.pointLayer?.remove();
     this.polygonLayer?.remove();
     this.listeners.clear();

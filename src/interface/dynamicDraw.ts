@@ -1,38 +1,39 @@
-import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { Geometry, LineString, Polygon } from "ol/geom";
+import { IPlotEditEventPayload } from '../extends/plot/plotEdit';
+import { Feature } from 'ol';
+import { Coordinate } from 'ol/coordinate';
+import { Geometry, LineString, Polygon } from 'ol/geom';
 
 export enum DrawType {
   /**
    * 绘制开始
    */
-  Drawstart = "drawstart",
+  Drawstart = 'drawstart',
   /**
    * 绘制中
    */
-  Drawing = "drawing",
+  Drawing = 'drawing',
   /**
    * 绘制完成
    */
-  Drawend = "drawend",
+  Drawend = 'drawend',
   /**
    * 绘制中点击
    */
-  DrawingClick = "drawingClick",
+  DrawingClick = 'drawingClick',
   /**
    * 退出绘制
    */
-  Drawexit = "drawexit",
+  Drawexit = 'drawexit'
 }
 export enum ModifyType {
   /**
    * 修改中
    */
-  Modifying = "modifying",
+  Modifying = 'modifying',
   /**
    * 退出修改
    */
-  Modifyexit = "modifyexit",
+  Modifyexit = 'modifyexit'
 }
 export interface IDrawBase {
   /**
@@ -60,7 +61,7 @@ export interface IDrawEvent {
   /**
    * 元素
    */
-  feature?: Feature<Geometry>
+  feature?: Feature<Geometry>;
 }
 export interface IModifyEvent {
   /**
@@ -71,6 +72,10 @@ export interface IModifyEvent {
    * 元素坐标
    */
   position?: Coordinate | Coordinate[];
+  /**
+   * plot编辑回调
+   */
+  plotParam?: IPlotEditEventPayload;
 }
 export interface IDrawPoint extends IDrawBase {
   /**

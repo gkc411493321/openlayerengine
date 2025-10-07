@@ -397,7 +397,7 @@ export default class Earth {
   disabledMapDrag() {
     this.map.getInteractions().forEach((interaction) => {
       if (interaction instanceof DragPan) {
-        this.map.removeInteraction(interaction);
+        interaction.setActive(false);
       }
     });
   }
@@ -405,7 +405,10 @@ export default class Earth {
    * 启用地图拖拽
    */
   enableMapDrag() {
-    const dragPan = new DragPan();
-    this.map.addInteraction(dragPan);
+    this.map.getInteractions().forEach((interaction) => {
+      if (interaction instanceof DragPan) {
+        interaction.setActive(true);
+      }
+    });
   }
 }
