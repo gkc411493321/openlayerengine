@@ -7,7 +7,7 @@ import PolygonLayer from '../../base/PolygonLayer';
 import PointLayer from '../../base/PointLayer';
 import { EPlotType } from '../../enum';
 import AttackArrow from './geom/AttackArrow';
-import { Modify } from 'ol/interaction';
+import { DragPan, Modify, Snap } from 'ol/interaction';
 import type { ModifyEvent } from 'ol/interaction/Modify';
 import VectorSource from 'ol/source/Vector';
 import { Geometry, Point } from 'ol/geom';
@@ -106,7 +106,10 @@ class plotEdit {
   /**
    * 分发事件
    */
-  private emit(event: PlotEditEventType, payload: Omit<IPlotEditEventPayload, 'plotType' | 'points' | 'coords'> & { points?: Coordinate[]; plotType?: EPlotType; coords?: Coordinate[][] }) {
+  private emit(
+    event: PlotEditEventType,
+    payload: Omit<IPlotEditEventPayload, 'plotType' | 'points' | 'coords'> & { points?: Coordinate[]; plotType?: EPlotType; coords?: Coordinate[][] }
+  ) {
     const list = this.listeners.get(event);
     if (!list || list.size === 0) return;
     const fullPayload: IPlotEditEventPayload = {
@@ -140,7 +143,8 @@ class plotEdit {
       this.pointLayer?.add({
         center: item,
         stroke: { color: '#fff' },
-        fill: { color: '#00aaff' }
+        fill: { color: '#00aaff' },
+        module: 'point'
       });
     }
   }
@@ -229,6 +233,31 @@ class plotEdit {
         this.emit('modifyExit', { index: this.modifyPointIndex });
       });
   }
+  private test() {
+    const snap = new Snap({ source: this.pointLayer?.getLayer().getSource() as VectorSource<Geometry> });
+    this.map.addInteraction(snap);
+    const event = useEarth().useGlobalEvent();
+    // 鼠标按下
+    const mouseDown = event.addMouseLeftDownEventByModule('point', (e) => {
+      if (e) {
+        // 禁用地图拖拽
+        useEarth().disabledMapDrag();
+        this.pointLayer?.set({ id: e.id, size: 8 });
+        // 监听鼠标移动
+        const mouseMove = event.addMouseMoveEventByGlobal((ev) => {
+          this.pointLayer?.setPosition(e.id, fromLonLat(ev.position));
+        });
+        // 监听鼠标抬起
+        const mouseUp = event.addMouseLeftUpEventByModule('point', (ee) => {
+          console.log(e);
+          useEarth().enableMapDrag();
+          mouseMove();
+          mouseUp();
+          this.pointLayer?.set({ id: e.id, size: 4, center: fromLonLat(ee.position) });
+        });
+      }
+    });
+  }
   /**
    * 激活绘制工具
    */
@@ -245,12 +274,15 @@ class plotEdit {
     // 创建多边形
     this.createEditPolygon(param);
     // 创建modify
-    const modify = new Modify({ source: <VectorSource<Geometry>>this.pointLayer?.getLayer().getSource() });
-    modify.set('dynamicDraw', true);
-    this.map.addInteraction(modify);
-    this.modifyInteraction = modify;
-    // 创建修改监听
-    this.createModifyEvent(modify);
+    // const modify = new Modify({ source: <VectorSource<Geometry>>this.pointLayer?.getLayer().getSource() });
+    // modify.set('dynamicDraw', true);
+    // this.map.addInteraction(modify);
+    // this.modifyInteraction = modify;
+    // // 创建修改监听
+    // this.createModifyEvent(modify);
+    setTimeout(() => {
+      this.test();
+    }, 1000);
   }
 
   /**

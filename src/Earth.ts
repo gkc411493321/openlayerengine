@@ -1,22 +1,22 @@
-import { DefaultEntities, IEarthConstructorOptions, IFeatureAtPixel } from "./interface";
-import { Feature, Map, View } from "ol";
+import { DefaultEntities, IEarthConstructorOptions, IFeatureAtPixel } from './interface';
+import { Feature, Map, View } from 'ol';
 import { defaults } from 'ol/control/defaults';
-import { Coordinate } from "ol/coordinate";
-import BaseLayer from "ol/layer/Base";
-import TileLayer from "ol/layer/Tile";
-import { fromLonLat } from "ol/proj";
-import OSM from "ol/source/OSM";
-import XYZ from "ol/source/XYZ";
-import { TileCoord } from "ol/tilecoord";
-import { ViewOptions } from "ol/View";
-import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, WindLayer } from "./base";
-import Base from "./base/Base";
-import { DynamicDraw, GlobalEvent, Measure } from "./commponents";
-import { DoubleClickZoom } from 'ol/interaction'
-import { Geometry } from "ol/geom";
-import { Layer } from "ol/layer";
-import { Source } from "ol/source";
-import LayerRenderer from "ol/renderer/Layer";
+import { Coordinate } from 'ol/coordinate';
+import BaseLayer from 'ol/layer/Base';
+import TileLayer from 'ol/layer/Tile';
+import { fromLonLat } from 'ol/proj';
+import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
+import { TileCoord } from 'ol/tilecoord';
+import { ViewOptions } from 'ol/View';
+import { BillboardLayer, CircleLayer, OverlayLayer, PointLayer, PolygonLayer, PolylineLayer, WindLayer } from './base';
+import Base from './base/Base';
+import { DynamicDraw, GlobalEvent, Measure } from './commponents';
+import { DoubleClickZoom, DragPan } from 'ol/interaction';
+import { Geometry } from 'ol/geom';
+import { Layer } from 'ol/layer';
+import { Source } from 'ol/source';
+import LayerRenderer from 'ol/renderer/Layer';
 /**
  * 地图基类
  */
@@ -120,12 +120,15 @@ export default class Earth {
    */
   private closeDefaultEvent(): void {
     // 删除默认的双击事件
-    const dblClickInteraction = this.map.getInteractions().getArray().find(interaction => {
-      return interaction instanceof DoubleClickZoom;
-    })
+    const dblClickInteraction = this.map
+      .getInteractions()
+      .getArray()
+      .find((interaction) => {
+        return interaction instanceof DoubleClickZoom;
+      });
     if (dblClickInteraction) this.map.removeInteraction(dblClickInteraction);
     // 关闭浏览器右键菜单
-    document.addEventListener("contextmenu", this.closeRightMenu);
+    document.addEventListener('contextmenu', this.closeRightMenu);
   }
   /**
    * 构造器
@@ -136,15 +139,25 @@ export default class Earth {
     const el = options?.target || 'olContainer';
     const map: Map = new Map({
       target: el,
-      view: new View(Object.assign({
-        center: this.center,
-        zoom: 4,
-      }, viewOptions)),
-      controls: defaults(Object.assign({
-        zoom: false,
-        rotate: false,
-        attribution: false
-      }, options))
+      view: new View(
+        Object.assign(
+          {
+            center: this.center,
+            zoom: 4
+          },
+          viewOptions
+        )
+      ),
+      controls: defaults(
+        Object.assign(
+          {
+            zoom: false,
+            rotate: false,
+            attribution: false
+          },
+          options
+        )
+      )
     });
     this.map = map;
     this.view = map.getView();
@@ -162,9 +175,9 @@ export default class Earth {
    */
   /**
    * 八进制字符串补0
-   * @param num 
-   * @param len 
-   * @param radix 
+   * @param num
+   * @param len
+   * @param radix
    */
   private zeroFill(num: number, len: number, radix: number): string {
     return num.toString(radix || 10).padStart(len, '0');
@@ -175,8 +188,8 @@ export default class Earth {
    */
   createOsmLayer(): TileLayer<OSM> {
     return new TileLayer({
-      source: new OSM(),
-    })
+      source: new OSM()
+    });
   }
   /**
    * 创建瓦片地图图层
@@ -186,7 +199,7 @@ export default class Earth {
   createXyzLayer(url: string): TileLayer<XYZ> {
     return new TileLayer({
       properties: {
-        id: "imageProvider"
+        id: 'imageProvider'
       },
       source: new XYZ({
         tileUrlFunction: (coordinate: TileCoord) => {
@@ -196,8 +209,8 @@ export default class Earth {
           return `${url}/` + z + '/' + y + '/' + x + '.jpg';
         },
         projection: 'EPSG:3857'
-      }),
-    })
+      })
+    });
   }
   /**
    * 添加图层
@@ -217,13 +230,13 @@ export default class Earth {
       removeLayer = this.map.removeLayer(layer);
     } else {
       const layers = this.map.getAllLayers();
-      layers.map(item => {
-        if (item.get("id") == "imageProvider") {
+      layers.map((item) => {
+        if (item.get('id') == 'imageProvider') {
           removeLayer = this.map.removeLayer(item);
         }
-      })
+      });
     }
-    return removeLayer
+    return removeLayer;
   }
   /**
    * 移动相机到默认位置
@@ -259,7 +272,7 @@ export default class Earth {
   }
   /**
    * 设置鼠标样式
-   * @param cursor 鼠标样式 
+   * @param cursor 鼠标样式
    */
   setMouseStyle(cursor: string): void {
     this.map.getTargetElement().style.cursor = cursor;
@@ -272,16 +285,16 @@ export default class Earth {
   }
   /**
    * 根据元素获取元素所在的图层
-   * @param feature 
+   * @param feature
    */
   // NOTE: LayerRenderer 泛型此处无需精确约束，使用 any 更符合当前抽象层级
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getLayerAtFeature(feature: Feature<Geometry>): Layer<Source, LayerRenderer<any>> | undefined {
     const layers = this.map.getAllLayers();
-    const layerId = <string>feature.get("layerId");
-    const filter = layers.filter(item => {
-      return item.get("id") == layerId
-    })
+    const layerId = <string>feature.get('layerId');
+    const filter = layers.filter((item) => {
+      return item.get('id') == layerId;
+    });
     if (filter.length) {
       return filter[0];
     } else {
@@ -317,7 +330,7 @@ export default class Earth {
           this.entities?.polyline.removeFlightLine();
           this.entities?.wind.remove();
         }
-      }
+      };
       this.entities.billboard.allowDestroyed = false;
       this.entities.circle.allowDestroyed = false;
       this.entities.point.allowDestroyed = false;
@@ -361,21 +374,38 @@ export default class Earth {
   getFeatureAtPixel(pixel: number[]): IFeatureAtPixel {
     let data: IFeatureAtPixel = {
       isExists: false
-    }
+    };
     if (this.map.hasFeatureAtPixel(pixel)) {
       const pixelData = this.map.forEachFeatureAtPixel(pixel, (feature, layer) => {
         return {
           isExists: true,
           id: <string>feature.getId(),
-          module: <string>feature.get("module"),
+          module: <string>feature.get('module'),
           feature: <Feature>feature,
           layer
-        }
-      })
+        };
+      });
       if (pixelData) {
         data = pixelData;
       }
     }
     return data;
+  }
+  /**
+   * 禁用地图拖拽
+   */
+  disabledMapDrag() {
+    this.map.getInteractions().forEach((interaction) => {
+      if (interaction instanceof DragPan) {
+        this.map.removeInteraction(interaction);
+      }
+    });
+  }
+  /**
+   * 启用地图拖拽
+   */
+  enableMapDrag() {
+    const dragPan = new DragPan();
+    this.map.addInteraction(dragPan);
   }
 }

@@ -212,6 +212,7 @@ export default class PointLayer<T = unknown> extends Base {
     );
     const radius = param.size || image.getRadius();
     super.setText(style, param.label, -(radius + 15));
+    features[0].changed();
     return features;
   }
   /**
