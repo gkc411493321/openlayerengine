@@ -15,6 +15,7 @@ export const testDynamicDraw = () => {
   //       }
   //     });
   // }, 5000);
+  useEarth().enableGraticule();
   useEarth()
     .useDrawTool()
     .drawwAttackArrow({

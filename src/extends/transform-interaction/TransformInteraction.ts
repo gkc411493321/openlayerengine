@@ -957,6 +957,9 @@ class TransformInteraction extends PointerInteraction {
         flag = true;
       }
     }
+    if (feature && useEarth().graticule && useEarth().graticule?.getSource()?.hasFeature(feature)) {
+      flag = true;
+    }
     return flag;
   }
 

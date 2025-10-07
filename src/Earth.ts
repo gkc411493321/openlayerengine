@@ -1,5 +1,5 @@
 import { DefaultEntities, IEarthConstructorOptions, IFeatureAtPixel } from './interface';
-import { Feature, Map, View } from 'ol';
+import { Feature, Graticule, Map, View } from 'ol';
 import { defaults } from 'ol/control/defaults';
 import { Coordinate } from 'ol/coordinate';
 import BaseLayer from 'ol/layer/Base';
@@ -17,6 +17,7 @@ import { Geometry } from 'ol/geom';
 import { Layer } from 'ol/layer';
 import { Source } from 'ol/source';
 import LayerRenderer from 'ol/renderer/Layer';
+import { Stroke } from 'ol/style';
 /**
  * 地图基类
  */
@@ -65,6 +66,10 @@ export default class Earth {
   private closeRightMenu(event: MouseEvent): void {
     event.preventDefault();
   }
+  /**
+   * 网格图层
+   */
+  public graticule: Graticule | undefined;
   /**
    * 内部方法：供 Base 构造器在提供 registryKey 时自动注册
    * @param key 注册名称
@@ -410,5 +415,35 @@ export default class Earth {
         interaction.setActive(true);
       }
     });
+  }
+  /**
+   * 启用网格线
+   */
+  enableGraticule() {
+    const graticule = new Graticule({
+      strokeStyle: new Stroke({
+        color: 'rgba(0, 0, 0, 0.3)',
+        width: 1
+      }),
+      showLabels: true,
+      wrapX: true,
+      lonLabelPosition: 0.98,
+      latLabelPosition: 0.02,
+      properties: {
+        layerType: 'graticule'
+      }
+    });
+    graticule.setZIndex(9999);
+    this.graticule = graticule;
+    this.map.addLayer(graticule);
+  }
+  /**
+   * 禁用网格线
+   */
+  disableGraticule() {
+    if (this.graticule) {
+      this.map.removeLayer(this.graticule);
+      this.graticule = undefined;
+    }
   }
 }
