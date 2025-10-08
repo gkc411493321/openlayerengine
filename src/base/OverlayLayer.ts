@@ -1,3 +1,4 @@
+import { useEarth } from "@/useEarth";
 import { Utils } from "../common";
 import Earth from "../Earth";
 import { IOverlayParam, ISetOverlayParam } from "../interface";
@@ -20,8 +21,9 @@ export default class OverlayLayer<T = unknown>{
    * const overlayLayer = new OverlayLayer(useEarth()); 
    * ```
    */
-  constructor(earth: Earth) {
-    this.map = earth.map
+  constructor(earth?: Earth) {
+    const e = earth ? earth : useEarth();
+    this.map = e.map
   }
   /**
    * 添加覆盖物

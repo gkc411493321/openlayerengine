@@ -8,9 +8,10 @@ import VectorSource from 'ol/source/Vector';
 import { Style } from 'ol/style';
 import Base from './Base';
 import { Coordinate } from 'ol/coordinate';
+import { useEarth } from '@/useEarth';
 
 /**
- * 创建多边形`Polygon`
+ * 创建区域`Polygon`
  */
 export default class PolygonLayer<T = Polygon> extends Base {
   /**
@@ -21,14 +22,15 @@ export default class PolygonLayer<T = Polygon> extends Base {
    * const polygonLayer = new PolygonLayer(useEarth());
    * ```
    */
-  constructor(earth: Earth, options?: { wrapX?: boolean }) {
+  constructor(earth?: Earth, options?: { wrapX?: boolean }) {
     // 增加 wrapX 可配置（编辑模式下需要关闭以避免多世界复制导致交互命中失败）
     const layer = new VectorLayer({
       source: new VectorSource({
         wrapX: options?.wrapX !== undefined ? options.wrapX : true
       })
     });
-    super(earth, layer, 'Polygon');
+    const e = earth ? earth : useEarth();
+    super(e, layer, 'Polygon');
   }
   /**
    * 创建矢量元素

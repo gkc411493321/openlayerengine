@@ -9,6 +9,7 @@ import { Circle, Fill, Stroke, Style } from 'ol/style.js';
 import { Utils } from '../common';
 import { unByKey } from 'ol/Observable';
 import { Coordinate } from 'ol/coordinate';
+import { useEarth } from '@/useEarth';
 
 /**
  * 创建点`Point`
@@ -22,13 +23,14 @@ export default class PointLayer<T = Point> extends Base {
    * const pointLayer = new PointLayer(useEarth());
    * ```
    */
-  constructor(earth: Earth, options?: { wrapX?: boolean }) {
+  constructor(earth?: Earth, options?: { wrapX?: boolean }) {
     const layer = new VectorLayer({
       source: new VectorSource({
         wrapX: options?.wrapX !== undefined ? options.wrapX : true
       })
     });
-    super(earth, layer, 'Point');
+    const e = earth ? earth : useEarth();
+    super(e, layer, 'Point');
   }
   /**
    * 创建矢量元素

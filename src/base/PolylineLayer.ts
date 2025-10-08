@@ -14,6 +14,7 @@ import RenderEvent from 'ol/render/Event';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { getWidth } from 'ol/extent';
+import { useEarth } from '@/useEarth';
 
 /**
  * 创建线`Polyline`
@@ -41,14 +42,15 @@ export default class Polyline<T = LineString> extends Base {
    * const polyline = new Polyline(useEarth());
    * ```
    */
-  constructor(earth: Earth, options?: { wrapX?: boolean }) {
+  constructor(earth?: Earth, options?: { wrapX?: boolean }) {
     const layer = new VectorLayer({
       source: new VectorSource({
         wrapX: options?.wrapX !== undefined ? options.wrapX : true
       }),
       declutter: true
     });
-    super(earth, layer, 'Polyline');
+    const e = earth ? earth : useEarth();
+    super(e, layer, 'Polyline');
   }
   /**
    * 创建矢量元素

@@ -23,11 +23,14 @@ export default class BillboardLayer<T = Point> extends Base {
    * const billboardLayer = new  BillboardLayer(useEarth());
    * ```
    */
-  constructor(earth: Earth) {
+  constructor(earth?: Earth, options?: { wrapX?: boolean }) {
     const layer = new VectorLayer({
-      source: new VectorSource()
+      source: new VectorSource({
+        wrapX: options?.wrapX !== undefined ? options.wrapX : true
+      })
     });
-    super(earth, layer, 'Billboard');
+    const e = earth ? earth : useEarth();
+    super(e, layer, 'Billboard');
   }
   /**
    * 创建矢量元素
@@ -106,7 +109,9 @@ export default class BillboardLayer<T = Point> extends Base {
     const nextRotationDeg = param.rotation !== undefined && param.rotation !== null ? param.rotation : undefined;
     const resolvedRotation = nextRotationDeg !== undefined ? Utils.deg2rad(nextRotationDeg) : oldIcon.getRotation();
     // size 必须是数组（宽高），否则使用旧值
-    const nextSize: [number, number] | undefined = Array.isArray(param.size) ? (param.size as [number, number]) : (oldIcon.getSize() as [number, number] | undefined);
+    const nextSize: [number, number] | undefined = Array.isArray(param.size)
+      ? (param.size as [number, number])
+      : (oldIcon.getSize() as [number, number] | undefined);
     interface IIconOptions {
       src?: string;
       size?: [number, number];
@@ -129,7 +134,7 @@ export default class BillboardLayer<T = Point> extends Base {
       displacement: param.displacement || oldIcon.getDisplacement(),
       scale: param.scale || oldIcon.getScale(),
       rotation: resolvedRotation,
-      anchor: anchorProvided ? param.anchor : [0.5, 0.5],
+      anchor: anchorProvided ? param.anchor : [0.5, 0.5]
     };
     // 清理 undefined 字段（手动列出避免索引签名）
     if (iconOptions.src == null) delete iconOptions.src;
@@ -187,7 +192,7 @@ export default class BillboardLayer<T = Point> extends Base {
     const iconScale = icon.getScale();
     const scale: [number, number] = Array.isArray(iconScale)
       ? [iconScale[0] || 1, iconScale[1] || 1]
-      : [ (iconScale as number) || 1, (iconScale as number) || 1 ];
+      : [(iconScale as number) || 1, (iconScale as number) || 1];
     const anchor = icon.getAnchor() || [0, 0];
     const displacement = icon.getDisplacement() || [0, 0];
 
