@@ -11,7 +11,7 @@ import { Coordinate } from 'ol/coordinate';
 /**
  * 创建圆`Circle`
  */
-export default class CircleLayer<T = unknown> extends Base {
+export default class CircleLayer<T = Circle> extends Base {
   /**
    * 构造器
    * @param earth 地图实例

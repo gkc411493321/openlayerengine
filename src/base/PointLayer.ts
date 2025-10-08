@@ -13,7 +13,7 @@ import { Coordinate } from 'ol/coordinate';
 /**
  * 创建点`Point`
  */
-export default class PointLayer<T = unknown> extends Base {
+export default class PointLayer<T = Point> extends Base {
   /**
    * 构造器
    * @param earth 地图实例

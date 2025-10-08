@@ -11,7 +11,6 @@ import CircleStyle from 'ol/style/Circle';
 import { Coordinate } from 'ol/coordinate';
 import * as PlotUtils from './utils';
 import { fromLonLat } from 'ol/proj';
-// import Utils from '../../common/Utils'; // 不再需要手动 normalize，改用 wrapX 让要素在复制世界可见
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -99,9 +98,6 @@ class PlotDraw {
     this.map.addLayer(layer);
     return layer;
   }
-  //   private createLayer() {
-  //     return new PolygonLayer<Polygon>(useEarth());
-  //   }
   /**
    * 创建元素geometry
    */

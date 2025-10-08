@@ -7,10 +7,7 @@ import PolygonLayer from '../../base/PolygonLayer';
 import PointLayer from '../../base/PointLayer';
 import { EPlotType } from '../../enum';
 import AttackArrow from './geom/AttackArrow';
-import { Modify, Snap } from 'ol/interaction';
-import type { ModifyEvent } from 'ol/interaction/Modify';
-import VectorSource from 'ol/source/Vector';
-import { Geometry, Point } from 'ol/geom';
+import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Utils } from '../../common';
 
@@ -32,10 +29,6 @@ export interface IPlotEditEventPayload {
   originalEvent?: unknown;
 }
 
-// 全局鼠标移动事件最小类型定义（根据项目实际结构可扩展）
-interface GlobalMoveEvent {
-  position: Coordinate;
-}
 
 interface IPlotParam {
   plotType: EPlotType;
@@ -202,8 +195,6 @@ class plotEdit {
    * 创建修改监听
    */
   private createModifyEvent() {
-    const snap = new Snap({ source: this.pointLayer?.getLayer().getSource() as VectorSource<Geometry> });
-    this.map.addInteraction(snap);
     const event = useEarth().useGlobalEvent();
     // 鼠标移入
     event.addMouseMoveEventByModule('plot-ctl-point', (e) => {

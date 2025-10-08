@@ -12,7 +12,7 @@ import { Coordinate } from 'ol/coordinate';
 /**
  * 创建多边形`Polygon`
  */
-export default class PolygonLayer<T = unknown> extends Base {
+export default class PolygonLayer<T = Polygon> extends Base {
   /**
    * 构造器
    * @param earth 地图实例

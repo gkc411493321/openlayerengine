@@ -14,7 +14,7 @@ import { Feature } from 'ol';
 /**
  * 创建广告牌`Billboard`
  */
-export default class BillboardLayer<T = unknown> extends Base {
+export default class BillboardLayer<T = Point> extends Base {
   /**
    * 构造器
    * @param earth 地图实例

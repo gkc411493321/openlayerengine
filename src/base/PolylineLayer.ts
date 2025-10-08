@@ -18,7 +18,7 @@ import { getWidth } from 'ol/extent';
 /**
  * 创建线`Polyline`
  */
-export default class Polyline<T = unknown> extends Base {
+export default class Polyline<T = LineString> extends Base {
   /**
    * 飞线缓存集合
    */
