@@ -22,7 +22,7 @@ export default class WindLayer {
    * @param earth 地图实例
    */
   constructor(earth?: Earth) {
-    const e = earth ? earth : useEarth();
+    const e = earth ?? useEarth();
     this.map = e.map;
   }
   /**

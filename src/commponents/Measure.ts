@@ -96,7 +96,7 @@ export default class Measure {
       }
     });
     this.map.addLayer(this.layer);
-    this.pointLayer = new PointLayer(useEarth());
+    this.pointLayer = new PointLayer();
   }
   private formatLength(line: LineString): number {
     const length = getLength(line);

@@ -89,24 +89,24 @@ export default class DynamicDraw {
     this.layer = layer; // 兼容旧属性命名
     this.tempSource = source;
     this.tempLayer = layer;
-    this.overlay = new OverlayLayer(useEarth());
+    this.overlay = new OverlayLayer();
   }
   /** 获取对应基础图层（懒创建，避免与用户手工创建重复冲突：如果外部已存在同类型图层，可在 Earth 封装里拓展一个获取逻辑；这里简单内部创建一次） */
   private getBaseLayer(type: 'Point' | 'LineString' | 'Polygon' | 'Circle') {
     if (type === 'Point') {
-      if (!this.pointLayer) this.pointLayer = new PointLayer(useEarth());
+      if (!this.pointLayer) this.pointLayer = new PointLayer();
       return this.pointLayer;
     }
     if (type === 'LineString') {
-      if (!this.polylineLayer) this.polylineLayer = new PolylineLayer(useEarth());
+      if (!this.polylineLayer) this.polylineLayer = new PolylineLayer();
       return this.polylineLayer;
     }
     if (type === 'Polygon') {
-      if (!this.polygonLayer) this.polygonLayer = new PolygonLayer(useEarth());
+      if (!this.polygonLayer) this.polygonLayer = new PolygonLayer();
       return this.polygonLayer;
     }
     if (type === 'Circle') {
-      if (!this.circleLayer) this.circleLayer = new CircleLayer(useEarth());
+      if (!this.circleLayer) this.circleLayer = new CircleLayer();
       return this.circleLayer;
     }
     return undefined;

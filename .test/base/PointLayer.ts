@@ -1,7 +1,7 @@
 import { fromLonLat } from 'ol/proj';
 import { PointLayer, useEarth } from '../../src';
 export const testPointLayer = () => {
-  const layer = new PointLayer(useEarth());
+  const layer = new PointLayer();
   layer.add({
     id: "point_1",
     center: fromLonLat([125, 50]),

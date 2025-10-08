@@ -4,7 +4,7 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { OverlayLayer, useEarth } from "../../src";
 
 export const testOverlayLayer = () => {
-  const layer = new OverlayLayer(useEarth());
+  const layer = new OverlayLayer();
   const div = document.createElement("div");
   div.className = "overlay";
   div.innerHTML = "<div class='title'>div，基于Overlay创建</div>"

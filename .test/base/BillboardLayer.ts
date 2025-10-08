@@ -2,7 +2,7 @@ import { fromLonLat } from 'ol/proj';
 import { BillboardLayer, useEarth } from '../../src';
 
 export const testBillboardLayer = () => {
-  const layer = new BillboardLayer(useEarth());
+  const layer = new BillboardLayer();
   layer.add({
     id: 'billboard_1',
     center: fromLonLat([65, 20]),

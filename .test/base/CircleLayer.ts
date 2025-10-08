@@ -1,39 +1,31 @@
-import CircleLayer from "../../src/base/CircleLayer"
+import CircleLayer from '../../src/base/CircleLayer';
 import { useEarth } from '../../src';
-import { fromLonLat } from "ol/proj";
+import { fromLonLat } from 'ol/proj';
 export const testCircleLayer = () => {
-  const layer = new CircleLayer(useEarth());
+  const layer = new CircleLayer();
   layer.add({
-    id: "circle_1",
+    id: 'circle_1',
     center: fromLonLat([155, 35]),
     radius: 700000,
     stroke: {
-      color: "#ee4",
+      color: '#ee4',
       width: 5
     },
     fill: {
-      color: "#fff"
+      color: '#fff'
     },
-    module: "circle",
-    data: {
-      a: "1",
-      b: "2"
-    }
-  })
+    module: 'circle'
+  });
   layer.add({
-    id: "circle_2",
+    id: 'circle_2',
     center: fromLonLat([155, 45]),
     radius: 700000,
     label: {
-      text: "带标签圆",
+      text: '带标签圆',
       scale: 1
     },
-    module: "circle",
-    data: {
-      a: "1",
-      b: "2"
-    },
-  })
+    module: 'circle'
+  });
   /**
    * 修改圆位置
    */
@@ -56,4 +48,4 @@ export const testCircleLayer = () => {
   //     text: "123"
   //   }
   // })
-}
+};

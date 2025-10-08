@@ -1,9 +1,10 @@
 import { Coordinate } from 'ol/coordinate';
-import { DrawType, EPlotType, useEarth } from '../../src';
+import { DrawType, EPlotType, PointLayer, useEarth } from '../../src';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import PlotDraw from '../../src/extends/plot/plotDraw';
 import PlotEdit from '../../src/extends/plot/plotEdit';
+import { fromLonLat } from 'ol/proj';
 
 export const testDynamicDraw = () => {
   // setTimeout(() => {

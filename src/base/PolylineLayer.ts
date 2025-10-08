@@ -49,7 +49,7 @@ export default class Polyline<T = LineString> extends Base {
       }),
       declutter: true
     });
-    const e = earth ? earth : useEarth();
+    const e = earth ?? useEarth();
     super(e, layer, 'Polyline');
   }
   /**

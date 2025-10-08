@@ -41,7 +41,7 @@ class Toolbar {
 
   constructor(options: IToolbarOptions) {
     this.options = options;
-    this.overlay = new OverlayLayer(useEarth());
+    this.overlay = new OverlayLayer();
     this.createOverlay();
   }
   /**

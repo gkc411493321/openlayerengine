@@ -29,7 +29,7 @@ export default class PolygonLayer<T = Polygon> extends Base {
         wrapX: options?.wrapX !== undefined ? options.wrapX : true
       })
     });
-    const e = earth ? earth : useEarth();
+    const e = earth ?? useEarth();
     super(e, layer, 'Polygon');
   }
   /**

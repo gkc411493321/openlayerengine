@@ -50,7 +50,7 @@ export default class Descriptor<T = any> {
    */
   constructor(private earth: Earth, private options: IDescriptorParams<T>) {
     this.id = Utils.GetGUID();
-    this.overLayer = new OverlayLayer(this.earth);
+    this.overLayer = new OverlayLayer();
   }
   /**
    * 初始化地图容器及相关事件

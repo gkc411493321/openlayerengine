@@ -108,7 +108,7 @@ export default class Transfrom {
 
   constructor(options: ITransfromParams) {
     this.options = options;
-    this.overlay = new OverlayLayer(useEarth());
+    this.overlay = new OverlayLayer();
     this.transforms = this.createTransform();
     // 初始化统一事件管线（内部数据处理 + 外部监听分发）
     this.setupEventPipeline();

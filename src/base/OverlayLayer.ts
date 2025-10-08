@@ -22,7 +22,7 @@ export default class OverlayLayer<T = unknown>{
    * ```
    */
   constructor(earth?: Earth) {
-    const e = earth ? earth : useEarth();
+    const e = earth ?? useEarth();
     this.map = e.map
   }
   /**

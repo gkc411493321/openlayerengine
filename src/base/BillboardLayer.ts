@@ -29,7 +29,7 @@ export default class BillboardLayer<T = Point> extends Base {
         wrapX: options?.wrapX !== undefined ? options.wrapX : true
       })
     });
-    const e = earth ? earth : useEarth();
+    const e = earth ?? useEarth();
     super(e, layer, 'Billboard');
   }
   /**

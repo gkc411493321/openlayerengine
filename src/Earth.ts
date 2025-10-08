@@ -318,13 +318,13 @@ export default class Earth {
   useDefaultLayer<T>(): DefaultEntities<T> {
     if (!this.entities) {
       this.entities = {
-        billboard: new BillboardLayer<T>(this),
-        circle: new CircleLayer<T>(this),
-        overlay: new OverlayLayer<T>(this),
-        point: new PointLayer<T>(this),
-        polygon: new PolygonLayer<T>(this),
-        polyline: new PolylineLayer<T>(this),
-        wind: new WindLayer(this),
+        billboard: new BillboardLayer<T>(),
+        circle: new CircleLayer<T>(),
+        overlay: new OverlayLayer<T>(),
+        point: new PointLayer<T>(),
+        polygon: new PolygonLayer<T>(),
+        polyline: new PolylineLayer<T>(),
+        wind: new WindLayer(),
         reset: () => {
           this.entities?.billboard.remove();
           this.entities?.circle.remove();
