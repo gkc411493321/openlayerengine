@@ -43,3 +43,22 @@ export interface IPlotEditParams {
    */
   feature: Feature;
 }
+
+export interface IPlotAssembleData {
+  /**
+   * 头部坐标集合
+   */
+  header: Coordinate[];
+  /**
+   * 左侧坐标集合
+   */
+  left: Coordinate[];
+  /**
+   * 右侧坐标集合
+   */
+  right: Coordinate[];
+  /**
+   * 尾部坐标集合
+   */
+  tail: Coordinate[];
+}

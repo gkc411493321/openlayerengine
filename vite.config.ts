@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
+import path from 'path';
 import vitePluginString from 'vite-plugin-string';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vitePluginString()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
+  },
   server: {
     // port: 3000,
     // proxy: {

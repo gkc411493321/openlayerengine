@@ -6,6 +6,8 @@ import { Map } from 'ol';
 import { Polygon } from 'ol/geom';
 import * as PlotUtils from '../utils';
 import { EPlotType } from '../../../enum';
+import { IPlotAssembleData } from '../../../interface';
+import { useEarth } from '@/useEarth';
 
 class AttackArrow extends Polygon {
   private type: EPlotType;
@@ -31,6 +33,8 @@ class AttackArrow extends Polygon {
   private swallowTailPnt: any;
 
   public fixPointCount: any;
+
+  public assembleData: IPlotAssembleData | undefined;
 
   constructor(coordinates: any, points: any, params: any) {
     super([]);
@@ -88,6 +92,15 @@ class AttackArrow extends Polygon {
           rightPnts.push(neckRight);
           leftPnts = PlotUtils.getQBSplinePoints(leftPnts);
           rightPnts = PlotUtils.getQBSplinePoints(rightPnts);
+          this.assembleData = {
+            header: headPnts,
+            left: leftPnts,
+            right: rightPnts,
+            tail: [tailLeft, tailRight]
+          };
+          useEarth()
+            .useDefaultLayer()
+            .polyline.add({ positions: [tailLeft, tailRight] });
           this.setCoordinates([leftPnts.concat(headPnts, rightPnts.reverse())]);
         }
       }
