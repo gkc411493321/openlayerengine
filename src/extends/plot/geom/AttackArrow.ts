@@ -7,7 +7,6 @@ import { Polygon } from 'ol/geom';
 import * as PlotUtils from '../utils';
 import { EPlotType } from '../../../enum';
 import { IPlotAssembleData } from '../../../interface';
-import { useEarth } from '@/useEarth';
 
 class AttackArrow extends Polygon {
   private type: EPlotType;
@@ -98,9 +97,6 @@ class AttackArrow extends Polygon {
             right: rightPnts,
             tail: [tailLeft, tailRight]
           };
-          useEarth()
-            .useDefaultLayer()
-            .polyline.add({ positions: [tailLeft, tailRight] });
           this.setCoordinates([leftPnts.concat(headPnts, rightPnts.reverse())]);
         }
       }
