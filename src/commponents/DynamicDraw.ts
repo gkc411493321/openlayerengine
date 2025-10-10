@@ -420,6 +420,42 @@ export default class DynamicDraw {
       });
   }
   /**
+   * 处理箭头编辑
+   */
+  private handleArrowEdit(param: IEditParam) {
+    const isShowUnderlay = param.isShowUnderlay === undefined ? true : param.isShowUnderlay;
+    const layer = useEarth().getLayer(param.feature.get('layerId')) as Base;
+    if (!isShowUnderlay) {
+      layer.hide(param.feature.getId() as string);
+    }
+    const p = new PlotEdit();
+    p.init({ feature: param.feature });
+    p.on('modifyStart', (e) => {
+      // 回调：绘制开始
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
+    });
+    p.on('modifying', (e) => {
+      // 回调：绘制移动
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
+    });
+    p.on('modifyEnd', (e) => {
+      // 回调：绘制移动结束
+      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
+    });
+    p.on('modifyExit', (e) => {
+      // 回调：退出绘制
+      p.destroy();
+      (param.feature.getGeometry() as Polygon).setCoordinates(e.coords);
+      const fParam = param.feature.get('param');
+      fParam.plotPoints = e.points;
+      param.feature.set('param', fParam);
+      if (!isShowUnderlay) {
+        layer.show(param.feature.getId() as string);
+      }
+      param.callback?.call(this, { type: ModifyType.Modifyexit, plotParam: e });
+    });
+  }
+  /**
    * 动态绘制线
    * @param param 详见{@link IDrawLine}
    */
@@ -569,73 +605,13 @@ export default class DynamicDraw {
    * 动态编辑进攻箭头
    */
   editAttackArrow(param: IEditParam): void {
-    const isShowUnderlay = param.isShowUnderlay === undefined ? true : param.isShowUnderlay;
-    const layer = useEarth().getLayer(param.feature.get('layerId')) as Base;
-    if (!isShowUnderlay) {
-      layer.hide(param.feature.getId() as string);
-    }
-    const p = new PlotEdit();
-    p.init({ feature: param.feature });
-    p.on('modifyStart', (e) => {
-      // 回调：绘制开始
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifying', (e) => {
-      // 回调：绘制移动
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifyEnd', (e) => {
-      // 回调：绘制移动结束
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifyExit', (e) => {
-      // 回调：退出绘制
-      p.destroy();
-      (param.feature.getGeometry() as Polygon).setCoordinates(e.coords);
-      const fParam = param.feature.get('param');
-      fParam.plotPoints = e.points;
-      param.feature.set('param', fParam);
-      if (!isShowUnderlay) {
-        layer.show(param.feature.getId() as string);
-      }
-      param.callback?.call(this, { type: ModifyType.Modifyexit, plotParam: e });
-    });
+    this.handleArrowEdit(param);
   }
   /**
    * 动态编辑进攻箭头
    */
   editTailedAttackArrow(param: IEditParam): void {
-    const isShowUnderlay = param.isShowUnderlay === undefined ? true : param.isShowUnderlay;
-    const layer = useEarth().getLayer(param.feature.get('layerId')) as Base;
-    if (!isShowUnderlay) {
-      layer.hide(param.feature.getId() as string);
-    }
-    const p = new PlotEdit();
-    p.init({ feature: param.feature });
-    p.on('modifyStart', (e) => {
-      // 回调：绘制开始
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifying', (e) => {
-      // 回调：绘制移动
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifyEnd', (e) => {
-      // 回调：绘制移动结束
-      param.callback?.call(this, { type: ModifyType.Modifying, plotParam: e });
-    });
-    p.on('modifyExit', (e) => {
-      // 回调：退出绘制
-      p.destroy();
-      (param.feature.getGeometry() as Polygon).setCoordinates(e.coords);
-      const fParam = param.feature.get('param');
-      fParam.plotPoints = e.points;
-      param.feature.set('param', fParam);
-      if (!isShowUnderlay) {
-        layer.show(param.feature.getId() as string);
-      }
-      param.callback?.call(this, { type: ModifyType.Modifyexit, plotParam: e });
-    });
+    this.handleArrowEdit(param);
   }
   /**
    * 动态修改面
