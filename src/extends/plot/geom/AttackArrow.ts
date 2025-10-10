@@ -7,6 +7,7 @@ import { Polygon } from 'ol/geom';
 import * as PlotUtils from '../utils';
 import { EPlotType } from '../../../enum';
 import { IPlotAssembleData } from '../../../interface';
+import { Coordinate } from 'ol/coordinate';
 
 class AttackArrow extends Polygon {
   private map: any;
@@ -29,9 +30,9 @@ class AttackArrow extends Polygon {
 
   protected swallowTailFactor!: number;
 
-  protected swallowTailPnt: any;
+  protected swallowTailPnt: Coordinate | null | undefined;
 
-  public fixPointCount: any;
+  public fixPointCount: number | undefined;
 
   public assembleData: IPlotAssembleData | undefined;
 
