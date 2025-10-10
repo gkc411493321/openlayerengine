@@ -4,11 +4,13 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { useEarth } from '@/useEarth';
 import Earth from '@/Earth';
+import PolygonLayer from './PolygonLayer';
+import { PolylineLayer } from '.';
 
 /**
  * 创建箭头`PolygonArrow`
  */
-export default class PolygonArrowLayer<T = Polygon> extends Base {
+export default class PolygonArrowLayer<T = unknown> extends Base {
   /**
    * 构造器
    * @param earth 地图实例，可不传
@@ -25,5 +27,36 @@ export default class PolygonArrowLayer<T = Polygon> extends Base {
     });
     const e = earth ?? useEarth();
     super(e, layer, 'PolygonArrow');
+  }
+
+  /**
+   * 创建箭头
+   */
+  add() {
+    console.log('add arrow');
+  }
+  /**
+   * 修改箭头
+   */
+  set() {
+    console.log('set arrow');
+  }
+  /**
+   * 修改坐标
+   */
+  setPosition() {
+    console.log('set position');
+  }
+  /**
+   * 移除箭头
+   */
+  remove(): void;
+  remove(id: string): void;
+  remove(id?: string): void {
+    if (id) {
+      super.remove(id);
+    } else {
+      super.remove();
+    }
   }
 }

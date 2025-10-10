@@ -9,27 +9,27 @@ import { EPlotType } from '../../../enum';
 import { IPlotAssembleData } from '../../../interface';
 
 class AttackArrow extends Polygon {
-  private type: EPlotType;
-
   private map: any;
 
-  private points: PlotUtils.Point[] | undefined;
+  protected type: EPlotType;
 
-  private headWidthFactor: number;
+  protected points: PlotUtils.Point[] | undefined;
 
-  private headHeightFactor: number;
+  protected headWidthFactor: number;
 
-  private neckWidthFactor: number;
+  protected headHeightFactor: number;
 
-  private neckHeightFactor: number;
+  protected neckWidthFactor: number;
 
-  private tailWidthFactor: number | undefined;
+  protected neckHeightFactor: number;
 
-  private headTailFactor: number;
+  protected tailWidthFactor!: number;
 
-  private swallowTailFactor: number | undefined;
+  protected headTailFactor: number;
 
-  private swallowTailPnt: any;
+  protected swallowTailFactor!: number;
+
+  protected swallowTailPnt: any;
 
   public fixPointCount: any;
 

@@ -11,6 +11,7 @@ import CircleStyle from 'ol/style/Circle';
 import { Coordinate } from 'ol/coordinate';
 import * as PlotUtils from './utils';
 import { fromLonLat } from 'ol/proj';
+import TailedAttackArrow from './geom/TailedAttackArrow';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -54,7 +55,9 @@ class PlotDraw {
     try {
       const extent = this.map.getView().getProjection().getExtent?.();
       if (extent) return extent[2] - extent[0];
-    } catch {/* ignore */}
+    } catch {
+      /* ignore */
+    }
     return undefined;
   }
   /**
@@ -104,6 +107,8 @@ class PlotDraw {
   private createGeom(type: EPlotType) {
     if (type === EPlotType.AttackArrow) {
       return new AttackArrow([], [], {});
+    } else if (type === EPlotType.TailedAttackArrow) {
+      return new TailedAttackArrow([], [], {});
     }
   }
   /**
@@ -120,7 +125,10 @@ class PlotDraw {
   private mouseClickEvent(param: { position: Coordinate; pixel: number[] }) {
     // 直接使用基础 world 投影坐标；借助 wrapX=true 让要素在所有复制世界中自动显示
     const projectedRaw = fromLonLat(param.position as [number, number]);
-    const projected = this.points.length > 0 ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number]) : projectedRaw;
+    const projected =
+      this.points.length > 0
+        ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number])
+        : projectedRaw;
     if (this.points.length > 0 && PlotUtils.MathDistance(projected, this.points[this.points.length - 1]) < 0.0001) {
       console.warn('点过近');
       return false;
@@ -153,7 +161,10 @@ class PlotDraw {
   private mouseMoveEvent(param: { position: Coordinate; pixel: number[] }) {
     if (!this.geom) return;
     const projectedRaw = fromLonLat(param.position as [number, number]);
-    const projected = this.points.length > 0 ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number]) : projectedRaw;
+    const projected =
+      this.points.length > 0
+        ? this.adjustToNearestWorld(this.points[this.points.length - 1] as [number, number], projectedRaw as [number, number])
+        : projectedRaw;
     const points = this.points.concat([projected]);
     this.geom.setPoints(points);
     // 事件：移动（动态预览点）
@@ -195,7 +206,6 @@ class PlotDraw {
     this.feature = undefined;
     // 移除监听
     this.offEvents.forEach((off: any) => off());
-
   }
   /**
    * 事件分发

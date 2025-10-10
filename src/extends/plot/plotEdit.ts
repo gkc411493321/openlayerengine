@@ -10,6 +10,7 @@ import AttackArrow from './geom/AttackArrow';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Utils } from '../../common';
+import TailedAttackArrow from './geom/TailedAttackArrow';
 
 // 事件类型定义
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit';
@@ -28,7 +29,6 @@ export interface IPlotEditEventPayload {
   /** 原始事件对象（OpenLayers事件或全局鼠标事件） */
   originalEvent?: unknown;
 }
-
 
 interface IPlotParam {
   plotType: EPlotType;
@@ -187,6 +187,9 @@ class plotEdit {
     let coords: Coordinate[][] = [];
     if (plotType === EPlotType.AttackArrow) {
       const geom = new AttackArrow([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.TailedAttackArrow) {
+      const geom = new TailedAttackArrow([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;

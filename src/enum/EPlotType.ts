@@ -3,5 +3,6 @@
  */
 export enum EPlotType {
   AttackArrow = 'attackArrow',
+  TailedAttackArrow = 'tailedAttackArrow',
 }
 
