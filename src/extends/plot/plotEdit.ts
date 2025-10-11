@@ -51,9 +51,17 @@ class plotEdit {
    */
   private pointLayer: PointLayer | undefined;
   /**
+   * 中点图层
+   */
+  private midPointLayer: PointLayer | undefined;
+  /**
    * 缓存控制点
    */
   private plotPoints: Coordinate[] = [];
+  /**
+   * 缓存序列中点
+   */
+  private midPoints: Coordinate[] = [];
   /**
    * 要素坐标集合
    */
@@ -77,9 +85,13 @@ class plotEdit {
    */
   private mouseDown: (() => void) | undefined;
   /**
-   * 映射点id与索引的map
+   * 映射点id与索引的map(控制点)
    */
   private pointIdMap: Map<string, number> | undefined;
+  /**
+   * 映射点id与索引的map(中点)
+   */
+  private midPointIdMap: Map<string, number> | undefined;
   /**
    * 鼠标右键按下事件销毁回调
    */
@@ -137,6 +149,27 @@ class plotEdit {
   private createLayer() {
     this.polygonLayer = new PolygonLayer(useEarth());
     this.pointLayer = new PointLayer<Point>(useEarth());
+    this.midPointLayer = new PointLayer<Point>(useEarth());
+  }
+  /**
+   * 由控制点生成序列中点
+   */
+  private computeSequentialMidPoints(points: Coordinate[]): Coordinate[] {
+    if (!points || points.length < 2) return [];
+    // 计算 points[0] 与 points[1] 的中点
+    const mid01: Coordinate = [(points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2];
+    // 构建临时数组 arr：mid01 + points[2..]
+    const arr: Coordinate[] = [mid01].concat(points.slice(2));
+    // 若 arr 长度不足以计算相邻中点，返回空数组
+    if (arr.length < 2) return [];
+    // 计算相邻中点序列
+    const result: Coordinate[] = [];
+    for (let i = 0; i < arr.length - 1; i++) {
+      const a = arr[i];
+      const b = arr[i + 1];
+      result.push([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+    }
+    return result;
   }
   /**
    * 创建控制点
@@ -157,6 +190,43 @@ class plotEdit {
       });
     }
     this.pointIdMap = pointIdMap;
+  }
+  /**
+   * 重新构建全部控制点与中点
+   */
+  private refreshEditPoints() {
+    this.pointLayer?.remove();
+    this.createEditPoint(this.plotPoints);
+    this.rebuildMidPointsOnly();
+  }
+  /**
+   * 仅重建中点（在控制点集不变或刚更新后调用）
+   */
+  private rebuildMidPointsOnly() {
+    this.midPointLayer?.remove();
+    this.createMidEditPoint(this.plotPoints);
+  }
+  /**
+   * 创建控制点
+   */
+  private createMidEditPoint(points: Coordinate[]) {
+    // 记录点与id映射map
+    const midPointIdMap = new Map<string, number>();
+    // 创建序列中点
+    this.midPoints = this.computeSequentialMidPoints(points);
+    for (let index = 0; index < this.midPoints.length; index++) {
+      const item = this.midPoints[index];
+      const id = Utils.GetGUID();
+      midPointIdMap.set(id, index);
+      this.midPointLayer?.add({
+        id: id,
+        center: item,
+        stroke: { color: '#fff' },
+        fill: { color: '#ffae009c' },
+        module: 'plot-ctl-point'
+      });
+    }
+    this.midPointIdMap = midPointIdMap;
   }
   /**
    * 创建编辑要素
@@ -209,60 +279,110 @@ class plotEdit {
     });
     // 鼠标按下
     this.mouseDown = event.addMouseLeftDownEventByModule('plot-ctl-point', (e) => {
-      if (e && e.feature) {
-        // 禁用地图拖拽
-        useEarth().disabledMapDrag();
-        // 修改point样式
-        // 分发修改开始回调
-        const index = this.pointIdMap?.get(e.id);
-        if (index !== undefined) {
-          this.modifyPointIndex = index;
+      if (!e || !e.feature) return;
+      const isCtrlPoint = this.pointIdMap?.has(e.id) ?? false;
+      const isMidPoint = !isCtrlPoint && (this.midPointIdMap?.has(e.id) ?? false);
+      // 禁用地图拖拽
+      useEarth().disabledMapDrag();
+      // 公共：右键退出（一次注册即可）
+      this.mouseRight = event.addMouseRightClickEventByGlobal(() => {
+        this.mouseDown?.();
+        this.mouseRight?.();
+        this.pointLayer?.remove();
+        this.midPointLayer?.remove();
+        this.polygonLayer?.remove();
+        this.emit('modifyExit', { index: this.modifyPointIndex });
+      });
+      this.midPointLayer?.hide();
+      // =============== 中点新增逻辑 ===============
+      if (isMidPoint) {
+        const midIdx = this.midPointIdMap!.get(e.id)!; // 当前中点序号
+        // 依据 computeSequentialMidPoints 的生成逻辑推导插入索引
+        const insertionIndex = midIdx === 0 ? 2 : midIdx + 2;
+        const center = (e.feature.getGeometry() as Point).getCoordinates();
+        const safeIndex = Math.min(insertionIndex, this.plotPoints.length); // 容错
+        this.plotPoints.splice(safeIndex, 0, center as Coordinate);
+        // 更新多边形
+        this.updateEditPolygon();
+        // 重绘控制点与中点（会生成新 id 映射）
+        this.refreshEditPoints();
+        this.modifyPointIndex = safeIndex;
+        // 找到新生成的控制点 id
+        let newPointId: string | undefined;
+        for (const [pid, idx] of this.pointIdMap!.entries()) {
+          if (idx === safeIndex) {
+            newPointId = pid;
+            break;
+          }
         }
+        if (!newPointId) return;
+        this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
+        this.pointLayer?.set({ id: newPointId, size: 8 });
+        const mouseMove = event.addMouseMoveEventByGlobal((move) => {
+          if (this.modifyPointIndex === undefined) return;
+          this.pointLayer?.setPosition(newPointId!, fromLonLat(move.position));
+          let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(move.position));
+          if (this.baseWorldIndex !== undefined) {
+            normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+          }
+          this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+          this.updateEditPolygon();
+          this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
+        });
+        const mouseUp = event.addMouseLeftUpEventByGlobal((up) => {
+          this.midPointLayer?.show();
+          if (this.modifyPointIndex === undefined) return;
+          useEarth().enableMapDrag();
+          mouseMove();
+          mouseUp();
+          this.pointLayer?.set({ id: newPointId!, size: 4, center: fromLonLat(up.position) });
+          let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(up.position));
+          if (this.baseWorldIndex !== undefined) {
+            normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
+          }
+          this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+          this.updateEditPolygon();
+          this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
+          // 重新计算中点
+          this.rebuildMidPointsOnly();
+        });
+        return; // 中点逻辑结束
+      }
+
+      // =============== 控制点拖拽逻辑（原逻辑） ===============
+      if (isCtrlPoint) {
+        const index = this.pointIdMap?.get(e.id);
+        if (index !== undefined) this.modifyPointIndex = index;
         const center = (e.feature.getGeometry() as Point).getCoordinates();
         this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
-        // 修改控制点样式
         this.pointLayer?.set({ id: e.id, size: 8 });
-        // 监听鼠标移动
         const mouseMove = event.addMouseMoveEventByGlobal((move) => {
-          if (this.modifyPointIndex !== undefined) {
-            this.pointLayer?.setPosition(e.id, fromLonLat(move.position));
-            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(move.position));
-            if (this.baseWorldIndex !== undefined) {
-              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
-            }
-            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-            // 更新多边形坐标
-            this.updateEditPolygon();
-            // 分发修改中回调
-            this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
+          if (this.modifyPointIndex === undefined) return;
+          this.pointLayer?.setPosition(e.id, fromLonLat(move.position));
+          let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(move.position));
+          if (this.baseWorldIndex !== undefined) {
+            normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
+          this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+          this.updateEditPolygon();
+          this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
         });
-        // 监听鼠标抬起
-        const mouseUp = event.addMouseLeftUpEventByModule('plot-ctl-point', (up) => {
-          if (this.modifyPointIndex !== undefined) {
-            useEarth().enableMapDrag();
-            mouseMove();
-            mouseUp();
-            this.pointLayer?.set({ id: e.id, size: 4, center: fromLonLat(up.position) });
-            let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(up.position));
-            if (this.baseWorldIndex !== undefined) {
-              normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
-            }
-            this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-            // 更新多边形坐标
-            this.updateEditPolygon();
-            // 分发修改完成回调
-            this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
+        const mouseUp = event.addMouseLeftUpEventByGlobal((up) => {
+          this.midPointLayer?.show();
+          if (this.modifyPointIndex === undefined) return;
+          useEarth().enableMapDrag();
+          mouseMove();
+          mouseUp();
+          this.pointLayer?.set({ id: e.id, size: 4, center: fromLonLat(up.position) });
+          let normalizedProjected = Utils.normalizeToViewWorld(fromLonLat(up.position));
+          if (this.baseWorldIndex !== undefined) {
+            normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
-        });
-        // 监听鼠标右键
-        this.mouseRight = event.addMouseRightClickEventByGlobal(() => {
-          this.mouseDown?.();
-          this.mouseRight?.();
-          this.pointLayer?.remove();
-          this.polygonLayer?.remove();
-          // 分发退出修改回调
-          this.emit('modifyExit', { index: this.modifyPointIndex });
+          this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
+          this.updateEditPolygon();
+          this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
+          // 控制点移动后更新中点
+          this.rebuildMidPointsOnly();
         });
       }
     });
@@ -284,6 +404,8 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
+    // 创建中间序列点
+    this.createMidEditPoint(this.plotPoints);
     // 创建多边形
     this.createEditPolygon(param);
     // // 创建修改监听
@@ -299,6 +421,7 @@ class plotEdit {
     this.mouseRight?.();
     // 销毁图层与监听
     this.pointLayer?.remove();
+    this.midPointLayer?.remove();
     this.polygonLayer?.remove();
     this.listeners.clear();
     this.plotPoints = [];
