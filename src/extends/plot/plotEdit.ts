@@ -11,6 +11,7 @@ import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Utils } from '../../common';
 import TailedAttackArrow from './geom/TailedAttackArrow';
+import FineArrow from './geom/FineArrow';
 
 // 事件类型定义
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit';
@@ -261,6 +262,9 @@ class plotEdit {
     } else if (plotType === EPlotType.TailedAttackArrow) {
       const geom = new TailedAttackArrow([], plotPoints, {});
       coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.FineArrow) {
+      const geom = new FineArrow([], plotPoints, {});
+      coords = geom.getCoordinates();
     }
     return coords;
   }
@@ -295,7 +299,7 @@ class plotEdit {
       });
       this.midPointLayer?.hide();
       // =============== 中点新增逻辑 ===============
-      if (isMidPoint) {
+      if (this.plotType != EPlotType.FineArrow && isMidPoint) {
         const midIdx = this.midPointIdMap!.get(e.id)!; // 当前中点序号
         // 依据 computeSequentialMidPoints 的生成逻辑推导插入索引
         const insertionIndex = midIdx === 0 ? 2 : midIdx + 2;
@@ -404,8 +408,10 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    // 创建中间序列点
-    this.createMidEditPoint(this.plotPoints);
+    if (this.plotType != EPlotType.FineArrow) {
+      // 创建中间序列点
+      this.createMidEditPoint(this.plotPoints);
+    }
     // 创建多边形
     this.createEditPolygon(param);
     // // 创建修改监听

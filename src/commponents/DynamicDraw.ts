@@ -674,6 +674,12 @@ export default class DynamicDraw {
     this.handleArrowEdit(param);
   }
   /**
+   * 动态编辑单箭头(2控制点)
+   */
+  editFineArrow(param: IEditParam): void {
+    this.handleArrowEdit(param);
+  }
+  /**
    * 动态修改面
    * @param param 参数，详见{@link IEditParam}
    */
