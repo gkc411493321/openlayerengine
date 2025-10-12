@@ -19,19 +19,19 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth()
     .useDrawTool()
-    .drawwTailedAttackArrow({
+    .drawwFineArrow({
       callback: (e) => {
         console.log(e);
         if (e.type === DrawType.Drawend) {
           setTimeout(() => {
-            useEarth()
-              .useDrawTool()
-              .editTailedAttackArrow({
-                feature: e.feature!,
-                callback: (e) => {
-                  console.log(e);
-                }
-              });
+            // useEarth()
+            //   .useDrawTool()
+            //   .editTailedAttackArrow({
+            //     feature: e.feature!,
+            //     callback: (e) => {
+            //       console.log(e);
+            //     }
+            //   });
           }, 1000);
         }
       }
