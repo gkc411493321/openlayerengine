@@ -12,7 +12,8 @@ import { fromLonLat } from 'ol/proj';
 import { Utils } from '../../common';
 import TailedAttackArrow from './geom/TailedAttackArrow';
 import FineArrow from './geom/FineArrow';
-import TailedSquadCombat from './geom/TailedSquadCombat';
+import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
+import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 
 // 事件类型定义
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit';
@@ -266,8 +267,11 @@ class plotEdit {
     } else if (plotType === EPlotType.FineArrow) {
       const geom = new FineArrow([], plotPoints, {});
       coords = geom.getCoordinates();
-    } else if (plotType === EPlotType.TailedSquadCombat) {
-      const geom = new TailedSquadCombat([], plotPoints, {});
+    } else if (plotType === EPlotType.TailedSquadCombatArrow) {
+      const geom = new TailedSquadCombatArrow([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.AssaultDirectionArrow) {
+      const geom = new AssaultDirectionArrow([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;
@@ -412,7 +416,7 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombat];
+    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow];
     if (!exclude.includes(this.plotType)) {
       // 创建中间序列点
       this.createMidEditPoint(this.plotPoints);

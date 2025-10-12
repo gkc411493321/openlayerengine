@@ -8,7 +8,7 @@ import { EPlotType } from '@/enum';
 class TailedSquadCombat extends AttackArrow {
   constructor(coordinates: any, points: any, params: any) {
     super(coordinates, points, params);
-    this.type = EPlotType.TailedSquadCombat;
+    this.type = EPlotType.TailedSquadCombatArrow;
     this.headHeightFactor = 0.18;
     this.headWidthFactor = 0.3;
     this.neckHeightFactor = 0.85;

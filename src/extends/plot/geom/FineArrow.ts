@@ -5,24 +5,23 @@ import { Polygon } from 'ol/geom';
 import * as PlotUtils from '../utils';
 import { EPlotType } from '@/enum';
 import { IPlotAssembleData } from '@/interface';
-import { useEarth } from '@/useEarth';
 
 class FineArrow extends Polygon {
-  protected type: EPlotType;
+  public type: EPlotType;
 
-  protected points: PlotUtils.Point[] = [];
+  public points: PlotUtils.Point[] = [];
 
-  protected freehand: boolean | undefined;
+  public freehand: boolean | undefined;
 
-  protected neckAngle: number;
+  public neckAngle: number;
 
-  protected headAngle: number;
+  public headAngle: number;
 
-  protected headWidthFactor: number;
+  public headWidthFactor: number;
 
-  protected neckWidthFactor: number;
+  public neckWidthFactor: number;
 
-  protected tailWidthFactor: number;
+  public tailWidthFactor: number;
 
   public fixPointCount: number | undefined;
 

@@ -13,7 +13,8 @@ import * as PlotUtils from './utils';
 import { fromLonLat } from 'ol/proj';
 import TailedAttackArrow from './geom/TailedAttackArrow';
 import FineArrow from './geom/FineArrow';
-import TailedSquadCombat from './geom/TailedSquadCombat';
+import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
+import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -113,8 +114,10 @@ class PlotDraw {
       return new TailedAttackArrow([], [], {});
     } else if (type === EPlotType.FineArrow) {
       return new FineArrow([], [], {});
-    } else if (type === EPlotType.TailedSquadCombat) {
-      return new TailedSquadCombat([], [], {});
+    } else if (type === EPlotType.TailedSquadCombatArrow) {
+      return new TailedSquadCombatArrow([], [], {});
+    } else if (type === EPlotType.AssaultDirectionArrow) {
+      return new AssaultDirectionArrow([], [], {});
     }
   }
   /**
