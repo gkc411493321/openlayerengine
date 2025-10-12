@@ -19,14 +19,14 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth()
     .useDrawTool()
-    .drawwFineArrow({
+    .drawwTailedSquadCombat({
       callback: (e) => {
         console.log(e);
         if (e.type === DrawType.Drawend) {
           setTimeout(() => {
             useEarth()
               .useDrawTool()
-              .editFineArrow({
+              .editTailedSquadCombat({
                 feature: e.feature!,
                 callback: (e) => {
                   console.log(e);

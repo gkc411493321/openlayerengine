@@ -13,6 +13,7 @@ import * as PlotUtils from './utils';
 import { fromLonLat } from 'ol/proj';
 import TailedAttackArrow from './geom/TailedAttackArrow';
 import FineArrow from './geom/FineArrow';
+import TailedSquadCombat from './geom/TailedSquadCombat';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -112,6 +113,8 @@ class PlotDraw {
       return new TailedAttackArrow([], [], {});
     } else if (type === EPlotType.FineArrow) {
       return new FineArrow([], [], {});
+    } else if (type === EPlotType.TailedSquadCombat) {
+      return new TailedSquadCombat([], [], {});
     }
   }
   /**
@@ -154,7 +157,7 @@ class PlotDraw {
       this.emit('start', { type: this.geom?.getPlotType?.(), point: projected, index: 0, pointCount: 1 });
     }
     // 判断是否绘制到最大值
-    if ( this.geom?.fixPointCount === this.geom?.getPointCount()) {
+    if (this.geom?.fixPointCount === this.geom?.getPointCount()) {
       // todo 执行退出绘制
       this.mouseRightClickEvent();
     }

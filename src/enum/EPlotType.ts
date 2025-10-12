@@ -5,5 +5,5 @@ export enum EPlotType {
   AttackArrow = 'attackArrow',
   TailedAttackArrow = 'tailedAttackArrow',
   FineArrow = 'fineArrow',
+  TailedSquadCombat = 'tailedSquadCombat'
 }
-
