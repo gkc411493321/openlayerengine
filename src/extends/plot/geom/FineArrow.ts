@@ -4,6 +4,8 @@
 import { Polygon } from 'ol/geom';
 import * as PlotUtils from '../utils';
 import { EPlotType } from '@/enum';
+import { IPlotAssembleData } from '@/interface';
+import { useEarth } from '@/useEarth';
 
 class FineArrow extends Polygon {
   protected type: EPlotType;
@@ -24,6 +26,7 @@ class FineArrow extends Polygon {
 
   public fixPointCount: number | undefined;
 
+  public assembleData: IPlotAssembleData | undefined;
 
   constructor(coordinates: any, points: any, params: any) {
     super([]);
@@ -72,6 +75,12 @@ class FineArrow extends Polygon {
       const neckLeft = PlotUtils.getThirdPoint(pnt1, pnt2, this.neckAngle, neckWidth, false);
       const neckRight = PlotUtils.getThirdPoint(pnt1, pnt2, this.neckAngle, neckWidth, true);
       const pList = [tailLeft, neckLeft, headLeft, pnt2, headRight, neckRight, tailRight];
+      this.assembleData = {
+        header: [neckLeft, headLeft, pnt2, headRight, neckRight],
+        left: [tailLeft, neckLeft],
+        right: [neckRight, tailRight],
+        tail: [tailLeft, tailRight]
+      };
       this.setCoordinates([pList]);
     } catch (e) {
       console.log(e);
