@@ -50,12 +50,12 @@ class TailedSquadCombat extends AttackArrow {
           rightPnts.push(neckRight);
           leftPnts = PlotUtils.getQBSplinePoints(leftPnts);
           rightPnts = PlotUtils.getQBSplinePoints(rightPnts);
-          // this.assembleData = {
-          //   header: headPnts,
-          //   left: leftPnts,
-          //   right: rightPnts,
-          //   tail: [tailLeft, tailRight]
-          // };
+          this.assembleData = {
+            header: headPnts,
+            left: rightPnts,
+            right: leftPnts,
+            tail: tailPnts
+          };
           this.setCoordinates([leftPnts.concat(headPnts, rightPnts.reverse(), [tailPnts[1], leftPnts[0]])]);
         }
       }
