@@ -21,5 +21,9 @@ export enum EPlotType {
   /**
    * 单直箭头（平尾-2点）
    */
-  AssaultDirectionArrow = 'assaultDirectionArrow'
+  AssaultDirectionArrow = 'assaultDirectionArrow',
+  /**
+   * 双箭头
+   */
+  DoubleArrow = 'doubleArrow'
 }

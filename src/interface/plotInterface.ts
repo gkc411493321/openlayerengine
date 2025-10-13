@@ -62,3 +62,30 @@ export interface IPlotAssembleData {
    */
   tail: Coordinate[];
 }
+
+export interface IPlotAssembleDoubleData {
+  /**
+   * 左侧头部箭头坐标集合
+   */
+  lHeader: Coordinate[];
+  /**
+   * 右侧头部箭头坐标集合
+   */
+  rHeader: Coordinate[];
+  /**
+   * 左侧坐标集合
+   */
+  left: Coordinate[];
+  /**
+   * 右侧坐标集合
+   */
+  right: Coordinate[];
+  /**
+   * 中部坐标集合
+   */
+  center: Coordinate[];
+  /**
+   * 尾部坐标集合
+   */
+  tail: Coordinate[];
+}

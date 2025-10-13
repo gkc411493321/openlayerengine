@@ -14,6 +14,7 @@ import TailedAttackArrow from './geom/TailedAttackArrow';
 import FineArrow from './geom/FineArrow';
 import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
+import DoubleArrow from './geom/DoubleArrow';
 
 // 事件类型定义
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit';
@@ -273,6 +274,9 @@ class plotEdit {
     } else if (plotType === EPlotType.AssaultDirectionArrow) {
       const geom = new AssaultDirectionArrow([], plotPoints, {});
       coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.DoubleArrow) {
+      const geom = new DoubleArrow([], plotPoints, {});
+      coords = geom.getCoordinates();
     }
     return coords;
   }
@@ -393,8 +397,10 @@ class plotEdit {
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
           this.updateEditPolygon();
           this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
-          // 控制点移动后更新中点
-          this.rebuildMidPointsOnly();
+          if (isMidPoint) {
+            // 控制点移动后更新中点
+            this.rebuildMidPointsOnly();
+          }
         });
       }
     });
@@ -416,7 +422,7 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow];
+    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow];
     if (!exclude.includes(this.plotType)) {
       // 创建中间序列点
       this.createMidEditPoint(this.plotPoints);
