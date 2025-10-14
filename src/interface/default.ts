@@ -1,4 +1,4 @@
-import { ECursor, ETransfrom, ETranslateType } from '../enum';
+import { ECursor, EPlotType, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { Coordinate } from 'ol/coordinate';
 import { Geometry, Point } from 'ol/geom';
@@ -320,7 +320,6 @@ export interface IPolygonParam<T> extends IAddBaseParam<T> {
    * 标签样式
    */
   label?: ILabel;
-
 }
 export interface ISetPolygonParam {
   /**
@@ -785,4 +784,48 @@ export interface ITransfromParams {
    * 仅在一次 Select -> SelectEnd 生命周期内生效，SelectEnd 时会清空。
    */
   historyLimit?: number;
+}
+export interface IPolygonArrowParam<T> extends IAddBaseParam<T> {
+  /**
+   * 控制点集合
+   */
+  ctlPoints: Coordinate[];
+  /**
+   * 箭头类型
+   */
+  type: EPlotType;
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式,isShowTail==true生效
+   */
+  fill?: IFill;
+  /**
+   * 是否显示尾部,默认true
+   */
+  isShowTail?: boolean;
+}
+export interface ISetPolygonArrowParam {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * 控制点集合
+   */
+  ctlPoints: Coordinate[];
+  /**
+   * 边框样式
+   */
+  stroke?: IStroke;
+  /**
+   * 填充样式,isShowTail==true生效
+   */
+  fill?: IFill;
+  /**
+   * 是否显示尾部,默认true
+   */
+  isShowTail?: boolean;
 }
