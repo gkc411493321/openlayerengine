@@ -1,11 +1,9 @@
-import { Polygon } from 'ol/geom';
 import Base from './Base';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { useEarth } from '@/useEarth';
 import Earth from '@/Earth';
-import PolygonLayer from './PolygonLayer';
-import { PolylineLayer } from '.';
+import { IPolygonArrowParam } from '@/interface';
 
 /**
  * 创建箭头`PolygonArrow`
@@ -32,8 +30,12 @@ export default class PolygonArrowLayer<T = unknown> extends Base {
   /**
    * 创建箭头
    */
-  add() {
-    console.log('add arrow');
+  add(param: IPolygonArrowParam<T>) {
+    if (param.isShowTail === false) {
+      // 只显示边框线
+    } else {
+      // 显示箭头和边框线
+    }
   }
   /**
    * 修改箭头
