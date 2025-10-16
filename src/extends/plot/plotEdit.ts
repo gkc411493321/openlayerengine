@@ -16,8 +16,8 @@ import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
 
-// 事件类型定义
-export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit';
+// 事件类型定义（新增 undo / redo）
+export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
 
 export interface IPlotEditEventPayload {
   /** 当前修改的控制点索引 */
@@ -100,6 +100,16 @@ class plotEdit {
    * 鼠标右键按下事件销毁回调
    */
   private mouseRight: (() => void) | undefined;
+  /** 键盘事件销毁回调 */
+  private keyDownDispose: (() => void) | undefined;
+  /** 历史记录栈（包含初始状态） */
+  private historyStack: Coordinate[][] = [];
+  /** 重做栈 */
+  private redoStack: Coordinate[][] = [];
+  /** 是否已经记录初始快照 */
+  private hasRecordedInitial = false;
+  /** 历史记录最大长度 */
+  private historyLimit = 50;
 
   constructor() {
     this.map = useEarth().map;
@@ -146,6 +156,104 @@ class plotEdit {
         console.error('[plotEdit emit error]', event, err);
       }
     });
+  }
+  /**
+   * 记录当前控制点快照（若与上一快照一致则跳过）
+   * @param forceInitial 是否强制作为初始快照（仅第一次）
+   */
+  private recordSnapshot(forceInitial = false) {
+    if (forceInitial && this.hasRecordedInitial) return; // 初始已记录则忽略
+    const clonePoints = this.plotPoints.map((p) => [p[0], p[1]] as Coordinate);
+    if (!forceInitial && this.historyStack.length) {
+      const last = this.historyStack[this.historyStack.length - 1];
+      if (last && last.length === clonePoints.length) {
+        let same = true;
+        for (let i = 0; i < last.length; i++) {
+          if (last[i][0] !== clonePoints[i][0] || last[i][1] !== clonePoints[i][1]) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return; // 无变化跳过
+      }
+    }
+    this.historyStack.push(clonePoints);
+    if (this.historyStack.length > this.historyLimit) this.historyStack.shift();
+    // 新快照产生后清空 redo 栈
+    this.redoStack = [];
+    if (forceInitial) this.hasRecordedInitial = true;
+  }
+  /** 应用某份快照 */
+  private applySnapshot(snapshot?: Coordinate[]) {
+    if (!snapshot) return;
+    this.plotPoints = snapshot.map((p) => [p[0], p[1]] as Coordinate);
+    this.updateEditPolygon();
+    this.refreshEditPoints();
+  }
+  /** 撤销 */
+  public undo() {
+    if (this.historyStack.length <= 1) return; // 至少保留初始
+    const current = this.historyStack.pop(); // 当前状态（将要撤销）
+    if (current) this.redoStack.push(current);
+    const prev = this.historyStack[this.historyStack.length - 1]; // 撤销后目标快照
+    // 计算差异索引（仅在单点变化时提供）
+    const diffIdx = this.computeSingleDiffIndex(current, prev);
+    this.applySnapshot(prev);
+    if (diffIdx !== undefined) {
+      this.emit('modifying', { index: diffIdx, coordinate: this.plotPoints[diffIdx] });
+    } else {
+      this.emit('modifying', { index: undefined });
+    }
+    this.emit('undo', { index: diffIdx });
+  }
+  /** 重做 */
+  public redo() {
+    if (!this.redoStack.length) return;
+    const snap = this.redoStack.pop(); // 目标快照
+    if (!snap) return;
+    // 当前状态（应用前）
+    const cur = this.plotPoints.map((p) => [p[0], p[1]] as Coordinate);
+    this.historyStack.push(cur); // 入历史
+    const diffIdx = this.computeSingleDiffIndex(cur, snap);
+    this.applySnapshot(snap);
+    if (diffIdx !== undefined) {
+      this.emit('modifying', { index: diffIdx, coordinate: this.plotPoints[diffIdx] });
+    } else {
+      this.emit('modifying', { index: undefined });
+    }
+    this.emit('redo', { index: diffIdx });
+  }
+  /** 计算两个快照间是否仅单点差异，返回该点索引 */
+  private computeSingleDiffIndex(a?: Coordinate[], b?: Coordinate[]): number | undefined {
+    if (!a || !b || a.length !== b.length) return undefined;
+    let diffIdx: number | undefined = undefined;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
+        if (diffIdx !== undefined) return undefined; // 超过一个差异
+        diffIdx = i;
+      }
+    }
+    return diffIdx;
+  }
+  /** 注册键盘撤销/重做 */
+  private setupKeyDown() {
+    try {
+      useEarth().useGlobalEvent().enableGlobalKeyDownEvent && useEarth().useGlobalEvent().enableGlobalKeyDownEvent();
+      this.keyDownDispose = useEarth()
+        .useGlobalEvent()
+        .addKeyDownEventByGlobal((ev: KeyboardEvent) => {
+          const key = ev.key.toLowerCase();
+          if (key === 'z' && ev.ctrlKey) {
+            this.undo();
+            ev.preventDefault();
+          } else if (key === 'y' && ev.ctrlKey) {
+            this.redo();
+            ev.preventDefault();
+          }
+        });
+    } catch (_) {
+      /* ignore */
+    }
   }
   /**
    * 创建编辑要素图层
@@ -201,7 +309,9 @@ class plotEdit {
   private refreshEditPoints() {
     this.pointLayer?.remove();
     this.createEditPoint(this.plotPoints);
-    this.rebuildMidPointsOnly();
+    if (this.midPoints && this.midPoints.length > 0) {
+      this.rebuildMidPointsOnly();
+    }
   }
   /**
    * 仅重建中点（在控制点集不变或刚更新后调用）
@@ -313,14 +423,12 @@ class plotEdit {
       // =============== 中点新增逻辑 ===============
       if (isMidPoint) {
         const midIdx = this.midPointIdMap!.get(e.id)!; // 当前中点序号
-        // 依据 computeSequentialMidPoints 的生成逻辑推导插入索引
-        const insertionIndex = midIdx === 0 ? 2 : midIdx + 2;
+        const insertionIndex = midIdx === 0 ? 2 : midIdx + 2; // 推导插入索引
         const center = (e.feature.getGeometry() as Point).getCoordinates();
-        const safeIndex = Math.min(insertionIndex, this.plotPoints.length); // 容错
+        const safeIndex = Math.min(insertionIndex, this.plotPoints.length);
+        // 插入前当前最后一个快照即为修改前状态，无需重复记录
         this.plotPoints.splice(safeIndex, 0, center as Coordinate);
-        // 更新多边形
         this.updateEditPolygon();
-        // 重绘控制点与中点（会生成新 id 映射）
         this.refreshEditPoints();
         this.modifyPointIndex = safeIndex;
         // 找到新生成的控制点 id
@@ -359,6 +467,8 @@ class plotEdit {
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
           this.updateEditPolygon();
           this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
+          // 记录快照（本次操作完成后）
+          this.recordSnapshot();
           // 重新计算中点
           this.rebuildMidPointsOnly();
         });
@@ -397,7 +507,9 @@ class plotEdit {
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
           this.updateEditPolygon();
           this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
-          if (isMidPoint) {
+          // 记录快照（结束）
+          this.recordSnapshot();
+          if (this.midPoints && this.midPoints.length > 0) {
             // 控制点移动后更新中点
             this.rebuildMidPointsOnly();
           }
@@ -431,6 +543,10 @@ class plotEdit {
     this.createEditPolygon(param);
     // // 创建修改监听
     this.createModifyEvent();
+    // 注册键盘撤销/重做
+    this.setupKeyDown();
+    // 初始快照
+    this.recordSnapshot(true);
   }
 
   /**
@@ -449,6 +565,11 @@ class plotEdit {
     this.modifyPointIndex = undefined;
     this.plotType = undefined;
     this.baseWorldIndex = undefined;
+    this.historyStack = [];
+    this.redoStack = [];
+    this.hasRecordedInitial = false;
+    this.keyDownDispose && this.keyDownDispose();
+    this.keyDownDispose = undefined;
   }
 }
 

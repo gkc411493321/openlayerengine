@@ -19,14 +19,14 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth()
     .useDrawTool()
-    .drawwDoubleArrow({
+    .drawwAttackArrow({
       callback: (e) => {
         console.log(e);
         if (e.type === DrawType.Drawend) {
           setTimeout(() => {
             useEarth()
               .useDrawTool()
-              .editDoubleArrow({
+              .editAttackArrow({
                 feature: e.feature!,
                 callback: (e) => {
                   console.log(e);
