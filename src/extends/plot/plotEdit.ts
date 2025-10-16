@@ -10,6 +10,9 @@ import AttackArrow from './geom/AttackArrow';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Utils } from '../../common';
+import OverlayLayer from '../../base/OverlayLayer';
+import { unByKey } from 'ol/Observable';
+import { EventsKey } from 'ol/events';
 import TailedAttackArrow from './geom/TailedAttackArrow';
 import FineArrow from './geom/FineArrow';
 import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
@@ -110,6 +113,16 @@ class plotEdit {
   private hasRecordedInitial = false;
   /** 历史记录最大长度 */
   private historyLimit = 50;
+  /** Tooltip Overlay */
+  private overlay: OverlayLayer<unknown> | undefined;
+  /** Tooltip overlay key */
+  private overlayKey: EventsKey | undefined;
+  /** Tooltip DOM */
+  private helpTooltipElement: HTMLDivElement | null = null;
+  /** 基础提示内容 */
+  private baseTooltipContent = '拖拽控制点进行编辑，右键退出';
+  /** 是否处于拖拽中 */
+  private isDragging = false;
 
   constructor() {
     this.map = useEarth().map;
@@ -182,6 +195,8 @@ class plotEdit {
     // 新快照产生后清空 redo 栈
     this.redoStack = [];
     if (forceInitial) this.hasRecordedInitial = true;
+    // 刷新提示中撤销/重做统计
+    this.updateUndoRedoTooltip();
   }
   /** 应用某份快照 */
   private applySnapshot(snapshot?: Coordinate[]) {
@@ -205,6 +220,7 @@ class plotEdit {
       this.emit('modifying', { index: undefined });
     }
     this.emit('undo', { index: diffIdx });
+    this.updateUndoRedoTooltip();
   }
   /** 重做 */
   public redo() {
@@ -222,6 +238,7 @@ class plotEdit {
       this.emit('modifying', { index: undefined });
     }
     this.emit('redo', { index: diffIdx });
+    this.updateUndoRedoTooltip();
   }
   /** 计算两个快照间是否仅单点差异，返回该点索引 */
   private computeSingleDiffIndex(a?: Coordinate[], b?: Coordinate[]): number | undefined {
@@ -254,6 +271,67 @@ class plotEdit {
     } catch (_) {
       /* ignore */
     }
+  }
+  /** 初始化帮助提示 */
+  private initHelpTooltip(str: string) {
+    if (typeof document === 'undefined') return;
+    if (!this.overlay) this.overlay = new OverlayLayer();
+    this.baseTooltipContent = str;
+    if (!this.helpTooltipElement) {
+      const div = document.createElement('div');
+      div.className = 'ol-tooltip';
+      div.innerHTML = str;
+      document.body.appendChild(div);
+      this.helpTooltipElement = div;
+      // 添加 overlay
+      this.overlay.add({
+        id: 'plot_edit_help_tooltip',
+        position: fromLonLat([0, 0]),
+        element: div,
+        offset: [15, -11]
+      });
+      this.overlayKey = this.map.on('pointermove', (evt) => {
+        this.overlay?.setPosition('plot_edit_help_tooltip', evt.coordinate);
+      });
+    } else {
+      this.helpTooltipElement.innerHTML = str;
+      this.overlay.set({ id: 'plot_edit_help_tooltip', element: this.helpTooltipElement });
+    }
+    // 初次渲染撤销/重做提示
+    this.updateUndoRedoTooltip();
+  }
+  /** 更新撤销/重做计数到提示 */
+  private updateUndoRedoTooltip() {
+    if (!this.helpTooltipElement) return;
+    const undoCount = Math.max(0, this.historyStack.length - 1); // 初始不计入
+    const redoCount = this.redoStack.length;
+    let extra = '<br/>';
+    if (undoCount > 0) {
+      extra += `<span style="color:#ff9800; font-weight:bold; padding-right:6px;">Ctrl+Z 撤销 (${undoCount})</span>`;
+    }
+    if (redoCount > 0) {
+      extra += `<span style="color:#00bfa5; font-weight:bold;">Ctrl+Y 重做 (${redoCount})</span>`;
+    }
+    this.helpTooltipElement.innerHTML = `<div>${this.baseTooltipContent}${undoCount > 0 || redoCount > 0 ? ' ' + extra : ''}</div>`;
+  }
+  /** 设置临时提示文本（不显示撤销/重做计数） */
+  private setTransientTooltip(text: string) {
+    if (!this.helpTooltipElement) return;
+    this.helpTooltipElement.innerHTML = `<div>${text}</div>`;
+  }
+  /** 移除帮助提示 */
+  private removeHelpTooltip() {
+    if (this.overlayKey) {
+      unByKey(this.overlayKey);
+      this.overlayKey = undefined;
+    }
+    if (this.overlay) {
+      this.overlay.remove('plot_edit_help_tooltip');
+    }
+    if (this.helpTooltipElement && this.helpTooltipElement.parentNode) {
+      this.helpTooltipElement.parentNode.removeChild(this.helpTooltipElement);
+    }
+    this.helpTooltipElement = null;
   }
   /**
    * 创建编辑要素图层
@@ -399,8 +477,18 @@ class plotEdit {
     event.addMouseMoveEventByModule('plot-ctl-point', (e) => {
       if (e.feature) {
         useEarth().setMouseStyle('move');
+        // 根据当前要素 id 判断是否是中点
+        const id = e.id;
+        if (this.isDragging) {
+          this.setTransientTooltip('拖拽中...');
+        } else if (id && this.midPointIdMap?.has(id)) {
+          this.setTransientTooltip('添加点');
+        } else {
+          this.updateUndoRedoTooltip();
+        }
       } else {
         useEarth().setMouseStyleToDefault();
+        if (!this.isDragging) this.updateUndoRedoTooltip();
       }
     });
     // 鼠标按下
@@ -442,6 +530,8 @@ class plotEdit {
         if (!newPointId) return;
         this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
         this.pointLayer?.set({ id: newPointId, size: 8 });
+        this.isDragging = true;
+        this.setTransientTooltip('拖拽中...');
         const mouseMove = event.addMouseMoveEventByGlobal((move) => {
           if (this.modifyPointIndex === undefined) return;
           this.pointLayer?.setPosition(newPointId!, fromLonLat(move.position));
@@ -471,6 +561,8 @@ class plotEdit {
           this.recordSnapshot();
           // 重新计算中点
           this.rebuildMidPointsOnly();
+          this.isDragging = false;
+          this.updateUndoRedoTooltip();
         });
         return; // 中点逻辑结束
       }
@@ -482,6 +574,8 @@ class plotEdit {
         const center = (e.feature.getGeometry() as Point).getCoordinates();
         this.emit('modifyStart', { index: this.modifyPointIndex, coordinate: center, originalEvent: e });
         this.pointLayer?.set({ id: e.id, size: 8 });
+        this.isDragging = true;
+        this.setTransientTooltip('拖拽中...');
         const mouseMove = event.addMouseMoveEventByGlobal((move) => {
           if (this.modifyPointIndex === undefined) return;
           this.pointLayer?.setPosition(e.id, fromLonLat(move.position));
@@ -513,6 +607,8 @@ class plotEdit {
             // 控制点移动后更新中点
             this.rebuildMidPointsOnly();
           }
+          this.isDragging = false;
+          this.updateUndoRedoTooltip();
         });
       }
     });
@@ -547,6 +643,8 @@ class plotEdit {
     this.setupKeyDown();
     // 初始快照
     this.recordSnapshot(true);
+    // 初始化提示牌
+    this.initHelpTooltip(this.baseTooltipContent);
   }
 
   /**
@@ -570,6 +668,7 @@ class plotEdit {
     this.hasRecordedInitial = false;
     this.keyDownDispose && this.keyDownDispose();
     this.keyDownDispose = undefined;
+    this.removeHelpTooltip();
   }
 }
 
