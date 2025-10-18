@@ -498,15 +498,6 @@ class plotEdit {
       const isMidPoint = !isCtrlPoint && (this.midPointIdMap?.has(e.id) ?? false);
       // 禁用地图拖拽
       useEarth().disabledMapDrag();
-      // 公共：右键退出（一次注册即可）
-      this.mouseRight = event.addMouseRightClickEventByGlobal(() => {
-        this.mouseDown?.();
-        this.mouseRight?.();
-        this.pointLayer?.remove();
-        this.midPointLayer?.remove();
-        this.polygonLayer?.remove();
-        this.emit('modifyExit', { index: this.modifyPointIndex });
-      });
       this.midPointLayer?.hide();
       // =============== 中点新增逻辑 ===============
       if (isMidPoint) {
@@ -611,6 +602,15 @@ class plotEdit {
           this.updateUndoRedoTooltip();
         });
       }
+    });
+    // 右键退出（一次注册即可）
+    this.mouseRight = event.addMouseRightClickEventByGlobal(() => {
+      this.mouseDown?.();
+      this.mouseRight?.();
+      this.pointLayer?.remove();
+      this.midPointLayer?.remove();
+      this.polygonLayer?.remove();
+      this.emit('modifyExit', { index: this.modifyPointIndex });
     });
   }
   /**

@@ -18,6 +18,7 @@ import { Layer } from 'ol/layer';
 import { Source } from 'ol/source';
 import LayerRenderer from 'ol/renderer/Layer';
 import { Stroke } from 'ol/style';
+import {ScaleLine} from 'ol/control';
 /**
  * 地图基类
  */
@@ -450,12 +451,17 @@ export default class Earth {
    * 启用比例尺
    */
   enableScaleLine() {
-
+    const scaleLine = new ScaleLine({
+      bar: true,
+      text: true,
+      minWidth: 100
+    });
+    this.map.addControl(scaleLine);
   }
   /**
    * 禁用比例尺
    */
   disableScaleLine() {
-    
+
   }
 }
