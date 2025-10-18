@@ -446,4 +446,16 @@ export default class Earth {
       this.graticule = undefined;
     }
   }
+  /**
+   * 启用比例尺
+   */
+  enableScaleLine() {
+
+  }
+  /**
+   * 禁用比例尺
+   */
+  disableScaleLine() {
+    
+  }
 }
