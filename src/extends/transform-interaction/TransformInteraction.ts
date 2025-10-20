@@ -808,9 +808,18 @@ class TransformInteraction extends PointerInteraction {
 
     const features: Feature<any>[] = [];
     const g = (geom as PolygonGeom).getCoordinates()[0];
+    // 若任一选中要素具有 param.plotType，则不显示旋转与缩放相关手柄
+    const disableRotateScale = this.selection_.getArray().some((f) => {
+      try {
+        const p = (f as any).get?.('param');
+        return p && p.plotType;
+      } catch {
+        return false;
+      }
+    });
     if (!this.ispt_ || ptRadius) {
       features.push(bbox);
-      if (!this.iscircle_ && !this.ispt_ && this.get('stretch') && this.get('scale')) {
+      if (!disableRotateScale && !this.iscircle_ && !this.ispt_ && this.get('stretch') && this.get('scale')) {
         for (let i = 0; i < g.length - 1; i++) {
           features.push(
             new Feature({
@@ -822,7 +831,7 @@ class TransformInteraction extends PointerInteraction {
           );
         }
       }
-      if (this.get('scale')) {
+      if (!disableRotateScale && this.get('scale')) {
         for (let i = 0; i < g.length - 1; i++) features.push(new Feature({ geometry: new PointGeom(g[i]), handle: 'scale', option: i }));
       }
       if (this.get('translate') && !this.get('translateFeature')) {
@@ -830,7 +839,7 @@ class TransformInteraction extends PointerInteraction {
       }
     }
 
-    if (!this.iscircle_ && this.get('rotate')) {
+    if (!disableRotateScale && !this.iscircle_ && this.get('rotate')) {
       let allowRotate = true;
       if (this.ispt_) {
         allowRotate = false;
@@ -844,10 +853,10 @@ class TransformInteraction extends PointerInteraction {
       }
     }
 
-    if (this.ispt_ && this.get('scale')) {
+    if (!disableRotateScale && this.ispt_ && this.get('scale')) {
       for (let i = 0; i < g.length - 1; i++) features.push(new Feature({ geometry: new PointGeom(g[i]), handle: 'scale', option: i }));
       // 当点要素具有位图 image 时，允许显示边中点拉伸手柄（与非点几 geometry 一致）
-      if (this.get('stretch') && this.selection_.getLength() === 1) {
+      if (!disableRotateScale && this.get('stretch') && this.selection_.getLength() === 1) {
         const pf = this.selection_.item(0) as Feature<any>;
         if (this._pointHasIconImage_(pf)) {
           for (let i = 0; i < g.length - 1; i++) {
