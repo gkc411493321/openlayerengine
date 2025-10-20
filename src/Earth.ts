@@ -429,7 +429,7 @@ export default class Earth {
       showLabels: true,
       wrapX: true,
       lonLabelPosition: 0.98,
-      latLabelPosition: 0.02,
+      latLabelPosition: 0.03,
       properties: {
         layerType: 'graticule'
       }

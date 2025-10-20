@@ -62,6 +62,10 @@ export interface IDrawEvent {
    * 元素
    */
   feature?: Feature<Geometry>;
+  /**
+   * 元素控制点
+   */
+  ctlPoints?: Coordinate[];
 }
 export interface IModifyEvent {
   /**

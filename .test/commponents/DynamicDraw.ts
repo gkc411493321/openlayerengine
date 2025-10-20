@@ -19,23 +19,23 @@ export const testDynamicDraw = () => {
 
   useEarth().enableGraticule();
   useEarth().enableScaleLine();
-  useEarth()
-    .useDrawTool()
-    .drawwAssaultDirectionArrow({
-      callback: (e) => {
-        console.log(e);
-        if (e.type === DrawType.Drawend) {
-          setTimeout(() => {
-            useEarth()
-              .useDrawTool()
-              .editAssaultDirectionArrow({
-                feature: e.feature!,
-                callback: (e) => {
-                  console.log(e);
-                }
-              });
-          }, 1000);
-        }
+  const dynamicDraw = useEarth().useDrawTool();
+  dynamicDraw.drawwAttackArrow({
+    keepGraphics: false,
+    callback: (e) => {
+      console.log(e);
+      if (e.type === DrawType.Drawend) {
+        // setTimeout(() => {
+        //   useEarth()
+        //     .useDrawTool()
+        //     .editAssaultDirectionArrow({
+        //       feature: e.feature!,
+        //       callback: (e) => {
+        //         console.log(e);
+        //       }
+        //     });
+        // }, 1000);
       }
-    });
+    }
+  });
 };

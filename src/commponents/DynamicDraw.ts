@@ -517,30 +517,33 @@ export default class DynamicDraw {
     });
     plot.on<IPlotAttackArrow>('end', (e) => {
       if (e.points && e.points.length > 2) {
-        const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
-        const geom = new AttackArrow([], e.points, {});
-        const coords = geom.getCoordinates();
-        const f = baseLayer?.add({
-          positions: coords,
-          stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
-          fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
-        });
-        const attackArrowParam = {
-          positions: coords,
-          plotType: EPlotType.AttackArrow,
-          plotPoints: e.points
-        };
-        f?.set('param', attackArrowParam);
         const response: IDrawEvent = {
           type: DrawType.Drawend,
           eventPosition: toLonLat(e.points[e.points.length - 1])
         };
+        if (param?.keepGraphics === true) {
+          const geom = new AttackArrow([], e.points, {});
+          const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
+          const coords = geom.getCoordinates();
+          const f = baseLayer?.add({
+            positions: coords,
+            stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
+            fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
+          });
+          const attackArrowParam = {
+            positions: coords,
+            plotType: EPlotType.AttackArrow,
+            plotPoints: e.points
+          };
+          f?.set('param', attackArrowParam);
+          response.feature = f;
+        }
         const featurePosition = [];
         for (const item of e.coordinates![0]) {
           featurePosition.push(toLonLat(item));
         }
-        response.feature = f;
         response.featurePosition = featurePosition;
+        response.ctlPoints = e.points;
         param?.callback?.call(this, response);
       }
       plot.destroy();
@@ -1355,13 +1358,21 @@ export default class DynamicDraw {
   /**
    * 清空绘制图层
    */
-  remove() {
-    if (this.overlayKey) {
-      this.overlay.remove('draw_help_tooltip');
-      unByKey(this.overlayKey);
-      this.overlayKey = undefined;
+  remove(): void;
+  remove(feature: Feature<Geometry>): void;
+  remove(feature?: Feature<Geometry>) {
+    if (feature) {
+      const type = feature.getGeometry()?.getType();
+      const baseLayer = this.getBaseLayer(type === 'Circle' ? 'Circle' : (type as 'Point' | 'LineString' | 'Polygon'));
+      baseLayer?.remove(feature.getId() as string);
+    } else {
+      if (this.overlayKey) {
+        this.overlay.remove('draw_help_tooltip');
+        unByKey(this.overlayKey);
+        this.overlayKey = undefined;
+      }
+      // 仅清空临时绘制层，不移除基础图层结果
+      this.tempSource.clear();
     }
-    // 仅清空临时绘制层，不移除基础图层结果
-    this.tempSource.clear();
   }
 }
