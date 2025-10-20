@@ -105,6 +105,8 @@ export default class Transfrom {
   private lastPointerPixel: number[] | null = null;
   /** pointermove 监听 key，用于销毁解绑 */
   private pointerMoveKey: EventsKey | undefined;
+  /** 平移开始时针对 plotPoints 的快照（用于在平移过程中同步控制点） */
+  private translatePlotSnapshot: { featureId: string; basePlotPoints: Coordinate[]; baseCenter: Coordinate } | null = null;
 
   constructor(options: ITransfromParams) {
     this.options = options;
@@ -332,7 +334,10 @@ export default class Transfrom {
         callbackParam = {
           type: eventName,
           eventPosition: toLonLat(useEarth().map.getCoordinateFromPixel(e.pixel)),
-          eventPixel: e.pixel
+          eventPixel: e.pixel,
+          featureId: this.checkSelect && this.checkSelect.getId() ? this.checkSelect.getId()?.toString() : '',
+          featurePosition: this.checkSelect && this.transformCoordinates(this.checkSelect),
+          feature: this.checkSelect
         };
       }
       if (this.toolbar) {
@@ -444,6 +449,30 @@ export default class Transfrom {
           layer = this.checkLayer as PointLayer;
           if (param.isFlash) layer.stopFlash(e.feature.getId());
         }
+        // 记录平移开始时的 plotPoints 快照（仅在存在 plotPoints 时）
+        if (eventName === ETransfrom.TranslateStart && param?.plotPoints && Array.isArray(param.plotPoints) && param.plotPoints.length) {
+          try {
+            const geom = e.feature.getGeometry();
+            let center: Coordinate | null = null;
+            if (geom) {
+              const gType = geom.getType?.();
+              if (gType === 'Circle') center = (geom as any).getCenter();
+              else if (typeof geom.getExtent === 'function') {
+                const extent = geom.getExtent();
+                if (extent && extent.length === 4) center = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+              }
+            }
+            if (center) {
+              this.translatePlotSnapshot = {
+                featureId: String(e.feature.getId?.() || ''),
+                basePlotPoints: (param.plotPoints as Coordinate[]).map((p: Coordinate) => [p[0], p[1]] as Coordinate),
+                baseCenter: [center[0], center[1]] as Coordinate
+              };
+            }
+          } catch (_) {
+            this.translatePlotSnapshot = null;
+          }
+        }
       }
     }
   }
@@ -453,6 +482,35 @@ export default class Transfrom {
   private handleEventing(eventName: ETransfrom, e: any) {
     // const type = e.feature?.getGeometry()?.getType();
     // const param = e.feature?.get('param');
+    // 平移进行中：同步 plotPoints
+    if (eventName === ETransfrom.Translating && this.translatePlotSnapshot && e.feature) {
+      const snap = this.translatePlotSnapshot;
+      const fid = e.feature.getId?.();
+      if (fid && String(fid) === snap.featureId) {
+        const param = e.feature.get('param');
+        if (param?.plotPoints && Array.isArray(param.plotPoints)) {
+          try {
+            const geom = e.feature.getGeometry();
+            let newCenter: Coordinate | null = null;
+            if (geom) {
+              const gType = geom.getType?.();
+              if (gType === 'Circle') newCenter = (geom as any).getCenter();
+              else if (typeof geom.getExtent === 'function') {
+                const extent = geom.getExtent();
+                if (extent && extent.length === 4) newCenter = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+              }
+            }
+            if (newCenter) {
+              param.plotPoints = this.translatePlotPoints(snap.basePlotPoints, snap.baseCenter, newCenter);
+              // 回写最新 param
+              e.feature.set('param', param);
+            }
+          } catch (_) {
+            /* ignore */
+          }
+        }
+      }
+    }
   }
   /**
    * 处理变换事件结束的逻辑
@@ -469,8 +527,55 @@ export default class Transfrom {
             layer.continueFlash(e.feature.getId());
           }
         }
+        // 平移结束后清理 plotPoints 快照
+        if (eventName === ETransfrom.TranslateEnd) {
+          this.translatePlotSnapshot = null;
+        }
       }
     }
+  }
+  /**
+   * 根据起始中心与当前中心计算偏移并将 basePlotPoints 平移（处理 world wrap 最短距离）
+   */
+  private translatePlotPoints(basePlotPoints: Coordinate[], baseCenter: Coordinate, newCenter: Coordinate): Coordinate[] {
+    if (!basePlotPoints || !basePlotPoints.length) return [];
+    const map = useEarth().map;
+    let worldWidth: number | undefined;
+    let minX: number | undefined;
+    let maxX: number | undefined;
+    try {
+      const extent = map.getView().getProjection().getExtent?.();
+      if (extent) {
+        worldWidth = extent[2] - extent[0];
+        minX = extent[0];
+        maxX = extent[2];
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    const shortestDeltaX = (from: number, to: number): number => {
+      if (!worldWidth || !isFinite(worldWidth)) return to - from;
+      let dx = to - from;
+      if (dx > worldWidth / 2) dx -= worldWidth;
+      else if (dx < -worldWidth / 2) dx += worldWidth;
+      return dx;
+    };
+    const dx = shortestDeltaX(baseCenter[0], newCenter[0]);
+    const dy = newCenter[1] - baseCenter[1];
+    // 目标 world 索引（以 newCenter 为准）
+    const targetWorld = worldWidth ? Utils.getWorldIndex(newCenter[0]) : undefined;
+    return basePlotPoints.map((p) => {
+      const nx = p[0] + dx;
+      const ny = p[1] + dy;
+      if (worldWidth && targetWorld !== undefined) {
+        const curWorld = Utils.getWorldIndex(nx);
+        if (curWorld !== undefined && curWorld !== targetWorld) {
+          const dw = targetWorld - curWorld;
+          return [nx + dw * worldWidth, ny] as Coordinate;
+        }
+      }
+      return [nx, ny] as Coordinate;
+    });
   }
   /**
    * 创建工具栏
