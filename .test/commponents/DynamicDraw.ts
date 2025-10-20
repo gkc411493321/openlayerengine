@@ -21,7 +21,6 @@ export const testDynamicDraw = () => {
   useEarth().enableScaleLine();
   const dynamicDraw = useEarth().useDrawTool();
   dynamicDraw.drawwAttackArrow({
-    keepGraphics: false,
     callback: (e) => {
       console.log(e);
       if (e.type === DrawType.Drawend) {

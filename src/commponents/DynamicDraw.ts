@@ -521,7 +521,7 @@ export default class DynamicDraw {
           type: DrawType.Drawend,
           eventPosition: toLonLat(e.points[e.points.length - 1])
         };
-        if (param?.keepGraphics === true) {
+        if (param?.keepGraphics === true || param?.keepGraphics === undefined) {
           const geom = new AttackArrow([], e.points, {});
           const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
           const coords = geom.getCoordinates();
