@@ -579,6 +579,44 @@ export default class Transfrom {
     });
   }
   /**
+   * 根据几何类型与坐标数组计算中心（复制时用于 plotPoints 平移）
+   * 支持: Point / BillBoard 使用单点, Polygon/Polyline 使用包围盒中心, Circle 使用 center
+   */
+  private calcCenterByType(type: string, coords: any): Coordinate | null {
+    try {
+      if (!coords) return null;
+      if (type === 'Point' || type === 'Billboard') {
+        return coords as Coordinate;
+      } else if (type === 'Circle') {
+        // Circle 在复制逻辑里 baseCoords 即 center
+        return coords as Coordinate;
+      } else if (type === 'Polygon' || type === 'Polyline') {
+        // 允许 positions 为 (Coordinate[]) 或包含洞的 (Coordinate[][]) 这里取第一层遍历
+        const flat: Coordinate[] = Array.isArray(coords)
+          ? (Array.isArray(coords[0]) && typeof coords[0][0] !== 'number'
+              ? (coords as Coordinate[][]).flat()
+              : (coords as Coordinate[]))
+          : [];
+        if (!flat.length) return null;
+        let minX = flat[0][0];
+        let maxX = flat[0][0];
+        let minY = flat[0][1];
+        let maxY = flat[0][1];
+        for (let i = 1; i < flat.length; i++) {
+          const [x, y] = flat[i];
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+        return [(minX + maxX) / 2, (minY + maxY) / 2];
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+  /**
    * 创建工具栏
    */
   private createToolbar(e: any) {
@@ -685,6 +723,9 @@ export default class Transfrom {
     if (!geom) return;
     const baseCoords = type === 'Circle' ? (geom as any).getCenter() : (geom as any).getCoordinates ? (geom as any).getCoordinates() : null;
     if (!baseCoords) return;
+    // 复制开始前记录 plotPoints 与 baseCenter 快照（供后续平移使用）
+    const basePlotPoints: Coordinate[] | undefined = Array.isArray(originParam.plotPoints) ? originParam.plotPoints.map((p: Coordinate) => [p[0], p[1]] as Coordinate) : undefined;
+    const baseCenter: Coordinate | null = this.calcCenterByType(type, baseCoords);
     // 节流（约 60fps -> wait ~16ms）
     const moveHandler = Utils.throttle(
       (evt: { pixel: number[] }) => {
@@ -699,6 +740,13 @@ export default class Transfrom {
         } else if (type === 'Circle') {
           newValue = Utils.getFeatureToPixel(evt.pixel, baseCoords);
           originParam.center = newValue; // center
+        }
+        // 平移过程中同步 plotPoints（若存在）
+        if (basePlotPoints && basePlotPoints.length && baseCenter) {
+          const newCenter = this.calcCenterByType(type, newValue);
+          if (newCenter) {
+            originParam.plotPoints = this.translatePlotPoints(basePlotPoints, baseCenter, newCenter);
+          }
         }
         if (!this.copyStatus) {
           originParam.id = Utils.GetGUID();
@@ -753,6 +801,13 @@ export default class Transfrom {
       } else if (type === 'Circle') {
         originParam.center = newValue; // center
       }
+      // 直接粘贴（一次性）也需要同步 plotPoints
+      if (basePlotPoints && basePlotPoints.length && baseCenter) {
+        const newCenter = this.calcCenterByType(type, newValue);
+        if (newCenter) {
+          originParam.plotPoints = this.translatePlotPoints(basePlotPoints, baseCenter, newCenter);
+        }
+      }
       originParam.id = Utils.GetGUID();
       // 初次创建：add 一次
       layer.add(originParam);
@@ -779,7 +834,6 @@ export default class Transfrom {
     if (!id) return;
     // 创建要素深拷贝（clone 不会保留 id，需要手动设置）
     const featureClone = feature.clone();
-    console.log(feature.get('param'));
     featureClone.set('param', cloneDeep(feature.get('param')));
     featureClone.setId(id);
     // 记录样式（用于点要素缩放/旋转等仅样式变化的撤销恢复）
@@ -923,7 +977,6 @@ export default class Transfrom {
     const { coords } = this.extractGeometryInfo(geomSnap);
     const type = snapshot.feature.get('layerType');
     const param = snapshot.feature.get('param');
-    console.log('applySnapshot param:', param);
     if (param && coords && type && this.checkLayer) {
       // 根据具体几何类型安全设置坐标
       let layer;
