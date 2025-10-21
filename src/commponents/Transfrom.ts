@@ -593,9 +593,9 @@ export default class Transfrom {
       } else if (type === 'Polygon' || type === 'Polyline') {
         // 允许 positions 为 (Coordinate[]) 或包含洞的 (Coordinate[][]) 这里取第一层遍历
         const flat: Coordinate[] = Array.isArray(coords)
-          ? (Array.isArray(coords[0]) && typeof coords[0][0] !== 'number'
-              ? (coords as Coordinate[][]).flat()
-              : (coords as Coordinate[]))
+          ? Array.isArray(coords[0]) && typeof coords[0][0] !== 'number'
+            ? (coords as Coordinate[][]).flat()
+            : (coords as Coordinate[])
           : [];
         if (!flat.length) return null;
         let minX = flat[0][0];
@@ -671,22 +671,46 @@ export default class Transfrom {
       const type = geom?.getType();
       this.handleRawEvent(ETransfrom.ModifyStart, { feature: checkSelect, pixel: pixel });
       if (type === 'Polygon') {
-        draw.editPolygon({
-          feature: checkSelect!,
-          isShowUnderlay: true,
-          callback: (ev) => {
-            if (ev.type === ModifyType.Modifying) {
-              const arr: Coordinate[] = [];
-              for (const item of ev.position!) {
-                arr.push(fromLonLat(item as Coordinate));
-              }
-              this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
-            } else if (ev.type === ModifyType.Modifyexit) {
-              draw.remove();
-              this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
-            }
+        const plotType = checkSelect?.get('param')?.plotType;
+        if (plotType) {
+          switch (plotType) {
+            case 'attackArrow':
+              draw.editAttackArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  console.log(ev);
+                  // if (ev.type === ModifyType.Modifying) {
+                  //   const arr: Coordinate[] = [];
+                  //   for (const item of ev.position!) {
+                  //     arr.push(fromLonLat(item as Coordinate));
+                  //   }
+                  //   this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
+                  // } else if (ev.type === ModifyType.Modifyexit) {
+                  //   draw.remove();
+                  //   this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
+                  // }
+                }
+              });
+              break;
           }
-        });
+        } else {
+          draw.editPolygon({
+            feature: checkSelect!,
+            isShowUnderlay: true,
+            callback: (ev) => {
+              if (ev.type === ModifyType.Modifying) {
+                const arr: Coordinate[] = [];
+                for (const item of ev.position!) {
+                  arr.push(fromLonLat(item as Coordinate));
+                }
+                this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
+              } else if (ev.type === ModifyType.Modifyexit) {
+                draw.remove();
+                this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
+              }
+            }
+          });
+        }
       } else if (type === 'LineString') {
         draw.editPolyline({
           feature: checkSelect!,
@@ -724,7 +748,9 @@ export default class Transfrom {
     const baseCoords = type === 'Circle' ? (geom as any).getCenter() : (geom as any).getCoordinates ? (geom as any).getCoordinates() : null;
     if (!baseCoords) return;
     // 复制开始前记录 plotPoints 与 baseCenter 快照（供后续平移使用）
-    const basePlotPoints: Coordinate[] | undefined = Array.isArray(originParam.plotPoints) ? originParam.plotPoints.map((p: Coordinate) => [p[0], p[1]] as Coordinate) : undefined;
+    const basePlotPoints: Coordinate[] | undefined = Array.isArray(originParam.plotPoints)
+      ? originParam.plotPoints.map((p: Coordinate) => [p[0], p[1]] as Coordinate)
+      : undefined;
     const baseCenter: Coordinate | null = this.calcCenterByType(type, baseCoords);
     // 节流（约 60fps -> wait ~16ms）
     const moveHandler = Utils.throttle(
