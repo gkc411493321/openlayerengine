@@ -410,6 +410,7 @@ export default class Transfrom {
         feature: e.feature
       };
     } else if (otherEvents.has(eventName)) {
+      this.checkSelect = e.feature;
       callbackParam = {
         type: eventName,
         featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
@@ -778,6 +779,7 @@ export default class Transfrom {
     if (!id) return;
     // 创建要素深拷贝（clone 不会保留 id，需要手动设置）
     const featureClone = feature.clone();
+    console.log(feature.get('param'));
     featureClone.set('param', cloneDeep(feature.get('param')));
     featureClone.setId(id);
     // 记录样式（用于点要素缩放/旋转等仅样式变化的撤销恢复）
@@ -921,6 +923,7 @@ export default class Transfrom {
     const { coords } = this.extractGeometryInfo(geomSnap);
     const type = snapshot.feature.get('layerType');
     const param = snapshot.feature.get('param');
+    console.log('applySnapshot param:', param);
     if (param && coords && type && this.checkLayer) {
       // 根据具体几何类型安全设置坐标
       let layer;
