@@ -64,7 +64,6 @@ class AttackArrow extends Polygon {
    * 执行动作
    */
   generate() {
-    console.log('pointsss', this.points);
     try {
       const points = this.getPointCount();
       if (points < 2) {

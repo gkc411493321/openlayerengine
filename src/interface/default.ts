@@ -1,3 +1,4 @@
+import { IPlotEditEventPayload } from '@/extends/plot/plotEdit';
 import { ECursor, EPlotType, ETransfrom, ETranslateType } from '../enum';
 import { Feature } from 'ol';
 import { Coordinate } from 'ol/coordinate';
@@ -744,6 +745,10 @@ export interface ITransformCallback {
    * 元素坐标
    */
   featurePosition?: Coordinate | Coordinate[];
+  /**
+   * 标绘元素属性
+   */
+  plotParam?: IPlotEditEventPayload;
 }
 
 export interface ITransfromParams {

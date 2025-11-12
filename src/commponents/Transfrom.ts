@@ -407,7 +407,8 @@ export default class Transfrom {
         eventPixel: e.pixel,
         featureId: e.feature && e.feature.getId ? e.feature.getId() : '',
         featurePosition: e.position ? e.position : this.transformCoordinates(e.feature),
-        feature: e.feature
+        feature: e.feature,
+        plotParam: e.plotParam
       };
     } else if (otherEvents.has(eventName)) {
       this.checkSelect = e.feature;
@@ -678,17 +679,11 @@ export default class Transfrom {
               draw.editAttackArrow({
                 feature: checkSelect!,
                 callback: (ev) => {
-                  console.log(ev);
-                  // if (ev.type === ModifyType.Modifying) {
-                  //   const arr: Coordinate[] = [];
-                  //   for (const item of ev.position!) {
-                  //     arr.push(fromLonLat(item as Coordinate));
-                  //   }
-                  //   this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
-                  // } else if (ev.type === ModifyType.Modifyexit) {
-                  //   draw.remove();
-                  //   this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
-                  // }
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
                 }
               });
               break;

@@ -3,7 +3,7 @@ import AttackArrow from '../../src/extends/plot/geom/AttackArrow';
 
 export const testTransfrom = () => {
   const transfrom = new Transfrom({});
-  const eventNname = [ETransfrom.Select, ETransfrom.SelectEnd, ETransfrom.ModifyStart, ETransfrom.Modifying, ETransfrom.ModifyEnd, ETransfrom.Copy];
+  const eventNname = [ETransfrom.Select, ETransfrom.SelectEnd, ETransfrom.Translating, ETransfrom.ModifyStart, ETransfrom.Modifying, ETransfrom.ModifyEnd, ETransfrom.Copy];
   transfrom.on(eventNname, (e) => {
     console.log(e.type, e);
     // if (e.type === ETransfrom.Copy) {
