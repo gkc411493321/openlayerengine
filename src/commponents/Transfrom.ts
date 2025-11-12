@@ -687,6 +687,65 @@ export default class Transfrom {
                 }
               });
               break;
+            case 'tailedAttackArrow':
+              draw.editTailedAttackArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+              break;
+            case 'fineArrow':
+              draw.editFineArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+              break;
+            case 'tailedSquadCombatArrow':
+              draw.editTailedSquadCombatArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+              break;
+            case 'assaultDirectionArrow':
+              draw.editAssaultDirectionArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+            case 'doubleArrow':
+              draw.editDoubleArrow({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+              break;
           }
         } else {
           draw.editPolygon({
