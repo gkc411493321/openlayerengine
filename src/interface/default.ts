@@ -354,11 +354,12 @@ export interface IPolylineParam<T> extends IAddBaseParam<T> {
    */
   width?: number;
   /**
-   * 边框样式
+   * 填充样式
    */
   stroke?: IStroke;
   /**
-   * 填充样式
+   * @deprecated 已废弃 请使用stroke
+   * 填充样式 无效
    */
   fill?: IFill;
   /**
