@@ -19,6 +19,10 @@ import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
 import Circle from './circle/Circle';
 import Ellipse from './circle/Ellipse';
+import ClosedCurvePolygon from './polygon/ClosedCurvePolygon';
+import { OverlayLayer } from '@/base';
+import { EventsKey } from 'ol/events';
+import { unByKey } from 'ol/Observable';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -36,7 +40,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | ClosedCurvePolygon | undefined;
   /**
    * 元素feature
    */
@@ -45,6 +49,12 @@ class PlotDraw {
    * 元素坐标
    */
   private points: PlotUtils.Point[] = [];
+  /** Tooltip Overlay */
+  private overlay: OverlayLayer<unknown> | undefined;
+  /** Tooltip overlay key */
+  private overlayKey: EventsKey | undefined;
+  /** Tooltip DOM */
+  private helpTooltipElement: HTMLDivElement | null = null;
   /** 事件监听集合：事件名 -> 回调集合 */
   private listeners: Record<string, Set<PlotDrawListener>> = {};
   /**
@@ -126,6 +136,8 @@ class PlotDraw {
       return new DoubleArrow([], [], {});
     } else if (type === EPlotType.AssemblePolygon) {
       return new AssemblePolygon([], [], {});
+    } else if (type === EPlotType.ClosedCurvePolygon) {
+      return new ClosedCurvePolygon([], [], {});
     } else if (type === EPlotType.Circle) {
       return new Circle([], [], {});
     } else if (type === EPlotType.Ellipse) {
@@ -138,7 +150,8 @@ class PlotDraw {
   private createEvent() {
     const event = useEarth().useGlobalEvent();
     const off = event.addMouseClickEventByGlobal(this.mouseClickEvent.bind(this));
-    this.offEvents.push(off);
+    const offRightClick = event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
+    this.offEvents.push(off, offRightClick);
   }
   /**
    * 鼠标单击事件
@@ -166,8 +179,7 @@ class PlotDraw {
     if (this.points.length === 1) {
       const event = useEarth().useGlobalEvent();
       const offMove = event.addMouseMoveEventByGlobal(this.mouseMoveEvent.bind(this));
-      const offRightClick = event.addMouseRightClickEventByGlobal(this.mouseRightClickEvent.bind(this));
-      this.offEvents.push(offMove, offRightClick);
+      this.offEvents.push(offMove);
       // 事件：开始绘制（首点）
       this.emit('start', { type: this.geom?.getPlotType?.(), point: projected, index: 0, pointCount: 1 });
     }
@@ -233,7 +245,47 @@ class PlotDraw {
     this.geom = undefined;
     this.feature = undefined;
     // 移除监听
+    this.removeHelpTooltip();
     this.offEvents.forEach((off: any) => off());
+  }
+  /** 初始化帮助提示 */
+  private initHelpTooltip(str: string) {
+    if (typeof document === 'undefined') return;
+    if (!this.overlay) this.overlay = new OverlayLayer();
+    if (!this.helpTooltipElement) {
+      const div = document.createElement('div');
+      div.className = 'ol-tooltip';
+      div.innerHTML = str;
+      document.body.appendChild(div);
+      this.helpTooltipElement = div;
+      // 添加 overlay
+      this.overlay.add({
+        id: 'plot_draw_help_tooltip',
+        position: fromLonLat([0, 0]),
+        element: div,
+        offset: [15, -11]
+      });
+      this.overlayKey = this.map.on('pointermove', (evt) => {
+        this.overlay?.setPosition('plot_draw_help_tooltip', evt.coordinate);
+      });
+    } else {
+      this.helpTooltipElement.innerHTML = str;
+      this.overlay.set({ id: 'plot_draw_help_tooltip', element: this.helpTooltipElement });
+    }
+  }
+  /** 移除帮助提示 */
+  private removeHelpTooltip() {
+    if (this.overlayKey) {
+      unByKey(this.overlayKey);
+      this.overlayKey = undefined;
+    }
+    if (this.overlay) {
+      this.overlay.remove();
+    }
+    if (this.helpTooltipElement && this.helpTooltipElement.parentNode) {
+      this.helpTooltipElement.parentNode.removeChild(this.helpTooltipElement);
+    }
+    this.helpTooltipElement = null;
   }
   /**
    * 事件分发
@@ -304,6 +356,8 @@ class PlotDraw {
     this.layer?.getSource()?.addFeature(this.feature);
     // 创建监听事件
     this.createEvent();
+    // 初始化提示牌
+    this.initHelpTooltip("左击开始绘制，右击退出绘制");
   }
   /**
    * 销毁：结束绘制、移除图层、清空事件监听。可多次调用（幂等）。

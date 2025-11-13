@@ -21,6 +21,7 @@ import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
 import Circle from './circle/Circle';
 import Ellipse from './circle/Ellipse';
+import ClosedCurvePolygon from './polygon/ClosedCurvePolygon';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -329,7 +330,7 @@ class plotEdit {
       this.overlayKey = undefined;
     }
     if (this.overlay) {
-      this.overlay.remove('plot_edit_help_tooltip');
+      this.overlay.remove();
     }
     if (this.helpTooltipElement && this.helpTooltipElement.parentNode) {
       this.helpTooltipElement.parentNode.removeChild(this.helpTooltipElement);
@@ -476,6 +477,9 @@ class plotEdit {
       coords = geom.getCoordinates();
     } else if (plotType === EPlotType.Ellipse) {
       const geom = new Ellipse([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.ClosedCurvePolygon) {
+      const geom = new ClosedCurvePolygon([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;

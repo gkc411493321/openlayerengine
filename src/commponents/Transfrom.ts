@@ -758,6 +758,18 @@ export default class Transfrom {
                 }
               })
               break;
+            case 'closedCurvePolygon':
+              draw.editClosedCurvePolygon({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              })
+              break;
             case 'circle':
               draw.editCircle({
                 feature: checkSelect!,

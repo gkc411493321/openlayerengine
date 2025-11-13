@@ -31,6 +31,10 @@ export enum EPlotType {
    */
   AssemblePolygon = 'assemblePolygon',
   /**
+   * 闭合曲面
+   */
+  ClosedCurvePolygon = 'closedCurvePolygon',
+  /**
    * 正圆
    */
   Circle = 'circle',

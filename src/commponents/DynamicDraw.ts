@@ -29,6 +29,7 @@ import DoubleArrow from '@/extends/plot/geom/DoubleArrow';
 import AssemblePolygon from '@/extends/plot/polygon/AssemblePolygon';
 import Circle from '@/extends/plot/circle/Circle';
 import Ellipse from '@/extends/plot/circle/Ellipse';
+import ClosedCurvePolygon from '@/extends/plot/polygon/ClosedCurvePolygon';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -547,6 +548,12 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
@@ -605,6 +612,12 @@ export default class DynamicDraw {
         }
         response.feature = f;
         response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
         param?.callback?.call(this, response);
       }
       plot.destroy();
@@ -668,11 +681,17 @@ export default class DynamicDraw {
         response.featurePosition = featurePosition;
         response.ctlPoints = e.points;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
+  /**
    * 动态绘制进攻箭头(燕尾)
    */
   drawwTailedAttackArrow(param?: IDrawPolygon) {
@@ -727,11 +746,17 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
+  /**
    * 动态绘制单箭头(2控制点)
    */
   drawwFineArrow(param?: IDrawPolygon) {
@@ -786,11 +811,17 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
+  /**
    * 动态绘制单箭头(燕尾-2控制点)
    */
   drawwTailedSquadCombatArrow(param?: IDrawPolygon) {
@@ -845,11 +876,17 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
+  /**
    * 动态绘制单直箭头(平尾-2控制点)
    */
   drawwAssaultDirectionArrow(param?: IDrawPolygon) {
@@ -904,11 +941,17 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
+  /**
    * 动态绘制双箭头(平尾-4控制点)
    */
   drawwDoubleArrow(param?: IDrawPolygon) {
@@ -963,13 +1006,19 @@ export default class DynamicDraw {
         response.feature = f;
         response.featurePosition = featurePosition;
         param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
       }
       plot.destroy();
     });
   }
-  /**(
- * 动态绘制集结地(区域-3控制点)
- */
+  /**
+   * 动态绘制集结地(区域-3控制点)
+   */
   drawwAssemblePolygon(param?: IDrawPolygon) {
     // 初始化绘制工具
     const plot = new PlotDraw();
@@ -996,7 +1045,7 @@ export default class DynamicDraw {
       });
     });
     plot.on<IPlotAttackArrow>('end', (e) => {
-      if (e.points && e.points.length > 2) {
+      if (e.points && e.points.length === 3) {
         const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
         const geom = new AssemblePolygon([], e.points, {});
         const coords = geom.getCoordinates();
@@ -1021,6 +1070,77 @@ export default class DynamicDraw {
         }
         response.feature = f;
         response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
+      }
+      plot.destroy();
+    });
+  }
+  /**
+   * 动态绘制闭合曲面(区域-控制点无上限)
+   */
+  drawwClosedCurvePolygon(param?: IDrawPolygon) {
+    // 初始化绘制工具
+    const plot = new PlotDraw();
+    plot.init(EPlotType.ClosedCurvePolygon);
+    plot.on<IPlotAttackArrow>('start', (e) => {
+      // 回调：绘制开始
+      param?.callback?.call(this, {
+        type: DrawType.Drawstart,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('add-point', (e) => {
+      // 回调：绘制中点击（新增控制点）
+      param?.callback?.call(this, {
+        type: DrawType.DrawingClick,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('moving', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      param?.callback?.call(this, {
+        type: DrawType.Drawing,
+        eventPosition: toLonLat(e.tempPoint || e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('end', (e) => {
+      if (e.points && e.points.length > 2) {
+        const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
+        const geom = new ClosedCurvePolygon([], e.points, {});
+        const coords = geom.getCoordinates();
+        const f = baseLayer?.add({
+          positions: coords,
+          stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
+          fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
+        });
+        const closedCurvePolygonParam = {
+          positions: coords,
+          plotType: EPlotType.ClosedCurvePolygon,
+          plotPoints: e.points
+        };
+        f?.set('param', closedCurvePolygonParam);
+        const response: IDrawEvent = {
+          type: DrawType.Drawend,
+          eventPosition: toLonLat(e.points[e.points.length - 1])
+        };
+        const featurePosition = [];
+        for (const item of e.coordinates![0]) {
+          featurePosition.push(toLonLat(item));
+        }
+        response.feature = f;
+        response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
         param?.callback?.call(this, response);
       }
       plot.destroy();
@@ -1067,6 +1187,12 @@ export default class DynamicDraw {
    * 动态编辑集结地(区域-3控制点)
    */
   editAssemblePolygon(param: IEditParam): void {
+    this.handlePlotEdit(param);
+  }
+  /**
+ * 动态编辑闭合曲面(区域-控制点无上限)
+ */
+  editClosedCurvePolygon(param: IEditParam): void {
     this.handlePlotEdit(param);
   }
   /**
