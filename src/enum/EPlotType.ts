@@ -25,5 +25,9 @@ export enum EPlotType {
   /**
    * 双箭头
    */
-  DoubleArrow = 'doubleArrow'
+  DoubleArrow = 'doubleArrow',
+  /**
+   * 集结地
+   */
+  AssemblePolygon = 'assemblePolygon'
 }

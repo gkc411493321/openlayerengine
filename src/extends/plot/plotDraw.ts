@@ -16,6 +16,7 @@ import FineArrow from './geom/FineArrow';
 import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
+import AssemblePolygon from './polygon/AssemblePolygon';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -33,7 +34,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | undefined;
   /**
    * 元素feature
    */
@@ -121,6 +122,8 @@ class PlotDraw {
       return new AssaultDirectionArrow([], [], {});
     } else if (type === EPlotType.DoubleArrow) {
       return new DoubleArrow([], [], {});
+    } else if (type === EPlotType.AssemblePolygon) {
+      return new AssemblePolygon([], [], {});
     }
   }
   /**

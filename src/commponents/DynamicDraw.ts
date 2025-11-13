@@ -26,6 +26,7 @@ import FineArrow from '@/extends/plot/geom/FineArrow';
 import TailedSquadCombat from '@/extends/plot/geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from '@/extends/plot/geom/AssaultDirectionArrow';
 import DoubleArrow from '@/extends/plot/geom/DoubleArrow';
+import AssemblePolygon from '@/extends/plot/polygon/AssemblePolygon';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -844,6 +845,66 @@ export default class DynamicDraw {
       plot.destroy();
     });
   }
+  /**(
+ * 动态绘制集结地(区域-3控制点)
+ */
+  drawwAssemblePolygon(param?: IDrawPolygon) {
+    // 初始化绘制工具
+    const plot = new PlotDraw();
+    plot.init(EPlotType.AssemblePolygon);
+    plot.on<IPlotAttackArrow>('start', (e) => {
+      // 回调：绘制开始
+      param?.callback?.call(this, {
+        type: DrawType.Drawstart,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('add-point', (e) => {
+      // 回调：绘制中点击（新增控制点）
+      param?.callback?.call(this, {
+        type: DrawType.DrawingClick,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('moving', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      param?.callback?.call(this, {
+        type: DrawType.Drawing,
+        eventPosition: toLonLat(e.tempPoint || e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('end', (e) => {
+      if (e.points && e.points.length > 2) {
+        const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
+        const geom = new AssemblePolygon([], e.points, {});
+        const coords = geom.getCoordinates();
+        const f = baseLayer?.add({
+          positions: coords,
+          stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
+          fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
+        });
+        const assemblePolygonParam = {
+          positions: coords,
+          plotType: EPlotType.AssemblePolygon,
+          plotPoints: e.points
+        };
+        f?.set('param', assemblePolygonParam);
+        const response: IDrawEvent = {
+          type: DrawType.Drawend,
+          eventPosition: toLonLat(e.points[e.points.length - 1])
+        };
+        const featurePosition = [];
+        for (const item of e.coordinates![0]) {
+          featurePosition.push(toLonLat(item));
+        }
+        response.feature = f;
+        response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      }
+      plot.destroy();
+    });
+  }
+
   /**
    * 动态编辑进攻箭头
    */
@@ -878,6 +939,12 @@ export default class DynamicDraw {
    * 动态编辑双箭头(平尾-4控制点)
    */
   editDoubleArrow(param: IEditParam): void {
+    this.handleArrowEdit(param);
+  }
+  /**
+ * 动态编辑集结地(区域-3控制点)
+ */
+  editAssemblePolygon(param: IEditParam): void {
     this.handleArrowEdit(param);
   }
   /**
