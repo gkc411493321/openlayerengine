@@ -18,6 +18,7 @@ import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
 import Circle from './circle/Circle';
+import Ellipse from './circle/Ellipse';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -35,7 +36,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | undefined;
   /**
    * 元素feature
    */
@@ -127,6 +128,8 @@ class PlotDraw {
       return new AssemblePolygon([], [], {});
     } else if (type === EPlotType.Circle) {
       return new Circle([], [], {});
+    } else if (type === EPlotType.Ellipse) {
+      return new Ellipse([], [], {});
     }
   }
   /**

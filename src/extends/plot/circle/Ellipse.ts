@@ -4,25 +4,26 @@
  */
 import { Map } from 'ol';
 import { Polygon } from 'ol/geom';
-import type { Point as TPoint } from '@/utils/utils';
-import { PlotTypes } from '@/utils/PlotTypes';
-import * as Constants from '../../constants';
-import * as PlotUtils from '../../utils/utils';
+import * as PlotUtils from '../utils';
+import { EPlotType } from '@/enum';
+import { IPlotAssembleData } from '@/interface';
 
 class Ellipse extends Polygon {
-  type: PlotTypes;
+  private type: EPlotType;
 
-  fixPointCount: number;
+  private map: any;
 
-  map: any;
+  protected points: PlotUtils.Point[] = [];
 
-  points: TPoint[];
+  public fixPointCount: number;
 
-  freehand: boolean;
+  public assembleData: IPlotAssembleData | undefined;
 
-  constructor(coordinates, points, params) {
+
+
+  constructor(coordinates: any, points: any, params: any) {
     super([]);
-    this.type = PlotTypes.ELLIPSE;
+    this.type = EPlotType.Ellipse;
     this.fixPointCount = 2;
     this.set('params', params);
     if (points && points.length > 0) {
@@ -59,12 +60,12 @@ class Ellipse extends Polygon {
    * @param minorRadius
    * @returns {*}
    */
-  generatePoints(center, majorRadius, minorRadius) {
+  generatePoints(center: any, majorRadius: any, minorRadius: any) {
     // eslint-disable-next-line
     let [x, y, angle] = [0, 0, 0];
-    const points: TPoint[] = [];
-    for (let i = 0; i <= Constants.FITTING_COUNT; i++) {
-      angle = (Math.PI * 2 * i) / Constants.FITTING_COUNT;
+    const points: PlotUtils.Point[] = [];
+    for (let i = 0; i <= PlotUtils.FITTING_COUNT; i++) {
+      angle = (Math.PI * 2 * i) / PlotUtils.FITTING_COUNT;
       x = center[0] + majorRadius * Math.cos(angle);
       y = center[1] + minorRadius * Math.sin(angle);
       points.push([x, y]);
@@ -76,7 +77,7 @@ class Ellipse extends Polygon {
    * 设置地图对象
    * @param map
    */
-  setMap(map) {
+  setMap(map: any) {
     if (map && map instanceof Map) {
       this.map = map;
     } else {
@@ -104,7 +105,7 @@ class Ellipse extends Polygon {
    * 设置坐标点
    * @param value
    */
-  setPoints(value) {
+  setPoints(value: any) {
     this.points = !value ? [] : value;
     if (this.points.length >= 1) {
       this.generate();
@@ -132,7 +133,7 @@ class Ellipse extends Polygon {
    * @param point
    * @param index
    */
-  updatePoint(point, index) {
+  updatePoint(point: any, index: any) {
     if (index >= 0 && index < this.points.length) {
       this.points[index] = point;
       this.generate();
@@ -143,14 +144,14 @@ class Ellipse extends Polygon {
    * 更新最后一个坐标
    * @param point
    */
-  updateLastPoint(point) {
+  updateLastPoint(point: any) {
     this.updatePoint(point, this.points.length - 1);
   }
 
   /**
    * 结束绘制
    */
-  finishDrawing() {}
+  finishDrawing() { }
 }
 
 export default Ellipse;

@@ -34,4 +34,8 @@ export enum EPlotType {
    * 正圆
    */
   Circle = 'circle',
+  /**
+   * 椭圆
+   */
+  Ellipse = 'ellipse',
 }

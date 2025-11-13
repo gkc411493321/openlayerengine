@@ -20,6 +20,7 @@ import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
 import Circle from './circle/Circle';
+import Ellipse from './circle/Ellipse';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -472,6 +473,9 @@ class plotEdit {
       coords = geom.getCoordinates();
     } else if (plotType === EPlotType.Circle) {
       const geom = new Circle([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.Ellipse) {
+      const geom = new Ellipse([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;
