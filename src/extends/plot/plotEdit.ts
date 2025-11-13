@@ -19,6 +19,7 @@ import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
+import Circle from './circle/Circle';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -469,6 +470,9 @@ class plotEdit {
     } else if (plotType === EPlotType.AssemblePolygon) {
       const geom = new AssemblePolygon([], plotPoints, {});
       coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.Circle) {
+      const geom = new Circle([], plotPoints, {});
+      coords = geom.getCoordinates();
     }
     return coords;
   }
@@ -634,7 +638,7 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon];
+    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle];
     if (!exclude.includes(this.plotType)) {
       // 创建中间序列点
       this.createMidEditPoint(this.plotPoints);

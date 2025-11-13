@@ -32,6 +32,14 @@ export interface IPlotAttackArrow {
    */
   feature?: Feature;
   /**
+   * 中心点 仅circle使用
+   */
+  center?: Coordinate;
+  /**
+   * 半径 仅circle使用
+   */
+  radius?: number;
+  /**
    * 标绘类型
    */
   type?: EPlotType;

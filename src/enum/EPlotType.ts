@@ -29,5 +29,9 @@ export enum EPlotType {
   /**
    * 集结地
    */
-  AssemblePolygon = 'assemblePolygon'
+  AssemblePolygon = 'assemblePolygon',
+  /**
+   * 正圆
+   */
+  Circle = 'circle',
 }

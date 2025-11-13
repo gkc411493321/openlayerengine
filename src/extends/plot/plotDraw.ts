@@ -17,6 +17,7 @@ import TailedSquadCombatArrow from './geom/TailedSquadCombatArrow';
 import AssaultDirectionArrow from './geom/AssaultDirectionArrow';
 import DoubleArrow from './geom/DoubleArrow';
 import AssemblePolygon from './polygon/AssemblePolygon';
+import Circle from './circle/Circle';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -34,7 +35,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | undefined;
   /**
    * 元素feature
    */
@@ -124,6 +125,8 @@ class PlotDraw {
       return new DoubleArrow([], [], {});
     } else if (type === EPlotType.AssemblePolygon) {
       return new AssemblePolygon([], [], {});
+    } else if (type === EPlotType.Circle) {
+      return new Circle([], [], {});
     }
   }
   /**
@@ -199,12 +202,18 @@ class PlotDraw {
    */
   private drawEnd() {
     // 事件：结束（在状态清理前收集结果）
-    const payload = {
+    const payload: any = {
       type: this.geom?.getPlotType?.(),
       points: this.points.slice(),
       coordinates: this.geom?.getCoordinates ? this.geom.getCoordinates() : undefined,
-      feature: this.feature
+      feature: this.feature,
+      center: null,
+      radius: null
     };
+    if (this.geom?.getPlotType?.() === EPlotType.Circle) {
+      payload.center = (this.geom as Circle).center;
+      payload.radius = (this.geom as Circle).radius;
+    }
     this.emit('end', payload);
     // 退出绘制
     this.exitDraw();
