@@ -31,6 +31,7 @@ import Circle from '@/extends/plot/circle/Circle';
 import Ellipse from '@/extends/plot/circle/Ellipse';
 import ClosedCurvePolygon from '@/extends/plot/polygon/ClosedCurvePolygon';
 import SectorPolygon from '@/extends/plot/polygon/SectorPolygon';
+import LunePolygon from '@/extends/plot/polygon/LunePolygon';
 
 // 编辑历史记录类型定义（用于当前会话内 Ctrl+Z / Ctrl+Y）
 type HistoryLineRecord = { type: 'LineString'; before: Coordinate[]; after: Coordinate[]; apply: (coords: Coordinate[]) => void };
@@ -1212,6 +1213,71 @@ export default class DynamicDraw {
       plot.destroy();
     });
   }
+  /**
+* 动态绘制弓形(区域-3控制点)
+*/
+  drawwLunePolygon(param?: IDrawPolygon) {
+    // 初始化绘制工具
+    const plot = new PlotDraw();
+    plot.init(EPlotType.LunePolygon);
+    plot.on<IPlotAttackArrow>('start', (e) => {
+      // 回调：绘制开始
+      param?.callback?.call(this, {
+        type: DrawType.Drawstart,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('add-point', (e) => {
+      // 回调：绘制中点击（新增控制点）
+      param?.callback?.call(this, {
+        type: DrawType.DrawingClick,
+        eventPosition: toLonLat(e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('moving', (e) => {
+      // 回调：绘制移动（实时移动位置，优先使用临时点）
+      param?.callback?.call(this, {
+        type: DrawType.Drawing,
+        eventPosition: toLonLat(e.tempPoint || e.point)
+      });
+    });
+    plot.on<IPlotAttackArrow>('end', (e) => {
+      if (e.points && e.points.length === 3) {
+        const baseLayer = this.getBaseLayer('Polygon') as PolygonLayer | undefined;
+        const geom = new LunePolygon([], e.points, {});
+        const coords = geom.getCoordinates();
+        const f = baseLayer?.add({
+          positions: coords,
+          stroke: { color: param?.strokeColor || '#ffcc33', width: param?.strokeWidth || 2 },
+          fill: { color: param?.fillColor || 'rgba(255,255,255,0.2)' }
+        });
+        const lunePolygonParam = {
+          positions: coords,
+          plotType: EPlotType.LunePolygon,
+          plotPoints: e.points
+        };
+        f?.set('param', lunePolygonParam);
+        const response: IDrawEvent = {
+          type: DrawType.Drawend,
+          eventPosition: toLonLat(e.points[e.points.length - 1])
+        };
+        const featurePosition = [];
+        for (const item of e.coordinates![0]) {
+          featurePosition.push(toLonLat(item));
+        }
+        response.feature = f;
+        response.featurePosition = featurePosition;
+        param?.callback?.call(this, response);
+      } else {
+        const response: IDrawEvent = {
+          type: DrawType.Drawexit,
+          eventPosition: e.points && e.points.length > 0 ? toLonLat(e.points[e.points.length - 1]) : []
+        };
+        param?.callback?.call(this, response);
+      }
+      plot.destroy();
+    });
+  }
 
   /**
    * 动态编辑进攻箭头
@@ -1277,6 +1343,12 @@ export default class DynamicDraw {
    * 动态编辑椭圆(区域-2控制点)
    */
   editEllipse(param: IEditParam): void {
+    this.handlePlotEdit(param);
+  }
+  /**
+ * 动态编辑弓形(区域-3控制点)
+ */
+  editLunePolygon(param: IEditParam): void {
     this.handlePlotEdit(param);
   }
   /**

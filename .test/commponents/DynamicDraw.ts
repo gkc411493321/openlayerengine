@@ -20,7 +20,7 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth().enableScaleLine();
   const dynamicDraw = useEarth().useDrawTool();
-  dynamicDraw.drawwSectorPolygon({
+  dynamicDraw.drawwLunePolygon({
     callback: (e) => {
       console.log(e);
       if (e.type === DrawType.Drawend) {
