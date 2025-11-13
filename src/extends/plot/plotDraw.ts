@@ -23,6 +23,7 @@ import ClosedCurvePolygon from './polygon/ClosedCurvePolygon';
 import { OverlayLayer } from '@/base';
 import { EventsKey } from 'ol/events';
 import { unByKey } from 'ol/Observable';
+import SectorPolygon from './polygon/SectorPolygon';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -40,7 +41,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | ClosedCurvePolygon | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | ClosedCurvePolygon | SectorPolygon | undefined;
   /**
    * 元素feature
    */
@@ -138,6 +139,8 @@ class PlotDraw {
       return new AssemblePolygon([], [], {});
     } else if (type === EPlotType.ClosedCurvePolygon) {
       return new ClosedCurvePolygon([], [], {});
+    } else if (type === EPlotType.SectorPolygon) {
+      return new SectorPolygon([], [], {});
     } else if (type === EPlotType.Circle) {
       return new Circle([], [], {});
     } else if (type === EPlotType.Ellipse) {

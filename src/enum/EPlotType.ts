@@ -35,6 +35,10 @@ export enum EPlotType {
    */
   ClosedCurvePolygon = 'closedCurvePolygon',
   /**
+   * 扇形
+   */
+  SectorPolygon = 'sectorPolygon',
+  /**
    * 正圆
    */
   Circle = 'circle',

@@ -22,6 +22,7 @@ import AssemblePolygon from './polygon/AssemblePolygon';
 import Circle from './circle/Circle';
 import Ellipse from './circle/Ellipse';
 import ClosedCurvePolygon from './polygon/ClosedCurvePolygon';
+import SectorPolygon from './polygon/SectorPolygon';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -481,6 +482,9 @@ class plotEdit {
     } else if (plotType === EPlotType.ClosedCurvePolygon) {
       const geom = new ClosedCurvePolygon([], plotPoints, {});
       coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.SectorPolygon) {
+      const geom = new SectorPolygon([], plotPoints, {});
+      coords = geom.getCoordinates();
     }
     return coords;
   }
@@ -646,7 +650,7 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle];
+    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle, EPlotType.SectorPolygon];
     if (!exclude.includes(this.plotType)) {
       // 创建中间序列点
       this.createMidEditPoint(this.plotPoints);

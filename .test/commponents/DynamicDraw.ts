@@ -20,14 +20,14 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth().enableScaleLine();
   const dynamicDraw = useEarth().useDrawTool();
-  dynamicDraw.drawwClosedCurvePolygon({
+  dynamicDraw.drawwSectorPolygon({
     callback: (e) => {
       console.log(e);
       if (e.type === DrawType.Drawend) {
         // setTimeout(() => {
         //   useEarth()
         //     .useDrawTool()
-        //     .editAssaultDirectionArrow({
+        //     .editPolyline({
         //       feature: e.feature!,
         //       callback: (e) => {
         //         console.log(e);
