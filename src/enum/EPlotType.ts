@@ -54,4 +54,8 @@ export enum EPlotType {
    * 弓形(线)
    */
   LuneLine = 'luneLine',
+  /**
+   * 曲线
+   */
+  CurvePolyline = 'curvePolyline',
 }

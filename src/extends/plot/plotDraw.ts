@@ -26,6 +26,7 @@ import { unByKey } from 'ol/Observable';
 import SectorPolygon from './polygon/SectorPolygon';
 import LunePolygon from './polygon/LunePolygon';
 import LunePolyline from './polyline/LunePolyline';
+import CurvePolyline from './polyline/CurvePolyline';
 
 // 事件类型与监听器类型定义（放在类外部避免语法错误）
 export type PlotDrawEventName = 'start' | 'add-point' | 'moving' | 'end' | 'cancel' | string;
@@ -43,7 +44,7 @@ class PlotDraw {
   /**
    * 元素geometry
    */
-  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | ClosedCurvePolygon | SectorPolygon | LunePolygon | LunePolyline | undefined;
+  private geom: AttackArrow | FineArrow | DoubleArrow | AssemblePolygon | Circle | Ellipse | ClosedCurvePolygon | SectorPolygon | LunePolygon | LunePolyline | CurvePolyline | undefined;
   /**
    * 元素feature
    */
@@ -151,6 +152,8 @@ class PlotDraw {
       return new LunePolygon([], [], {});
     } else if (type === EPlotType.LuneLine) {
       return new LunePolyline([], [], {});
+    } else if (type === EPlotType.CurvePolyline) {
+      return new CurvePolyline([], [], {});
     }
   }
   /**

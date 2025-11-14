@@ -26,6 +26,7 @@ import SectorPolygon from './polygon/SectorPolygon';
 import LunePolygon from './polygon/LunePolygon';
 import LunePolyline from './polyline/LunePolyline';
 import { PolylineLayer } from '@/base';
+import CurvePolyline from './polyline/CurvePolyline';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -136,7 +137,7 @@ class plotEdit {
   /** 是否处于拖拽中 */
   private isDragging = false;
   /** 线标绘类型数组 */
-  private plotLineTypes = [EPlotType.LuneLine];
+  private plotLineTypes = [EPlotType.LuneLine, EPlotType.CurvePolyline];
   /** 需要排除创建中点的类型 */
   private exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle, EPlotType.SectorPolygon, EPlotType.LunePolygon, EPlotType.LuneLine];
 
@@ -523,6 +524,9 @@ class plotEdit {
       coords = geom.getCoordinates();
     } else if (plotType === EPlotType.LuneLine) {
       const geom = new LunePolyline([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.CurvePolyline) {
+      const geom = new CurvePolyline([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;
