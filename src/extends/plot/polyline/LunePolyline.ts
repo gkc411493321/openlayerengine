@@ -1,0 +1,144 @@
+/**
+ * 弓形线
+ */
+import { Map } from 'ol';
+import { LineString } from 'ol/geom';
+import * as PlotUtils from '../utils';
+import { EPlotType } from '@/enum';
+import { IPlotAssembleData } from '@/interface';
+
+class LunePolyline extends LineString {
+  private type: EPlotType;
+  private map: any;
+  private points: PlotUtils.Point[] = [];
+  public fixPointCount: number;
+  public assembleData: IPlotAssembleData | undefined;
+
+  constructor(coordinates: any, points: any, params: any) {
+    super([]);
+    this.type = EPlotType.LuneLine;
+    this.fixPointCount = 3;
+    this.set('params', params);
+    if (points && points.length > 0) {
+      this.setPoints(points);
+    } else if (coordinates && coordinates.length > 0) {
+      this.setCoordinates(coordinates);
+    }
+  }
+
+  /**
+   * 获取标绘类型
+   * @returns {*}
+   */
+  getPlotType() {
+    return this.type;
+  }
+
+  /**
+   * 执行动作
+   */
+  generate() {
+    const count = this.getPointCount();
+    if (count < 2) return;
+    if (count === 2) {
+      this.setCoordinates(this.points);
+    } else {
+      // eslint-disable-next-line
+      let [pnt1, pnt2, pnt3, startAngle, endAngle] = [this.points[0], this.points[1], this.points[2], 0, 0];
+      const center = PlotUtils.getCircleCenterOfThreePoints(pnt1, pnt2, pnt3);
+      const radius = PlotUtils.MathDistance(pnt1, center);
+      const angle1 = PlotUtils.getAzimuth(pnt1, center);
+      const angle2 = PlotUtils.getAzimuth(pnt2, center);
+      if (PlotUtils.isClockWise(pnt1, pnt2, pnt3)) {
+        startAngle = angle2;
+        endAngle = angle1;
+      } else {
+        startAngle = angle1;
+        endAngle = angle2;
+      }
+      this.setCoordinates(PlotUtils.getArcPoints(center, radius, startAngle, endAngle));
+    }
+  }
+
+  /**
+   * 设置地图对象
+   * @param map
+   */
+  setMap(map: any) {
+    if (map && map instanceof Map) {
+      this.map = map;
+    } else {
+      throw new Error('传入的不是地图对象！');
+    }
+  }
+
+  /**
+   * 获取当前地图对象
+   * @returns {ol.Map|*}
+   */
+  getMap() {
+    return this.map;
+  }
+
+  /**
+   * 判断是否是Plot
+   * @returns {boolean}
+   */
+  isPlot() {
+    return true;
+  }
+
+  /**
+   * 设置坐标点
+   * @param value
+   */
+  setPoints(value: any) {
+    this.points = !value ? [] : value;
+    if (this.points.length >= 1) {
+      this.generate();
+    }
+  }
+
+  /**
+   * 获取坐标点
+   * @returns {Array.<T>}
+   */
+  getPoints() {
+    return this.points.slice(0);
+  }
+
+  /**
+   * 获取点数量
+   * @returns {Number}
+   */
+  getPointCount() {
+    return this.points.length;
+  }
+
+  /**
+   * 更新当前坐标
+   * @param point
+   * @param index
+   */
+  updatePoint(point: any, index: any) {
+    if (index >= 0 && index < this.points.length) {
+      this.points[index] = point;
+      this.generate();
+    }
+  }
+
+  /**
+   * 更新最后一个坐标
+   * @param point
+   */
+  updateLastPoint(point: any) {
+    this.updatePoint(point, this.points.length - 1);
+  }
+
+  /**
+   * 结束绘制
+   */
+  finishDrawing() { }
+}
+
+export default LunePolyline;

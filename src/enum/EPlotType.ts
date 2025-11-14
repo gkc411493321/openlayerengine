@@ -47,7 +47,11 @@ export enum EPlotType {
    */
   Ellipse = 'ellipse',
   /**
-   * 弓形
+   * 弓形(区域)
    */
   LunePolygon = 'lunePolygon',
+  /**
+   * 弓形(线)
+   */
+  LuneLine = 'luneLine',
 }

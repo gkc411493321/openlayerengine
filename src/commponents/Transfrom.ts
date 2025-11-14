@@ -826,22 +826,41 @@ export default class Transfrom {
           });
         }
       } else if (type === 'LineString') {
-        draw.editPolyline({
-          feature: checkSelect!,
-          isShowUnderlay: true,
-          callback: (ev) => {
-            if (ev.type === ModifyType.Modifying) {
-              const arr: Coordinate[] = [];
-              for (const item of ev.position!) {
-                arr.push(fromLonLat(item as Coordinate));
-              }
-              this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
-            } else if (ev.type === ModifyType.Modifyexit) {
-              draw.remove();
-              this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
-            }
+        const plotType = checkSelect?.get('param')?.plotType;
+        if (plotType) {
+          switch (plotType) {
+            case 'luneLine':
+              draw.editLunePolyline({
+                feature: checkSelect!,
+                callback: (ev) => {
+                  if (ev.type === ModifyType.Modifying) {
+                    this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  } else if (ev.type === ModifyType.Modifyexit) {
+                    this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, plotParam: ev.plotParam, pixel: pixel });
+                  }
+                }
+              });
+              break;
           }
-        });
+        } else {
+          draw.editPolyline({
+            feature: checkSelect!,
+            isShowUnderlay: true,
+            callback: (ev) => {
+              if (ev.type === ModifyType.Modifying) {
+                const arr: Coordinate[] = [];
+                for (const item of ev.position!) {
+                  arr.push(fromLonLat(item as Coordinate));
+                }
+                this.handleRawEvent(ETransfrom.Modifying, { feature: checkSelect, position: arr, pixel: pixel });
+              } else if (ev.type === ModifyType.Modifyexit) {
+                draw.remove();
+                this.handleRawEvent(ETransfrom.ModifyEnd, { feature: checkSelect, pixel: pixel });
+              }
+            }
+          });
+        }
+
       }
       // 退出编辑模式
       this.transforms.exitEdit(pixel);

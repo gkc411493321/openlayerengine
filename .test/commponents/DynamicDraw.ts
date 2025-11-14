@@ -20,7 +20,7 @@ export const testDynamicDraw = () => {
   useEarth().enableGraticule();
   useEarth().enableScaleLine();
   const dynamicDraw = useEarth().useDrawTool();
-  dynamicDraw.drawEllipse({
+  dynamicDraw.drawwLunePolyline({
     callback: (e) => {
       console.log(e);
       if (e.type === DrawType.Drawend) {

@@ -24,6 +24,8 @@ import Ellipse from './circle/Ellipse';
 import ClosedCurvePolygon from './polygon/ClosedCurvePolygon';
 import SectorPolygon from './polygon/SectorPolygon';
 import LunePolygon from './polygon/LunePolygon';
+import LunePolyline from './polyline/LunePolyline';
+import { PolylineLayer } from '@/base';
 
 // 事件类型定义（新增 undo / redo）
 export type PlotEditEventType = 'modifyStart' | 'modifying' | 'modifyEnd' | 'modifyExit' | 'undo' | 'redo';
@@ -36,7 +38,7 @@ export interface IPlotEditEventPayload {
   /** 最新全部控制点(引用，为保持实时性，不要修改内部元素) */
   points: Coordinate[];
   /** 当前编辑要素（多边形/箭头等）实时坐标集合（外环+内环等），引用 this.coords */
-  coords: Coordinate[][];
+  coords: Coordinate[] | Coordinate[][];
   /** 标绘类型 */
   plotType?: EPlotType;
   /** 原始事件对象（OpenLayers事件或全局鼠标事件） */
@@ -60,6 +62,10 @@ class plotEdit {
    */
   private polygonLayer: PolygonLayer | undefined;
   /**
+   * 线图层
+   */
+  private polylineLayer: PolylineLayer | undefined;
+  /**
    * 点图层
    */
   private pointLayer: PointLayer | undefined;
@@ -78,7 +84,7 @@ class plotEdit {
   /**
    * 要素坐标集合
    */
-  private coords: Coordinate[][] = [];
+  private coords: Coordinate[] | Coordinate[][] = [];
   /**
    * 标绘类型
    */
@@ -129,6 +135,10 @@ class plotEdit {
   private baseTooltipContent = '拖拽控制点进行编辑，右键退出';
   /** 是否处于拖拽中 */
   private isDragging = false;
+  /** 线标绘类型数组 */
+  private plotLineTypes = [EPlotType.LuneLine];
+  /** 需要排除创建中点的类型 */
+  private exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle, EPlotType.SectorPolygon, EPlotType.LunePolygon, EPlotType.LuneLine];
 
   constructor() {
     this.map = useEarth().map;
@@ -208,7 +218,7 @@ class plotEdit {
   private applySnapshot(snapshot?: Coordinate[]) {
     if (!snapshot) return;
     this.plotPoints = snapshot.map((p) => [p[0], p[1]] as Coordinate);
-    this.updateEditPolygon();
+    this.updateEditPlot();
     this.refreshEditPoints();
   }
   /** 撤销 */
@@ -344,6 +354,7 @@ class plotEdit {
    */
   private createLayer() {
     this.polygonLayer = new PolygonLayer(useEarth());
+    this.polylineLayer = new PolylineLayer(useEarth());
     this.pointLayer = new PointLayer<Point>(useEarth());
     this.midPointLayer = new PointLayer<Point>(useEarth());
   }
@@ -427,10 +438,10 @@ class plotEdit {
     this.midPointIdMap = midPointIdMap;
   }
   /**
-   * 创建编辑要素
+   * 创建编辑要素-多边形
    */
   private createEditPolygon(param: IPlotParam) {
-    const coords = this.getEditCoordinates(param.plotType, param.plotPoints);
+    const coords = this.getEditCoordinates(param.plotType, param.plotPoints) as Coordinate[][];
     this.coords = coords;
     this.polygonLayer?.add({
       id: 'edit-plot',
@@ -441,18 +452,39 @@ class plotEdit {
     });
   }
   /**
+   * 创建编辑要素-线
+   */
+  private createEditPolyline(param: IPlotParam) {
+    const coords = this.getEditCoordinates(param.plotType, param.plotPoints) as Coordinate[];
+    this.coords = coords;
+    this.polylineLayer?.add({
+      id: 'edit-plot',
+      positions: coords,
+      stroke: { color: '#00aaff', width: 2 },
+      module: 'plot-ctl-polyline'
+    });
+  }
+  /**
    * 更新编辑要素
    */
-  private updateEditPolygon() {
+  private updateEditPlot() {
+    // 判断标绘类型 按图层更新标绘元素
     const coords = this.getEditCoordinates(this.plotType!, this.plotPoints);
     this.coords = coords;
-    this.polygonLayer?.setPosition('edit-plot', coords);
+    if (this.plotLineTypes.includes(this.plotType!)) {
+      // 更新线
+      this.polylineLayer?.setPosition('edit-plot', (coords as Coordinate[]));
+    } else {
+      // 更新多边形
+      this.polygonLayer?.setPosition('edit-plot', (coords as Coordinate[][]));
+    }
+
   }
   /**
    * 根据plot类型获取要素坐标
    */
   private getEditCoordinates(plotType: EPlotType, plotPoints: Coordinate[]) {
-    let coords: Coordinate[][] = [];
+    let coords: Coordinate[][] | Coordinate[] = [];
     if (plotType === EPlotType.AttackArrow) {
       const geom = new AttackArrow([], plotPoints, {});
       coords = geom.getCoordinates();
@@ -488,6 +520,9 @@ class plotEdit {
       coords = geom.getCoordinates();
     } else if (plotType === EPlotType.LunePolygon) {
       const geom = new LunePolygon([], plotPoints, {});
+      coords = geom.getCoordinates();
+    } else if (plotType === EPlotType.LuneLine) {
+      const geom = new LunePolyline([], plotPoints, {});
       coords = geom.getCoordinates();
     }
     return coords;
@@ -531,7 +566,7 @@ class plotEdit {
         const safeIndex = Math.min(insertionIndex, this.plotPoints.length);
         // 插入前当前最后一个快照即为修改前状态，无需重复记录
         this.plotPoints.splice(safeIndex, 0, center as Coordinate);
-        this.updateEditPolygon();
+        this.updateEditPlot();
         this.refreshEditPoints();
         this.modifyPointIndex = safeIndex;
         // 找到新生成的控制点 id
@@ -555,7 +590,7 @@ class plotEdit {
             normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-          this.updateEditPolygon();
+          this.updateEditPlot();
           this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
         });
         const mouseUp = event.addMouseLeftUpEventByGlobal((up) => {
@@ -570,7 +605,7 @@ class plotEdit {
             normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-          this.updateEditPolygon();
+          this.updateEditPlot();
           this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
           // 记录快照（本次操作完成后）
           this.recordSnapshot();
@@ -599,7 +634,7 @@ class plotEdit {
             normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-          this.updateEditPolygon();
+          this.updateEditPlot();
           this.emit('modifying', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: move });
         });
         const mouseUp = event.addMouseLeftUpEventByGlobal((up) => {
@@ -614,7 +649,7 @@ class plotEdit {
             normalizedProjected = Utils.restoreToWorldIndex(normalizedProjected, this.baseWorldIndex);
           }
           this.plotPoints[this.modifyPointIndex] = normalizedProjected as Coordinate;
-          this.updateEditPolygon();
+          this.updateEditPlot();
           this.emit('modifyEnd', { index: this.modifyPointIndex, coordinate: normalizedProjected, originalEvent: up });
           // 记录快照（结束）
           this.recordSnapshot();
@@ -654,13 +689,18 @@ class plotEdit {
     this.plotType = param.plotType;
     // 创建控制点
     this.createEditPoint(param.plotPoints);
-    const exclude = [EPlotType.FineArrow, EPlotType.TailedSquadCombatArrow, EPlotType.AssaultDirectionArrow, EPlotType.DoubleArrow, EPlotType.AssemblePolygon, EPlotType.Circle, EPlotType.SectorPolygon, EPlotType.LunePolygon];
-    if (!exclude.includes(this.plotType)) {
+    if (!this.exclude.includes(this.plotType)) {
       // 创建中间序列点
       this.createMidEditPoint(this.plotPoints);
     }
-    // 创建多边形
-    this.createEditPolygon(param);
+    // 判断标绘类型 按图层创建元素
+    if (this.plotLineTypes.includes(param.plotType)) {
+      // 创建线
+      this.createEditPolyline(param);
+    } else {
+      // 创建多边形
+      this.createEditPolygon(param);
+    }
     // // 创建修改监听
     this.createModifyEvent();
     // 注册键盘撤销/重做
@@ -682,6 +722,7 @@ class plotEdit {
     this.pointLayer?.remove();
     this.midPointLayer?.remove();
     this.polygonLayer?.remove();
+    this.polylineLayer?.remove();
     this.listeners.clear();
     this.plotPoints = [];
     this.modifyPointIndex = undefined;
